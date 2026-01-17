@@ -1,8 +1,0 @@
-{
-	"InstallScripts" : 
-	[
-		"C:/local/software_dev/loklight/build/Debug/cmake_install.cmake",
-		"C:/local/software_dev/loklight/build/Debug/cmake/stm32cubemx/cmake_install.cmake"
-	],
-	"Parallel" : false
-}
