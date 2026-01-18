@@ -1,6 +1,6 @@
 <mxfile host="Electron" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/29.3.0 Chrome/140.0.7339.249 Electron/38.7.2 Safari/537.36" version="29.3.0">
   <diagram name="Page-1" id="hMRzY6uVS92dumbr7SLH">
-    <mxGraphModel dx="1358" dy="801" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+    <mxGraphModel dx="819" dy="564" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -238,7 +238,7 @@
           <mxGeometry height="80" width="80" x="180" y="1320" as="geometry" />
         </mxCell>
         <mxCell id="gh9xPGv8Amtbu-xvTfAU-119" parent="1" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" value="Configuration" vertex="1">
-          <mxGeometry height="360" width="560" x="40" y="1720" as="geometry" />
+          <mxGeometry height="390" width="560" x="40" y="1720" as="geometry" />
         </mxCell>
         <mxCell id="gh9xPGv8Amtbu-xvTfAU-127" parent="gh9xPGv8Amtbu-xvTfAU-119" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="LokLight_AddrBasic = [0, 1, 2, &lt;b&gt;3&lt;/b&gt;, .. 127 ]" vertex="1">
           <mxGeometry height="30" width="560" y="30" as="geometry" />
@@ -264,17 +264,20 @@
         <mxCell id="gh9xPGv8Amtbu-xvTfAU-120" parent="gh9xPGv8Amtbu-xvTfAU-119" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="LED&amp;lt;1,2&amp;gt;_FunctionOutputId = [&lt;b&gt;F0Front |&lt;/b&gt;&amp;nbsp;F0Rear | F1 | F2 | F3]" vertex="1">
           <mxGeometry height="30" width="560" y="240" as="geometry" />
         </mxCell>
-        <mxCell id="gh9xPGv8Amtbu-xvTfAU-122" parent="gh9xPGv8Amtbu-xvTfAU-119" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="LED&amp;lt;1,2&amp;gt;_CfgBrightness = [0, 1 .. &lt;b&gt;128 &lt;/b&gt;.. 255]" vertex="1">
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-122" parent="gh9xPGv8Amtbu-xvTfAU-119" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="LED&amp;lt;1,2&amp;gt;_CfgBrightnessMax = [0, 1 .. &lt;b&gt;128 &lt;/b&gt;.. 255]" vertex="1">
           <mxGeometry height="30" width="560" y="270" as="geometry" />
         </mxCell>
-        <mxCell id="gh9xPGv8Amtbu-xvTfAU-132" parent="gh9xPGv8Amtbu-xvTfAU-119" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="LED&amp;lt;1,2&amp;gt;_Ramp = [0, 1 ..&amp;nbsp;&lt;b&gt;25&lt;/b&gt;.. 255] (/255 seconds)" vertex="1">
+        <mxCell id="8a8wbFRaKkKH3Ax3deOf-1" parent="gh9xPGv8Amtbu-xvTfAU-119" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="LED&amp;lt;1,2&amp;gt;_CfgBrightnessMin = [&lt;b&gt;0&lt;/b&gt;, 1 ..&amp;nbsp;255]" vertex="1">
           <mxGeometry height="30" width="560" y="300" as="geometry" />
         </mxCell>
-        <mxCell id="gh9xPGv8Amtbu-xvTfAU-131" parent="gh9xPGv8Amtbu-xvTfAU-119" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="LED&amp;lt;1,2&amp;gt;_Direction = [&lt;b&gt;EnabledFWD&lt;/b&gt;, EnabledREV, EnabledAlways]" vertex="1">
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-132" parent="gh9xPGv8Amtbu-xvTfAU-119" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="LED&amp;lt;1,2&amp;gt;_Ramp = [0, 1 ..&amp;nbsp;&lt;b&gt;25&lt;/b&gt;.. 255] (/255 seconds)" vertex="1">
           <mxGeometry height="30" width="560" y="330" as="geometry" />
         </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-131" parent="gh9xPGv8Amtbu-xvTfAU-119" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="LED&amp;lt;1,2&amp;gt;_Direction = [&lt;b&gt;EnabledFWD&lt;/b&gt;, EnabledREV, EnabledAlways]" vertex="1">
+          <mxGeometry height="30" width="560" y="360" as="geometry" />
+        </mxCell>
         <mxCell id="gh9xPGv8Amtbu-xvTfAU-133" parent="1" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" value="CV" vertex="1">
-          <mxGeometry height="360" width="520" x="600" y="1720" as="geometry" />
+          <mxGeometry height="390" width="520" x="600" y="1720" as="geometry" />
         </mxCell>
         <mxCell id="gh9xPGv8Amtbu-xvTfAU-134" parent="gh9xPGv8Amtbu-xvTfAU-133" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="CV1" vertex="1">
           <mxGeometry height="30" width="520" y="30" as="geometry" />
@@ -303,14 +306,17 @@
         <mxCell id="gh9xPGv8Amtbu-xvTfAU-137" parent="gh9xPGv8Amtbu-xvTfAU-133" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="CV112 (output1), CV113 (output2)" vertex="1">
           <mxGeometry height="30" width="520" y="270" as="geometry" />
         </mxCell>
-        <mxCell id="gh9xPGv8Amtbu-xvTfAU-138" parent="gh9xPGv8Amtbu-xvTfAU-133" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="CV114(output1), CV115(output2)" vertex="1">
+        <mxCell id="8a8wbFRaKkKH3Ax3deOf-2" parent="gh9xPGv8Amtbu-xvTfAU-133" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="CV122 (output1), CV123 (output2)" vertex="1">
           <mxGeometry height="30" width="520" y="300" as="geometry" />
         </mxCell>
-        <mxCell id="gh9xPGv8Amtbu-xvTfAU-139" parent="gh9xPGv8Amtbu-xvTfAU-133" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="CV116 (bits 0..1 output1, bits 2..3 output2)" vertex="1">
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-138" parent="gh9xPGv8Amtbu-xvTfAU-133" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="CV114(output1), CV115(output2)" vertex="1">
           <mxGeometry height="30" width="520" y="330" as="geometry" />
         </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-139" parent="gh9xPGv8Amtbu-xvTfAU-133" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="CV116 (bits 0..1 output1, bits 2..3 output2)" vertex="1">
+          <mxGeometry height="30" width="520" y="360" as="geometry" />
+        </mxCell>
         <mxCell id="gh9xPGv8Amtbu-xvTfAU-157" parent="1" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" value="State variables" vertex="1">
-          <mxGeometry height="150" width="560" x="40" y="2160" as="geometry" />
+          <mxGeometry height="180" width="560" x="40" y="2160" as="geometry" />
         </mxCell>
         <mxCell id="gh9xPGv8Amtbu-xvTfAU-159" parent="gh9xPGv8Amtbu-xvTfAU-157" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="LokLight_Mode [&lt;b&gt;DCC&lt;/b&gt;, Analog]" vertex="1">
           <mxGeometry height="30" width="560" y="30" as="geometry" />
@@ -318,14 +324,17 @@
         <mxCell id="gh9xPGv8Amtbu-xvTfAU-207" parent="gh9xPGv8Amtbu-xvTfAU-157" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="LokLight_ActiveAddr [0, 1, 2, &lt;b&gt;3&lt;/b&gt; .. 9.999]" vertex="1">
           <mxGeometry height="30" width="560" y="60" as="geometry" />
         </mxCell>
-        <mxCell id="gh9xPGv8Amtbu-xvTfAU-158" parent="gh9xPGv8Amtbu-xvTfAU-157" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="LED&amp;lt;1,2&amp;gt;_Enabled [&lt;b&gt;false&lt;/b&gt;, true]" vertex="1">
+        <mxCell id="8a8wbFRaKkKH3Ax3deOf-3" parent="gh9xPGv8Amtbu-xvTfAU-157" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="LokLight_Dir [&lt;b&gt;Normal&lt;/b&gt;, Reversed]" vertex="1">
           <mxGeometry height="30" width="560" y="90" as="geometry" />
         </mxCell>
-        <mxCell id="gh9xPGv8Amtbu-xvTfAU-160" parent="gh9xPGv8Amtbu-xvTfAU-157" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="LED&amp;lt;1,2&amp;gt;_ActiveBrightness [&lt;b&gt;0&lt;/b&gt;, 1 .. 255]" vertex="1">
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-158" parent="gh9xPGv8Amtbu-xvTfAU-157" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="LED&amp;lt;1,2&amp;gt;_Enabled [&lt;b&gt;false&lt;/b&gt;, true]" vertex="1">
           <mxGeometry height="30" width="560" y="120" as="geometry" />
         </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-160" parent="gh9xPGv8Amtbu-xvTfAU-157" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="LED&amp;lt;1,2&amp;gt;_ActiveBrightness [&lt;b&gt;0&lt;/b&gt;, 1 .. 255]" vertex="1">
+          <mxGeometry height="30" width="560" y="150" as="geometry" />
+        </mxCell>
         <mxCell id="gh9xPGv8Amtbu-xvTfAU-169" parent="1" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" value="Commanded by" vertex="1">
-          <mxGeometry height="150" width="520" x="600" y="2160" as="geometry" />
+          <mxGeometry height="180" width="520" x="600" y="2160" as="geometry" />
         </mxCell>
         <mxCell id="gh9xPGv8Amtbu-xvTfAU-170" parent="gh9xPGv8Amtbu-xvTfAU-169" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="DCC: Funcs F0..F3 in digital operation, or LokLight_AnalogMode&amp;lt;&amp;gt; in analog operation" vertex="1">
           <mxGeometry height="30" width="520" y="30" as="geometry" />
@@ -333,11 +342,14 @@
         <mxCell id="gh9xPGv8Amtbu-xvTfAU-208" parent="gh9xPGv8Amtbu-xvTfAU-169" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="DCC: Refreshed when CV1, CV17, CV18 and CV29 are updated" vertex="1">
           <mxGeometry height="30" width="520" y="60" as="geometry" />
         </mxCell>
-        <mxCell id="gh9xPGv8Amtbu-xvTfAU-179" parent="gh9xPGv8Amtbu-xvTfAU-169" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="DCC: DCC is (re)set upon reception of valid Msg, Analog Mode after comms timeout" vertex="1">
+        <mxCell id="8a8wbFRaKkKH3Ax3deOf-4" parent="gh9xPGv8Amtbu-xvTfAU-169" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="DCC: Refreshed when CV29 is updated" vertex="1">
           <mxGeometry height="30" width="520" y="90" as="geometry" />
         </mxCell>
-        <mxCell id="gh9xPGv8Amtbu-xvTfAU-180" parent="gh9xPGv8Amtbu-xvTfAU-169" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="Light Control: 0 for Off, _CfgBrightness for On and ramp _Ramp between transitions" vertex="1">
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-179" parent="gh9xPGv8Amtbu-xvTfAU-169" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="DCC: DCC is (re)set upon reception of valid Msg, Analog Mode after comms timeout" vertex="1">
           <mxGeometry height="30" width="520" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-180" parent="gh9xPGv8Amtbu-xvTfAU-169" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="Light Control: 0 for Off, _CfgBrightness for On and ramp _Ramp between transitions" vertex="1">
+          <mxGeometry height="30" width="520" y="150" as="geometry" />
         </mxCell>
         <mxCell id="gh9xPGv8Amtbu-xvTfAU-181" parent="1" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;dashed=1;dashPattern=1 2;" value="Main thread" vertex="1">
           <mxGeometry height="160" width="600" x="80" y="320" as="geometry" />
