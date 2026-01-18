@@ -56,3 +56,6 @@ dkms.conf
 
 # build folder
 build/
+
+# drawio backup files
+*.drawio.bkp

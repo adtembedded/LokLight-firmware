@@ -1,0 +1,448 @@
+<mxfile host="Electron" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/29.3.0 Chrome/140.0.7339.249 Electron/38.7.2 Safari/537.36" version="29.3.0">
+  <diagram name="Page-1" id="hMRzY6uVS92dumbr7SLH">
+    <mxGraphModel dx="1358" dy="801" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-69" parent="1" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;dashed=1;dashPattern=1 2;" value="Main thread" vertex="1">
+          <mxGeometry height="160" width="880" x="80" y="520" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-22" parent="1" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;dashed=1;dashPattern=1 2;" value="Main thread" vertex="1">
+          <mxGeometry height="160" width="610" x="390" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-21" parent="1" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;dashed=1;dashPattern=1 2;" value="IRQ" vertex="1">
+          <mxGeometry height="160" width="290" x="80" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-1" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;rounded=0;" value="&lt;h1 style=&quot;margin-top: 0px;&quot;&gt;DCC&lt;/h1&gt;&lt;p&gt;The DCC function dispatches commands from the Command Station by collecting polarity changes on the tracks and converting these to DCC messages.&lt;/p&gt;" vertex="1">
+          <mxGeometry height="110" width="310" x="40" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-11" edge="1" parent="1" source="gh9xPGv8Amtbu-xvTfAU-5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="gh9xPGv8Amtbu-xvTfAU-6" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-5" parent="1" style="rounded=1;whiteSpace=wrap;html=1;verticalAlign=middle;" value="Bit timer" vertex="1">
+          <mxGeometry height="60" width="120" x="210" y="170" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-12" edge="1" parent="1" source="gh9xPGv8Amtbu-xvTfAU-6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="gh9xPGv8Amtbu-xvTfAU-7" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-6" parent="1" style="rounded=1;whiteSpace=wrap;html=1;verticalAlign=middle;" value="Message decoder" vertex="1">
+          <mxGeometry height="60" width="120" x="440" y="170" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-13" edge="1" parent="1" source="gh9xPGv8Amtbu-xvTfAU-7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="gh9xPGv8Amtbu-xvTfAU-8" value="Yes">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-15" edge="1" parent="1" source="gh9xPGv8Amtbu-xvTfAU-7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" target="gh9xPGv8Amtbu-xvTfAU-9" value="No">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="640" y="260" />
+              <mxPoint x="960" y="260" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-7" parent="1" style="rhombus;whiteSpace=wrap;html=1;" value="Valid full message?" vertex="1">
+          <mxGeometry height="80" width="80" x="600" y="160" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-14" edge="1" parent="1" source="gh9xPGv8Amtbu-xvTfAU-8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="gh9xPGv8Amtbu-xvTfAU-9" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-8" parent="1" style="rounded=1;whiteSpace=wrap;html=1;verticalAlign=middle;" value="Dispatch" vertex="1">
+          <mxGeometry height="60" width="120" x="760" y="170" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-9" parent="1" style="ellipse;html=1;shape=endState;fillColor=#000000;strokeColor=#ff0000;" value="" vertex="1">
+          <mxGeometry height="30" width="30" x="945" y="185" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-16" parent="1" style="ellipse;html=1;shape=startState;fillColor=#000000;strokeColor=#000000;" value="" vertex="1">
+          <mxGeometry height="30" width="30" x="115" y="185" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-17" edge="1" parent="1" source="gh9xPGv8Amtbu-xvTfAU-16" style="edgeStyle=orthogonalEdgeStyle;html=1;verticalAlign=bottom;endArrow=open;endSize=8;strokeColor=#000000;rounded=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="gh9xPGv8Amtbu-xvTfAU-5" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="210" y="200" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-23" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;rounded=0;" value="&lt;h1 style=&quot;margin-top: 0px;&quot;&gt;Light control&lt;/h1&gt;&lt;p&gt;The light control function changes the active PWM parameters according to the active brightness setting&lt;/p&gt;" vertex="1">
+          <mxGeometry height="110" width="310" x="40" y="840" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-24" parent="1" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;dashed=1;dashPattern=1 2;" value="IRQ" vertex="1">
+          <mxGeometry height="160" width="760" x="80" y="960" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-46" edge="1" parent="1" source="gh9xPGv8Amtbu-xvTfAU-29" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="gh9xPGv8Amtbu-xvTfAU-45" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-29" parent="1" style="rounded=1;whiteSpace=wrap;html=1;verticalAlign=middle;" value="Update brightness up/down by ramp function" vertex="1">
+          <mxGeometry height="60" width="120" x="360" y="1010" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-30" parent="1" style="ellipse;html=1;shape=startState;fillColor=#000000;strokeColor=#000000;" value="" vertex="1">
+          <mxGeometry height="30" width="30" x="115" y="1025" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-31" edge="1" parent="1" source="gh9xPGv8Amtbu-xvTfAU-30" style="edgeStyle=orthogonalEdgeStyle;html=1;verticalAlign=bottom;endArrow=open;endSize=8;strokeColor=#000000;rounded=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="210" y="1040" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-34" connectable="0" parent="1" style="group" value="" vertex="1">
+          <mxGeometry height="50" width="60" x="100" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-32" parent="gh9xPGv8Amtbu-xvTfAU-34" style="rounded=0;whiteSpace=wrap;html=1;" value="" vertex="1">
+          <mxGeometry height="50" width="60" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-4" edge="1" parent="gh9xPGv8Amtbu-xvTfAU-34" style="endArrow=none;html=1;rounded=0;verticalAlign=bottom;labelPosition=center;verticalLabelPosition=top;align=center;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <Array as="points">
+              <mxPoint x="27.5" y="37.5" />
+              <mxPoint x="32.5" y="12.5" />
+            </Array>
+            <mxPoint x="17.5" y="37.5" as="sourcePoint" />
+            <mxPoint x="42.5" y="12.5" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-231" edge="1" parent="gh9xPGv8Amtbu-xvTfAU-34" style="endArrow=none;html=1;rounded=0;verticalAlign=bottom;labelPosition=center;verticalLabelPosition=top;align=center;dashed=1;dashPattern=1 2;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <Array as="points">
+              <mxPoint x="27.5" y="12.5" />
+              <mxPoint x="32.5" y="37.5" />
+            </Array>
+            <mxPoint x="17.5" y="12.5" as="sourcePoint" />
+            <mxPoint x="42.5" y="37.5" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-42" connectable="0" parent="1" style="group" value="" vertex="1">
+          <mxGeometry height="50" width="80" x="90" y="970" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-36" parent="gh9xPGv8Amtbu-xvTfAU-42" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;" value="PWM period" vertex="1">
+          <mxGeometry height="50" width="80" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-40" parent="gh9xPGv8Amtbu-xvTfAU-42" style="html=1;verticalLabelPosition=bottom;align=center;labelBackgroundColor=#ffffff;verticalAlign=top;strokeWidth=2;strokeColor=#000000;shadow=0;dashed=0;shape=mxgraph.ios7.icons.clock;flipH=1;legacyAnchorPoints=0;" value="" vertex="1">
+          <mxGeometry height="15" width="15" x="32.5" y="25" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-44" edge="1" parent="1" source="gh9xPGv8Amtbu-xvTfAU-43" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="gh9xPGv8Amtbu-xvTfAU-29" value="Yes">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-47" edge="1" parent="1" source="gh9xPGv8Amtbu-xvTfAU-43" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" target="gh9xPGv8Amtbu-xvTfAU-45" value="No">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-43" parent="1" style="rhombus;whiteSpace=wrap;html=1;" value="In transition on/off?" vertex="1">
+          <mxGeometry height="80" width="80" x="200" y="1000" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-49" edge="1" parent="1" source="gh9xPGv8Amtbu-xvTfAU-45" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="gh9xPGv8Amtbu-xvTfAU-48" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-45" parent="1" style="rounded=1;whiteSpace=wrap;html=1;verticalAlign=middle;" value="Update PWM" vertex="1">
+          <mxGeometry height="60" width="120" x="560" y="1010" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-48" parent="1" style="ellipse;html=1;shape=endState;fillColor=#000000;strokeColor=#ff0000;" value="" vertex="1">
+          <mxGeometry height="30" width="30" x="745" y="1025" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-76" edge="1" parent="1" source="gh9xPGv8Amtbu-xvTfAU-68" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="gh9xPGv8Amtbu-xvTfAU-75" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-68" parent="1" style="ellipse;html=1;shape=startState;fillColor=#000000;strokeColor=#000000;" value="" vertex="1">
+          <mxGeometry height="30" width="30" x="115" y="585" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-74" connectable="0" parent="1" style="group" value="" vertex="1">
+          <mxGeometry height="50" width="80" x="90" y="530" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-72" parent="gh9xPGv8Amtbu-xvTfAU-74" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;" value="Cmd msg" vertex="1">
+          <mxGeometry height="50" width="80" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-70" parent="gh9xPGv8Amtbu-xvTfAU-74" style="shape=message;html=1;html=1;outlineConnect=0;labelPosition=center;verticalLabelPosition=bottom;align=center;verticalAlign=top;" value="" vertex="1">
+          <mxGeometry height="20" width="30" x="25" y="24" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-81" edge="1" parent="1" source="gh9xPGv8Amtbu-xvTfAU-75" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="gh9xPGv8Amtbu-xvTfAU-80" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-75" parent="1" style="rounded=1;whiteSpace=wrap;html=1;verticalAlign=middle;" value="Filter address &amp;amp; command validity" vertex="1">
+          <mxGeometry height="60" width="120" x="200" y="570" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-84" edge="1" parent="1" source="gh9xPGv8Amtbu-xvTfAU-77" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="gh9xPGv8Amtbu-xvTfAU-79" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-77" parent="1" style="rounded=1;whiteSpace=wrap;html=1;verticalAlign=middle;align=left;" value="&amp;nbsp; &amp;nbsp;Execute command&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;-&amp;gt; update state vars&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;-&amp;gt; write CV&lt;/span&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="120" x="720" y="570" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-79" parent="1" style="ellipse;html=1;shape=endState;fillColor=#000000;strokeColor=#ff0000;" value="" vertex="1">
+          <mxGeometry height="30" width="30" x="890" y="585" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-83" edge="1" parent="1" source="gh9xPGv8Amtbu-xvTfAU-80" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" target="gh9xPGv8Amtbu-xvTfAU-79" value="No">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-199" edge="1" parent="1" source="gh9xPGv8Amtbu-xvTfAU-80" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="gh9xPGv8Amtbu-xvTfAU-198" value="Yes">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-80" parent="1" style="rhombus;whiteSpace=wrap;html=1;" value="Valid cmd?" vertex="1">
+          <mxGeometry height="80" width="80" x="400" y="560" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-85" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;rounded=0;" value="&lt;h1 style=&quot;margin-top: 0px;&quot;&gt;Configuration update&lt;/h1&gt;&lt;p&gt;The light control function changes the active PWM parameters according to the active brightness setting&lt;/p&gt;" vertex="1">
+          <mxGeometry height="110" width="310" x="40" y="1160" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-86" parent="1" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;dashed=1;dashPattern=1 2;" value="Main thread" vertex="1">
+          <mxGeometry height="160" width="1080" x="80" y="1280" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-89" parent="1" style="ellipse;html=1;shape=startState;fillColor=#000000;strokeColor=#000000;" value="" vertex="1">
+          <mxGeometry height="30" width="30" x="115" y="1345" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-90" edge="1" parent="1" source="gh9xPGv8Amtbu-xvTfAU-106" style="edgeStyle=orthogonalEdgeStyle;html=1;verticalAlign=middle;endArrow=open;endSize=8;strokeColor=#000000;rounded=0;" target="gh9xPGv8Amtbu-xvTfAU-99" value="No">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="220" y="1420" />
+              <mxPoint x="1120" y="1420" />
+            </Array>
+            <mxPoint x="210" y="1360" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-99" parent="1" style="ellipse;html=1;shape=endState;fillColor=#000000;strokeColor=#ff0000;" value="" vertex="1">
+          <mxGeometry height="30" width="30" x="1105" y="1345" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-101" parent="1" style="html=1;shape=mxgraph.infographic.ribbonSimple;notch1=16.14;notch2=0;align=left;verticalAlign=middle;fontSize=14;fontStyle=0;flipH=1;fillColor=#FFFFFF;whiteSpace=wrap;legacyAnchorPoints=0;" value="Update CV" vertex="1">
+          <mxGeometry height="30" width="90" x="90" y="1310" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-108" edge="1" parent="1" source="gh9xPGv8Amtbu-xvTfAU-103" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="gh9xPGv8Amtbu-xvTfAU-105" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-103" parent="1" style="rounded=1;whiteSpace=wrap;html=1;verticalAlign=middle;" value="Disable light control and IRQs" vertex="1">
+          <mxGeometry height="60" width="120" x="320" y="1330" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-112" edge="1" parent="1" source="gh9xPGv8Amtbu-xvTfAU-105" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="gh9xPGv8Amtbu-xvTfAU-111" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-105" parent="1" style="rounded=1;whiteSpace=wrap;html=1;verticalAlign=middle;" value="Update Cfg RAM" vertex="1">
+          <mxGeometry height="60" width="120" x="480" y="1330" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-107" edge="1" parent="1" source="gh9xPGv8Amtbu-xvTfAU-106" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="gh9xPGv8Amtbu-xvTfAU-103" value="Yes">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-116" edge="1" parent="1" source="gh9xPGv8Amtbu-xvTfAU-111" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="gh9xPGv8Amtbu-xvTfAU-113" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-111" parent="1" style="rounded=1;whiteSpace=wrap;html=1;verticalAlign=middle;" value="Store Cfg in Flash mem" vertex="1">
+          <mxGeometry height="60" width="120" x="640" y="1330" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-117" edge="1" parent="1" source="gh9xPGv8Amtbu-xvTfAU-113" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="gh9xPGv8Amtbu-xvTfAU-114" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-113" parent="1" style="rounded=1;whiteSpace=wrap;html=1;verticalAlign=middle;" value="Flash lights" vertex="1">
+          <mxGeometry height="60" width="120" x="800" y="1330" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-118" edge="1" parent="1" source="gh9xPGv8Amtbu-xvTfAU-114" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="gh9xPGv8Amtbu-xvTfAU-99" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-114" parent="1" style="rounded=1;whiteSpace=wrap;html=1;verticalAlign=middle;" value="Enable IRQs and light control" vertex="1">
+          <mxGeometry height="60" width="120" x="960" y="1330" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-115" edge="1" parent="1" source="gh9xPGv8Amtbu-xvTfAU-89" style="edgeStyle=orthogonalEdgeStyle;html=1;verticalAlign=bottom;endArrow=open;endSize=8;strokeColor=#000000;rounded=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="gh9xPGv8Amtbu-xvTfAU-106" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="145" y="1360" as="sourcePoint" />
+            <mxPoint x="210" y="1360" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-106" parent="1" style="rhombus;whiteSpace=wrap;html=1;" value="Valid CV?" vertex="1">
+          <mxGeometry height="80" width="80" x="180" y="1320" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-119" parent="1" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" value="Configuration" vertex="1">
+          <mxGeometry height="360" width="560" x="40" y="1720" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-127" parent="gh9xPGv8Amtbu-xvTfAU-119" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="LokLight_AddrBasic = [0, 1, 2, &lt;b&gt;3&lt;/b&gt;, .. 127 ]" vertex="1">
+          <mxGeometry height="30" width="560" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-141" parent="gh9xPGv8Amtbu-xvTfAU-119" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="LokLight_AddrExt1 = [192 .. 231] (Addr = (LokLight_AddrExt1-192)*256 + LokLight_AddrExt2)" vertex="1">
+          <mxGeometry height="30" width="560" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-140" parent="gh9xPGv8Amtbu-xvTfAU-119" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="LokLight_AddrExt2 = [0 .. 255] (Extended address range is 128 .. 9.999)" vertex="1">
+          <mxGeometry height="30" width="560" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-144" parent="gh9xPGv8Amtbu-xvTfAU-119" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="LokLight_AddrMode = [&lt;b&gt;Basic&lt;/b&gt;, Extended]" vertex="1">
+          <mxGeometry height="30" width="560" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-155" parent="gh9xPGv8Amtbu-xvTfAU-119" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="LokLight_RevDir = [&lt;b&gt;Normal&lt;/b&gt;, Reversed]" vertex="1">
+          <mxGeometry height="30" width="560" y="150" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-145" parent="gh9xPGv8Amtbu-xvTfAU-119" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="LokLight_AnalogModeF1F8 = [F1EnAnalog | F2EnAnalog .. F8EnAnalog]" vertex="1">
+          <mxGeometry height="30" width="560" y="180" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-151" parent="gh9xPGv8Amtbu-xvTfAU-119" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="LokLight_AnalogModeFLF12 = [&lt;b&gt;F0FwdEnAnalog |&lt;/b&gt;&amp;nbsp;F0RwdEnAnalog | F9EnAnalog .. F12EnAnalog]" vertex="1">
+          <mxGeometry height="30" width="560" y="210" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-120" parent="gh9xPGv8Amtbu-xvTfAU-119" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="LED&amp;lt;1,2&amp;gt;_FunctionOutputId = [&lt;b&gt;F0Front |&lt;/b&gt;&amp;nbsp;F0Rear | F1 | F2 | F3]" vertex="1">
+          <mxGeometry height="30" width="560" y="240" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-122" parent="gh9xPGv8Amtbu-xvTfAU-119" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="LED&amp;lt;1,2&amp;gt;_CfgBrightness = [0, 1 .. &lt;b&gt;128 &lt;/b&gt;.. 255]" vertex="1">
+          <mxGeometry height="30" width="560" y="270" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-132" parent="gh9xPGv8Amtbu-xvTfAU-119" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="LED&amp;lt;1,2&amp;gt;_Ramp = [0, 1 ..&amp;nbsp;&lt;b&gt;25&lt;/b&gt;.. 255] (/255 seconds)" vertex="1">
+          <mxGeometry height="30" width="560" y="300" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-131" parent="gh9xPGv8Amtbu-xvTfAU-119" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="LED&amp;lt;1,2&amp;gt;_Direction = [&lt;b&gt;EnabledFWD&lt;/b&gt;, EnabledREV, EnabledAlways]" vertex="1">
+          <mxGeometry height="30" width="560" y="330" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-133" parent="1" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" value="CV" vertex="1">
+          <mxGeometry height="360" width="520" x="600" y="1720" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-134" parent="gh9xPGv8Amtbu-xvTfAU-133" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="CV1" vertex="1">
+          <mxGeometry height="30" width="520" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-143" parent="gh9xPGv8Amtbu-xvTfAU-133" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="CV17" vertex="1">
+          <mxGeometry height="30" width="520" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-142" parent="gh9xPGv8Amtbu-xvTfAU-133" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="CV18" vertex="1">
+          <mxGeometry height="30" width="520" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-148" parent="gh9xPGv8Amtbu-xvTfAU-133" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="CV29" vertex="1">
+          <mxGeometry height="30" width="520" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-156" parent="gh9xPGv8Amtbu-xvTfAU-133" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="CV29" vertex="1">
+          <mxGeometry height="30" width="520" y="150" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-146" parent="gh9xPGv8Amtbu-xvTfAU-133" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="CV13" vertex="1">
+          <mxGeometry height="30" width="520" y="180" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-152" parent="gh9xPGv8Amtbu-xvTfAU-133" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="CV14" vertex="1">
+          <mxGeometry height="30" width="520" y="210" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-135" parent="gh9xPGv8Amtbu-xvTfAU-133" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="CV33 .. CV37 (note that LokLight has two outputs 1..2 which only CV33..CV37 can influence" vertex="1">
+          <mxGeometry height="30" width="520" y="240" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-137" parent="gh9xPGv8Amtbu-xvTfAU-133" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="CV112 (output1), CV113 (output2)" vertex="1">
+          <mxGeometry height="30" width="520" y="270" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-138" parent="gh9xPGv8Amtbu-xvTfAU-133" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="CV114(output1), CV115(output2)" vertex="1">
+          <mxGeometry height="30" width="520" y="300" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-139" parent="gh9xPGv8Amtbu-xvTfAU-133" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="CV116 (bits 0..1 output1, bits 2..3 output2)" vertex="1">
+          <mxGeometry height="30" width="520" y="330" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-157" parent="1" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" value="State variables" vertex="1">
+          <mxGeometry height="150" width="560" x="40" y="2160" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-159" parent="gh9xPGv8Amtbu-xvTfAU-157" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="LokLight_Mode [&lt;b&gt;DCC&lt;/b&gt;, Analog]" vertex="1">
+          <mxGeometry height="30" width="560" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-207" parent="gh9xPGv8Amtbu-xvTfAU-157" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="LokLight_ActiveAddr [0, 1, 2, &lt;b&gt;3&lt;/b&gt; .. 9.999]" vertex="1">
+          <mxGeometry height="30" width="560" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-158" parent="gh9xPGv8Amtbu-xvTfAU-157" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="LED&amp;lt;1,2&amp;gt;_Enabled [&lt;b&gt;false&lt;/b&gt;, true]" vertex="1">
+          <mxGeometry height="30" width="560" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-160" parent="gh9xPGv8Amtbu-xvTfAU-157" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="LED&amp;lt;1,2&amp;gt;_ActiveBrightness [&lt;b&gt;0&lt;/b&gt;, 1 .. 255]" vertex="1">
+          <mxGeometry height="30" width="560" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-169" parent="1" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" value="Commanded by" vertex="1">
+          <mxGeometry height="150" width="520" x="600" y="2160" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-170" parent="gh9xPGv8Amtbu-xvTfAU-169" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="DCC: Funcs F0..F3 in digital operation, or LokLight_AnalogMode&amp;lt;&amp;gt; in analog operation" vertex="1">
+          <mxGeometry height="30" width="520" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-208" parent="gh9xPGv8Amtbu-xvTfAU-169" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="DCC: Refreshed when CV1, CV17, CV18 and CV29 are updated" vertex="1">
+          <mxGeometry height="30" width="520" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-179" parent="gh9xPGv8Amtbu-xvTfAU-169" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="DCC: DCC is (re)set upon reception of valid Msg, Analog Mode after comms timeout" vertex="1">
+          <mxGeometry height="30" width="520" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-180" parent="gh9xPGv8Amtbu-xvTfAU-169" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="Light Control: 0 for Off, _CfgBrightness for On and ramp _Ramp between transitions" vertex="1">
+          <mxGeometry height="30" width="520" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-181" parent="1" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;dashed=1;dashPattern=1 2;" value="Main thread" vertex="1">
+          <mxGeometry height="160" width="600" x="80" y="320" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-182" edge="1" parent="1" source="gh9xPGv8Amtbu-xvTfAU-183" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="gh9xPGv8Amtbu-xvTfAU-188" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-183" parent="1" style="ellipse;html=1;shape=startState;fillColor=#000000;strokeColor=#000000;" value="" vertex="1">
+          <mxGeometry height="30" width="30" x="115" y="385" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-187" edge="1" parent="1" source="gh9xPGv8Amtbu-xvTfAU-188" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="gh9xPGv8Amtbu-xvTfAU-202" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="384.9999999999866" y="400" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-188" parent="1" style="rounded=1;whiteSpace=wrap;html=1;verticalAlign=middle;" value="Set Analog mode" vertex="1">
+          <mxGeometry height="60" width="120" x="200" y="370" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-195" connectable="0" parent="1" style="group" value="" vertex="1">
+          <mxGeometry height="50" width="90" x="90" y="330" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-196" parent="gh9xPGv8Amtbu-xvTfAU-195" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;fontSize=11;" value="Comm timeout" vertex="1">
+          <mxGeometry height="50" width="80" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-197" parent="gh9xPGv8Amtbu-xvTfAU-195" style="html=1;verticalLabelPosition=bottom;align=center;labelBackgroundColor=#ffffff;verticalAlign=top;strokeWidth=2;strokeColor=#000000;shadow=0;dashed=0;shape=mxgraph.ios7.icons.clock;flipH=1;legacyAnchorPoints=0;" value="" vertex="1">
+          <mxGeometry height="15" width="15" x="32.5" y="25" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-200" edge="1" parent="1" source="gh9xPGv8Amtbu-xvTfAU-198" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="gh9xPGv8Amtbu-xvTfAU-77" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-198" parent="1" style="rounded=1;whiteSpace=wrap;html=1;verticalAlign=middle;align=center;" value="Set DCC Mode" vertex="1">
+          <mxGeometry height="60" width="120" x="560" y="570" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-205" edge="1" parent="1" source="gh9xPGv8Amtbu-xvTfAU-202" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="gh9xPGv8Amtbu-xvTfAU-203" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-202" parent="1" style="rounded=1;whiteSpace=wrap;html=1;verticalAlign=middle;" value="Update state vars for analog mode" vertex="1">
+          <mxGeometry height="60" width="120" x="400" y="370" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-203" parent="1" style="ellipse;html=1;shape=endState;fillColor=#000000;strokeColor=#ff0000;" value="" vertex="1">
+          <mxGeometry height="30" width="30" x="584" y="385" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-209" parent="1" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;dashed=1;dashPattern=1 2;" value="Main thread" vertex="1">
+          <mxGeometry height="160" width="1080" x="80" y="1480" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-210" parent="1" style="ellipse;html=1;shape=startState;fillColor=#000000;strokeColor=#000000;" value="" vertex="1">
+          <mxGeometry height="30" width="30" x="115" y="1545" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-211" edge="1" parent="1" source="gh9xPGv8Amtbu-xvTfAU-226" style="edgeStyle=orthogonalEdgeStyle;html=1;verticalAlign=middle;endArrow=open;endSize=8;strokeColor=#000000;rounded=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" target="gh9xPGv8Amtbu-xvTfAU-217" value="No">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="220" y="1620" />
+              <mxPoint x="820" y="1620" />
+            </Array>
+            <mxPoint x="210" y="1560" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-212" parent="1" style="ellipse;html=1;shape=endState;fillColor=#000000;strokeColor=#ff0000;" value="" vertex="1">
+          <mxGeometry height="30" width="30" x="1105" y="1545" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-213" parent="1" style="html=1;shape=mxgraph.infographic.ribbonSimple;notch1=16.14;notch2=0;align=left;verticalAlign=middle;fontSize=14;fontStyle=0;flipH=1;fillColor=#FFFFFF;whiteSpace=wrap;legacyAnchorPoints=0;" value="Boot" vertex="1">
+          <mxGeometry height="30" width="90" x="90" y="1510" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-227" edge="1" parent="1" source="gh9xPGv8Amtbu-xvTfAU-229" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="gh9xPGv8Amtbu-xvTfAU-212">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="540" y="1510" />
+              <mxPoint x="1120" y="1510" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-230" edge="1" parent="1" source="gh9xPGv8Amtbu-xvTfAU-215" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="gh9xPGv8Amtbu-xvTfAU-229" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-215" parent="1" style="rounded=1;whiteSpace=wrap;html=1;verticalAlign=middle;" value="Update Cfg RAM from Flash" vertex="1">
+          <mxGeometry height="60" width="120" x="320" y="1530" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-216" edge="1" parent="1" source="gh9xPGv8Amtbu-xvTfAU-217" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="gh9xPGv8Amtbu-xvTfAU-220" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-217" parent="1" style="rounded=1;whiteSpace=wrap;html=1;verticalAlign=middle;" value="Store default Cfg in Flash mem" vertex="1">
+          <mxGeometry height="60" width="120" x="760" y="1530" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-218" edge="1" parent="1" source="gh9xPGv8Amtbu-xvTfAU-226" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="gh9xPGv8Amtbu-xvTfAU-215" value="Yes">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-228" edge="1" parent="1" source="gh9xPGv8Amtbu-xvTfAU-220" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="gh9xPGv8Amtbu-xvTfAU-212">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-220" parent="1" style="rounded=1;whiteSpace=wrap;html=1;verticalAlign=middle;" value="Reset" vertex="1">
+          <mxGeometry height="60" width="120" x="920" y="1530" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-225" edge="1" parent="1" source="gh9xPGv8Amtbu-xvTfAU-210" style="edgeStyle=orthogonalEdgeStyle;html=1;verticalAlign=bottom;endArrow=open;endSize=8;strokeColor=#000000;rounded=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="gh9xPGv8Amtbu-xvTfAU-226" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="145" y="1560" as="sourcePoint" />
+            <mxPoint x="210" y="1560" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-226" parent="1" style="rhombus;whiteSpace=wrap;html=1;" value="Valid cfg?" vertex="1">
+          <mxGeometry height="80" width="80" x="180" y="1520" as="geometry" />
+        </mxCell>
+        <mxCell id="gh9xPGv8Amtbu-xvTfAU-229" parent="1" style="rounded=1;whiteSpace=wrap;html=1;verticalAlign=middle;" value="Init state vars" vertex="1">
+          <mxGeometry height="60" width="120" x="480" y="1530" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
