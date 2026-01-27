@@ -19,11 +19,7 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#include <stdint.h> // For standard integer types
+#include <cstdint> // For standard integer types
 
 /*
 
@@ -91,8 +87,5 @@ typedef struct llStateVars_s {
 
 */
 
-#ifdef __cplusplus
-}
-#endif // __cplusplus
 
 #endif // CONFIG_H
