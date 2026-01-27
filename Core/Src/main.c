@@ -88,7 +88,7 @@ int main(void)
 
   /* USER CODE BEGIN SysInit */
   LokLightHandle loklight_handle = loklight_create();
-  bool init_result = loklight_init(loklight_handle, 0);
+  bool init_result = loklight_init(loklight_handle, 6);
   if(init_result)
   {
     while(1); // Success

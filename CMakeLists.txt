@@ -45,6 +45,11 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
 # Add sources to executable
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user sources here
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/config.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/dcc.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/led_control.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/loklight_wrapper.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/loklight.cpp
 )
 
 # Add include paths

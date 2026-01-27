@@ -27,15 +27,6 @@ set(MX_Application_Src
     ${CMAKE_CURRENT_SOURCE_DIR}/../../startup_stm32l011xx.s
 )
 
-# User generated application sources
-set(User_App_Src
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Src/config.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Src/dcc.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Src/led_control.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Src/loklight_wrapper.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Src/loklight.cpp
-)
-
 # STM32 HAL/LL Drivers
 set(STM32_Drivers_Src
     ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Src/system_stm32l0xx.c
@@ -59,7 +50,7 @@ set(STM32_Drivers_Src
     ${CMAKE_CURRENT_SOURCE_DIR}/../../Drivers/STM32L0xx_HAL_Driver/Src/stm32l0xx_hal_uart_ex.c
 )
 
-# Drivers Middlewares
+# Drivers Midllewares
 
 
 
@@ -86,9 +77,6 @@ target_link_libraries(STM32_Drivers PUBLIC stm32cubemx)
 
 # Add STM32CubeMX generated application sources to the project
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE ${MX_Application_Src})
-
-# Add user application sources to the project
-target_sources(${CMAKE_PROJECT_NAME} PRIVATE ${User_App_Src})
 
 # Link directories setup
 target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE ${MX_LINK_DIRS})
