@@ -21,13 +21,13 @@
 #include "dcc.hpp"
 #include "led_control.hpp"
 
-LokLight::LokLight()
+Loklight::Loklight()
     : dummyVal_(0)
 {
     // Constructor implementation (if needed)
 }
 
-LoklightInitResult_t LokLight::init(uint32_t a)
+LoklightInitResult_t Loklight::init(uint32_t a)
 {
     // Initialize configuration
     // Load configuration from Flash or set defaults

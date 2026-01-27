@@ -27,17 +27,17 @@ typedef enum {
     LOKLIGHT_INIT_ERROR = -1
 } LoklightInitResult_t;
 
-class LokLight
+class Loklight
 {
 public:
-    LokLight();
-    ~LokLight();
+    Loklight();
+    ~Loklight();
 
     // Prevent copying and moving. This object interfaces with C-code, it should exist only once and be managed strictly per instance.
-    LokLight(const LokLight&) = delete;
-    LokLight(LokLight&&) = delete;
-    LokLight& operator=(const LokLight&) = delete;
-    LokLight& operator=(LokLight&&) = delete;
+    Loklight(const Loklight&) = delete;
+    Loklight(Loklight&&) = delete;
+    Loklight& operator=(const Loklight&) = delete;
+    Loklight& operator=(Loklight&&) = delete;
 
     LoklightInitResult_t init(uint32_t a);
 

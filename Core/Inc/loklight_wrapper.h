@@ -26,15 +26,15 @@ extern "C" {
 #include <stdint.h> // bool
 
 // Opaque handle type for C
-typedef void* LokLightHandle;
+typedef void* LoklightHandle;
 
 // Create and destroy
-LokLightHandle loklight_create(void);
+LoklightHandle loklight_create(void);
 
-void loklight_destroy(LokLightHandle handle);
+void loklight_destroy(LoklightHandle handle);
 
 // Initialization, call after creation and HW init
-bool loklight_init(LokLightHandle handle, uint32_t a);
+bool loklight_init(LoklightHandle handle, uint32_t a);
 
 #ifdef __cplusplus
 }

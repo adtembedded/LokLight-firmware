@@ -87,7 +87,7 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
-  LokLightHandle loklight_handle = loklight_create();
+  LoklightHandle loklight_handle = loklight_create();
   bool init_result = loklight_init(loklight_handle, 6);
   if(init_result)
   {

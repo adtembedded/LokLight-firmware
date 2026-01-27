@@ -1,5 +1,5 @@
 /*
-* LokLight
+* Loklight
 * Copyright (C) 2026 ADT Embedded
 * 
 * This program is free software: you can redistribute it and/or modify
@@ -19,29 +19,29 @@
 #include "loklight_wrapper.h"
 #include "loklight.hpp"
 
-struct LokLightWrapper_s
+struct LoklightWrapper_s
 {
-    LokLight ll;                    // Actual C++ LokLight instance
-    LokLightWrapper_s() : ll() {}   // Initializer list adds loklight object to the wrapper
+    Loklight ll;                    // Actual C++ Loklight instance
+    LoklightWrapper_s() : ll() {}   // Initializer list adds Loklight object to the wrapper
 };
 
 // Create and destroy
-extern "C" LokLightHandle loklight_create(void)
+extern "C" LoklightHandle loklight_create(void)
 {
-    return reinterpret_cast<LokLightHandle>(new LokLightWrapper_s()); //Need unsafe conversion to allow C code to use C++ object
+    return reinterpret_cast<LoklightHandle>(new LoklightWrapper_s()); //Need unsafe conversion to allow C code to use C++ object
 }
 
-extern "C" void loklight_destroy(LokLightHandle handle)
+extern "C" void loklight_destroy(LoklightHandle handle)
 {
-    delete reinterpret_cast<LokLightWrapper_s*>(handle); //Need unsafe conversion to allow C code to use C++ object
+    delete reinterpret_cast<LoklightWrapper_s*>(handle); //Need unsafe conversion to allow C code to use C++ object
 }
 
 // Initialization, call after creation and HW init
-extern "C" bool loklight_init(LokLightHandle handle, uint32_t a)
+extern "C" bool loklight_init(LoklightHandle handle, uint32_t a)
 {
-    LokLightWrapper_s* wrapper = reinterpret_cast<LokLightWrapper_s*>(handle); //Need unsafe conversion to allow C code to use C++ object
+    LoklightWrapper_s* wrapper = reinterpret_cast<LoklightWrapper_s*>(handle); //Need unsafe conversion to allow C code to use C++ object
     LoklightInitResult_t result;
     result = wrapper->ll.init(a);
-    bool blnResult = (result == LOKLIGHT_INIT_OK)? true : false;
-    return blnResult;
+    bool result_bool = (result == LOKLIGHT_INIT_OK)? true : false;
+    return result_bool;
 }
