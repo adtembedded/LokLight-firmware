@@ -29,6 +29,13 @@ extern "C" {
 
 #include <stdint.h> // bool
 
+/*
+
+    Forward declarations
+
+*/
+typedef struct LedControlInitCfg_s LedControlInitCfg_t;
+
 /* 
 
     Loklight class
@@ -43,13 +50,20 @@ LoklightHandle loklight_create(void);
 void loklight_destroy(LoklightHandle handle);
 
 // Initialization, call after creation and HW init
-bool loklight_init(LoklightHandle handle, uint32_t a);
+bool loklight_init(LoklightHandle handle, LedControlInitCfg_t* ledInitCfg);
+
+// Step function, call periodically
+bool loklight_step(LoklightHandle handle);
 
 /* 
 
     Led control class
 
 */
+// Set the number of LEDs supported by the hardware
+// Make sure to start from 0 and count up 1 for every LED
+#define LED_COUNT (2)
+
 typedef enum {
     LED1 = 0,
     LED2 = 1
@@ -61,7 +75,7 @@ typedef struct LedControlInitCfg_s {
 } LedControlInitCfg_t;
 
 // Overwrite when using a specific hardware implementation
-inline bool led_control_init(LedControlInitCfg_t led_cfg)
+inline bool led_control_init(LedControlInitCfg_t* led_cfg)
 {
     // Placeholder implementation
     // On STM32, this is done already in main while initializing

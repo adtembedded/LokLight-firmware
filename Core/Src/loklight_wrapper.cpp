@@ -28,13 +28,6 @@ struct LoklightWrapper_s
     LoklightWrapper_s() : ll() {}   // Initializer list adds Loklight object to the wrapper
 };
 
-struct LedControlWrapper_s
-{
-    LedControl ledControl;                    // Actual C++ LedControl instance
-    LedControlWrapper_s() : ledControl() {}   // Initializer list adds LedControl object to the wrapper
-};
-
-
 // Create and destroy
 extern "C" LoklightHandle loklight_create(void)
 {
@@ -47,24 +40,30 @@ extern "C" void loklight_destroy(LoklightHandle handle)
 }
 
 // Initialization, call after creation and HW init
-extern "C" bool loklight_init(LoklightHandle handle, uint32_t a)
+extern "C" bool loklight_init(LoklightHandle handle, LedControlInitCfg_t* ledInitCfg)
 {
     LoklightWrapper_s* wrapper = reinterpret_cast<LoklightWrapper_s*>(handle); //Need unsafe conversion to allow C code to use C++ object
     LoklightInitResult_t result;
-    result = wrapper->ll.init(a);
+    result = wrapper->ll.init(ledInitCfg);
     bool result_bool = (result == LOKLIGHT_INIT_OK)? true : false;
     return result_bool;
 }
 
+extern "C" bool loklight_step(LoklightHandle handle)
+{
+    LoklightWrapper_s* wrapper = reinterpret_cast<LoklightWrapper_s*>(handle); //Need unsafe conversion to allow C code to use C++ object
+    return wrapper->ll.step();
+}
+
 // Overwrite when using another hardware implementation
-void led_control_set_pwm(LedNumber_t ledNumber, uint8_t brightness)
+extern "C" void led_control_set_pwm(LedNumber_t ledNumber, uint8_t brightness)
 {
     //Use the STM32 HAL to set the PWM duty cycle at runtime
     //In this implementation, TIM2 is used on hardware PWM mode on channel 3 and 4
     //The COMPARE reg resolution is 16-bit, therefore we need to scale brightness from 0-255 to 0-65535
     TIM_HandleTypeDef htimer;
     htimer.Instance = TIM2;
-    uint16_t brightness_16b = (uint16_t) brightness << 8;
+    uint16_t brightness_16b = (uint16_t) (brightness<<8) + brightness;  //Linearly scale 0x00-0xFF to 0x0000-0xFFFF
     
     if(ledNumber == LED1)
     {

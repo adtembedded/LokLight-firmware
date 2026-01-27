@@ -34,13 +34,13 @@ public:
     LedControl& operator=(const LedControl&) = delete;
     LedControl& operator=(LedControl&&) = delete;
 
-    bool init();
+    bool init(LedControlInitCfg_t* initCfg = nullptr);
+    bool isInitialized() const { return isInitialized_; }
     void setBrightness(LedNumber_t ledNumber, uint8_t brightness);
     uint8_t getBrightness(LedNumber_t ledNumber) const;
 
 private:
-    uint8_t led1Brightness_ = 0;
-    uint8_t led2Brightness_ = 0;
+    uint8_t ledBrightness_[LED_COUNT] = {};
     bool isInitialized_ = false;
 };
 

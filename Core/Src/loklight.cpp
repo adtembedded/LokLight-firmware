@@ -17,30 +17,57 @@
 */
 
 #include "loklight.h"
-#include "config.h"
-#include "dcc.h"
-#include "led_control.h"
 
 Loklight::Loklight()
-    : dummyVal_(0)
 {
     // Constructor implementation (if needed)
 }
 
-LoklightInitResult_t Loklight::init(uint32_t a)
+LoklightInitResult_t Loklight::init(LedControlInitCfg_t* ledInitCfg /*= nullptr*/)
 {
-    // Initialize configuration
-    // Load configuration from Flash or set defaults
-    // Initialize DCC decoder
-    // Initialize LED control
-    if(a>5)
+    // Validate input
+    if(ledInitCfg == nullptr)
     {
-        dummyVal_ = a; // Example usage of dummyVal_
-        return LOKLIGHT_INIT_OK;
-    }
-    else
-    {
-        dummyVal_ = 0;
         return LOKLIGHT_INIT_ERROR;
     }
+
+    // Initialize configuration
+    // Load configuration from Flash or set defaults
+    //TODO
+    
+    // Initialize DCC decoder
+    //TODO
+
+    // Initialize LED control
+
+
+    bool ledInitResult = ledControl_.init(ledInitCfg);
+    if(!ledInitResult)
+    {
+        return LOKLIGHT_INIT_ERROR;
+    }
+
+    return LOKLIGHT_INIT_OK;
+}
+
+bool Loklight::step()
+{
+    // Perform periodic tasks
+    
+    // First check if we are initialized
+    if(!this->ledControl_.isInitialized())
+    {
+        return false; // Not initialized
+    }
+    
+    // Check for new DCC commands, update LED states, etc.
+    
+    //TODO
+    
+    //Dummy code to control LEDs
+    static uint8_t brightness = 0;
+    this->ledControl_.setBrightness(LED1, brightness);
+    this->ledControl_.setBrightness(LED2, 255 - brightness++);
+
+    return true; // Return true if step was successful
 }

@@ -20,6 +20,10 @@
 #define LOKLIGHT_HPP
 
 #include <cstdint>  // For standard integer types
+#include "loklight_wrapper.h"   // For types
+#include "config.h"
+#include "dcc.h"
+#include "led_control.h"       
 
 // return type of init
 typedef enum {
@@ -39,10 +43,11 @@ public:
     Loklight& operator=(const Loklight&) = delete;
     Loklight& operator=(Loklight&&) = delete;
 
-    LoklightInitResult_t init(uint32_t a);
+    LoklightInitResult_t init(LedControlInitCfg_t* ledInitCfg = nullptr);
+    bool step();
 
 private:
-    uint32_t dummyVal_; // Placeholder member variable
+    LedControl ledControl_; // LED control instance
 };
 
 #endif // LOKLIGHT_HPP

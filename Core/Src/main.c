@@ -88,16 +88,6 @@ int main(void)
 
   /* USER CODE BEGIN SysInit */
   LoklightHandle loklight_handle = loklight_create();
-  bool init_result = loklight_init(loklight_handle, 6);
-  if(init_result)
-  {
-    while(1); // Success
-  }
-  else
-  {
-    // Error handling
-    while(1);
-  }
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
@@ -111,33 +101,25 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  //Set LED config (dummy in this hardware implementation, as STM Cube has already setup the PWM timer)
+  LedControlInitCfg_t led_cfg = {0};  // Replace with real configuration if needed
+  bool init_result = loklight_init(loklight_handle, &led_cfg);
+  if(!init_result)
+  {
+    while(1); // Error handling
+  }
+
   HAL_GPIO_WritePin(GPIOB, EN_LED1_Pin, GPIO_PIN_SET);
   HAL_GPIO_WritePin(GPIOB, EN_LED2_Pin, GPIO_PIN_SET);
   //static uint8_t led_state = 0;
 
   while (1)
   {
-    // HAL_GPIO_WritePin(GPIOB, EN_LED1_Pin, GPIO_PIN_SET);
-    // HAL_GPIO_WritePin(GPIOB, EN_LED2_Pin, GPIO_PIN_SET);
-    uint32_t cnt_th = 1000;
-    if(dcc_counter>2*cnt_th)
-    {
-      dcc_counter = 0;
-    }
-    else if (dcc_counter > cnt_th)
-    {
-      HAL_GPIO_WritePin(GPIOB, EN_LED1_Pin, GPIO_PIN_RESET);
-      HAL_GPIO_WritePin(GPIOB, EN_LED2_Pin, GPIO_PIN_SET);
-    }
-    else
-    {
-      HAL_GPIO_WritePin(GPIOB, EN_LED1_Pin, GPIO_PIN_SET);
-      HAL_GPIO_WritePin(GPIOB, EN_LED2_Pin, GPIO_PIN_RESET);
-    }
+    loklight_step(loklight_handle);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-    // HAL_Delay(500);
+    HAL_Delay(10);
   }
   /* USER CODE END 3 */
 }
