@@ -19,26 +19,32 @@
 #include "loklight_wrapper.h"
 #include "loklight.hpp"
 
-struct LoklightWrapper_s
+struct LokLightWrapper_s
 {
     LokLight ll;                    // Actual C++ LokLight instance
-    LoklightWrapper_s() : ll() {}   // Initializer list adds loklight object to the wrapper
+    LokLightWrapper_s() : ll() {}   // Initializer list adds loklight object to the wrapper
 };
 
+typedef struct LLWrapInitResult_s{
+    LoklightInitResult_t result_code;   // Can now be fully defined as loklight.hpp is included
+}LLWrapInitResult_t;
+
 // Create and destroy
-LoklightHandle loklight_create(void)
+extern "C" LokLightHandle loklight_create(void)
 {
-    return reinterpret_cast<LoklightHandle>(new LoklightWrapper_s()); //Need unsafe conversion to allow C code to use C++ object
+    return reinterpret_cast<LokLightHandle>(new LokLightWrapper_s()); //Need unsafe conversion to allow C code to use C++ object
 }
 
-void loklight_destroy(LoklightHandle handle)
+extern "C" void loklight_destroy(LokLightHandle handle)
 {
-    delete reinterpret_cast<LoklightWrapper_s*>(handle); //Need unsafe conversion to allow C code to use C++ object
+    delete reinterpret_cast<LokLightWrapper_s*>(handle); //Need unsafe conversion to allow C code to use C++ object
 }
 
 // Initialization, call after creation and HW init
-LoklightInitResult_t loklight_init(LoklightHandle handle, uint32_t a)
+extern "C" LLWrapInitResult_t loklight_init(LokLightHandle handle, uint32_t a)
 {
-    LoklightWrapper_s* wrapper = reinterpret_cast<LoklightWrapper_s*>(handle); //Need unsafe conversion to allow C code to use C++ object
-    return wrapper->ll.init(a);
+    LokLightWrapper_s* wrapper = reinterpret_cast<LokLightWrapper_s*>(handle); //Need unsafe conversion to allow C code to use C++ object
+    LLWrapInitResult_t result;
+    result.result_code = wrapper->ll.init(a);
+    return result;
 }

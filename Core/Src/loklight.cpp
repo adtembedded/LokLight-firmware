@@ -33,6 +33,14 @@ LoklightInitResult_t LokLight::init(uint32_t a)
     // Load configuration from Flash or set defaults
     // Initialize DCC decoder
     // Initialize LED control
-    dummyVal_ = a; // Example usage of dummyVal_
-    return LOKLIGHT_INIT_OK;
+    if(a>5)
+    {
+        dummyVal_ = a; // Example usage of dummyVal_
+        return LOKLIGHT_INIT_OK;
+    }
+    else
+    {
+        dummyVal_ = 0;
+        return LOKLIGHT_INIT_ERROR;
+    }
 }
