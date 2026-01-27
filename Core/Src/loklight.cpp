@@ -39,8 +39,7 @@ LoklightInitResult_t Loklight::init(LedControlInitCfg_t* ledInitCfg /*= nullptr*
     //TODO
 
     // Initialize LED control
-
-
+    // This automatically sets brightness to 0 for all LEDs
     bool ledInitResult = ledControl_.init(ledInitCfg);
     if(!ledInitResult)
     {

@@ -41,13 +41,13 @@ bool LedControl::init(LedControlInitCfg_t* initCfg /*= nullptr*/)
         // Call the hardware-specific initialization function
         if(led_control_init(initCfg))
         {
-            isInitialized_ = true;
-
-            //TODO set initial brightness to led<x>Min from the config file
+            // Set all LEDs to off initially
             for(auto i = 0; i < LED_COUNT; ++i)
             {
                 led_control_set_pwm(static_cast<LedNumber_t>(i), 0);
             }
+
+            isInitialized_ = true;
         }
         return isInitialized_;
     }
