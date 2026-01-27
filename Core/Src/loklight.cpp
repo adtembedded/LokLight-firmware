@@ -16,10 +16,10 @@
 * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "loklight.hpp"
-#include "config.hpp"
-#include "dcc.hpp"
-#include "led_control.hpp"
+#include "loklight.h"
+#include "config.h"
+#include "dcc.h"
+#include "led_control.h"
 
 Loklight::Loklight()
     : dummyVal_(0)

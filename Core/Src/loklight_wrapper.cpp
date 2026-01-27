@@ -17,8 +17,8 @@
 */
 
 #include "loklight_wrapper.h"
-#include "loklight.hpp"
-#include "led_control.hpp"
+#include "loklight.h"
+#include "led_control.h"
 // use HAL includes here
 #include "stm32l0xx_hal.h"
 
