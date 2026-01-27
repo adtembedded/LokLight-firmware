@@ -25,10 +25,6 @@ struct LokLightWrapper_s
     LokLightWrapper_s() : ll() {}   // Initializer list adds loklight object to the wrapper
 };
 
-typedef struct LLWrapInitResult_s{
-    LoklightInitResult_t result_code;   // Can now be fully defined as loklight.hpp is included
-}LLWrapInitResult_t;
-
 // Create and destroy
 extern "C" LokLightHandle loklight_create(void)
 {
@@ -41,10 +37,11 @@ extern "C" void loklight_destroy(LokLightHandle handle)
 }
 
 // Initialization, call after creation and HW init
-extern "C" LLWrapInitResult_t loklight_init(LokLightHandle handle, uint32_t a)
+extern "C" bool loklight_init(LokLightHandle handle, uint32_t a)
 {
     LokLightWrapper_s* wrapper = reinterpret_cast<LokLightWrapper_s*>(handle); //Need unsafe conversion to allow C code to use C++ object
-    LLWrapInitResult_t result;
-    result.result_code = wrapper->ll.init(a);
-    return result;
+    LoklightInitResult_t result;
+    result = wrapper->ll.init(a);
+    bool blnResult = (result == LOKLIGHT_INIT_OK)? true : false;
+    return blnResult;
 }

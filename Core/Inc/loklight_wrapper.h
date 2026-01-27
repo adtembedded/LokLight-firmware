@@ -23,6 +23,7 @@
 extern "C" {
 #endif
 
+#include <stdint.h> // bool
 
 // Opaque handle type for C
 typedef void* LokLightHandle;
@@ -32,11 +33,8 @@ LokLightHandle loklight_create(void);
 
 void loklight_destroy(LokLightHandle handle);
 
-// forward definition of return type of init. As enums can be forward declared, the result is stored in a struct with 1 member.
-// This avoid multiple definitions of the same enum.
-typedef struct LLWrapInitResult_s LLWrapInitResult_t;
 // Initialization, call after creation and HW init
-LLWrapInitResult_t loklight_init(LokLightHandle handle, uint32_t a);
+bool loklight_init(LokLightHandle handle, uint32_t a);
 
 #ifdef __cplusplus
 }

@@ -21,6 +21,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include <stdbool.h>
 #include "loklight_wrapper.h"
 /* USER CODE END Includes */
 
@@ -86,7 +87,17 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
-
+  LokLightHandle loklight_handle = loklight_create();
+  bool init_result = loklight_init(loklight_handle, 0);
+  if(init_result)
+  {
+    while(1); // Success
+  }
+  else
+  {
+    // Error handling
+    while(1);
+  }
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
