@@ -25,8 +25,12 @@
 class LedControl
 {
 public:
-    LedControl(){;}
-    ~LedControl(){;}
+    // Singleton access
+    static LedControl& getInstance()
+    {
+        static LedControl instance;
+        return instance;
+    }
 
     // Prevent copying and moving. This object interfaces with C-code, it should exist only once and be managed strictly per instance.
     LedControl(const LedControl&) = delete;
@@ -42,6 +46,10 @@ public:
 private:
     uint8_t ledBrightness_[LED_COUNT] = {};
     bool isInitialized_ = false;
+
+    //This class is a singleton
+    LedControl(){;}
+    ~LedControl(){;}
 };
 
 #endif

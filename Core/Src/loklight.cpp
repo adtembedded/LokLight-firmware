@@ -19,13 +19,12 @@
 #include "loklight.h"
 
 Loklight::Loklight()
+    : ledControl_(LedControl::getInstance()) // Initialize reference to singleton instance
 {
-    // Constructor implementation (if needed)
 }
 
 Loklight::~Loklight()
 {
-    // Destructor implementation (if needed)
 }
 
 LoklightInitResult_t Loklight::init(LedControlInitCfg_t* ledInitCfg /*= nullptr*/)
