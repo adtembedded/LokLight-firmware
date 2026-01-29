@@ -19,7 +19,8 @@
 #include "loklight.h"
 
 Loklight::Loklight()
-    : ledControl_(LedControl::getInstance()) // Initialize reference to singleton instance
+    : ledControl_(LedControl::getInstance()), // Initialize reference to singleton instance
+      loklightConfig_(LoklightConfig::getInstance())
 {
 }
 

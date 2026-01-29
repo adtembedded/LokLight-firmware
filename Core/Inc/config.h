@@ -90,8 +90,8 @@ public:
 
 private:
     // This is a singleton class, make sure this object cannot be created except for getInstance
-    LoklightConfig();
-    ~LoklightConfig();
+    LoklightConfig(){;}
+    ~LoklightConfig(){;}
 
     bool isInitialized_ = false;
     static std::map<uint32_t, uint8_t> cvMap_;

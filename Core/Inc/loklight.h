@@ -59,7 +59,8 @@ private:
     Loklight();
     ~Loklight();
 
-    LedControl& ledControl_; // LED control instance
+    LedControl& ledControl_;            // LED control instance
+    LoklightConfig& loklightConfig_;    // Configuration instance
 };
 
 #endif // LOKLIGHT_HPP
