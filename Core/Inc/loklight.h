@@ -34,8 +34,16 @@ typedef enum {
 class Loklight
 {
 public:
-    Loklight();
-    ~Loklight();
+    // This is a singleton class
+    static Loklight& getInstance(){ 
+        static Loklight instance; // created once
+        return instance;
+    }
+
+    // For C-wrapper
+    static Loklight* getInstancePtr(){
+        return &getInstance();  // this works because a reference Loklight& is a name which points to the object itself
+    }
 
     // Prevent copying and moving. This object interfaces with C-code, it should exist only once and be managed strictly per instance.
     Loklight(const Loklight&) = delete;
@@ -47,6 +55,10 @@ public:
     bool step();
 
 private:
+    // This is a singleton class, make sure this object cannot be created except for getInstance
+    Loklight();
+    ~Loklight();
+
     LedControl ledControl_; // LED control instance
 };
 

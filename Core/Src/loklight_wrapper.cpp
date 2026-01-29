@@ -22,37 +22,49 @@
 // use HAL includes here
 #include "stm32l0xx_hal.h"
 
-struct LoklightWrapper_s
-{
-    Loklight ll;                    // Actual C++ Loklight instance
-    LoklightWrapper_s() : ll() {}   // Initializer list adds Loklight object to the wrapper
-};
+// Re-enable when create and destroy are used
+// struct LoklightWrapper_s
+// {
+//     Loklight ll;                    // Actual C++ Loklight instance
+//     LoklightWrapper_s() : ll() {}   // Initializer list adds Loklight object to the wrapper
+// };
 
 // Create and destroy
-extern "C" LoklightHandle loklight_create(void)
-{
-    return reinterpret_cast<LoklightHandle>(new LoklightWrapper_s()); //Need unsafe conversion to allow C code to use C++ object
-}
+// Enable when class isn't a singleton
+// extern "C" LoklightHandle loklight_create(void)
+// {
+//     return reinterpret_cast<LoklightHandle>(new LoklightWrapper_s()); //Need unsafe conversion to allow C code to use C++ object
+// }
 
-extern "C" void loklight_destroy(LoklightHandle handle)
+// Enable when class isn't a singleton
+// extern "C" void loklight_destroy(LoklightHandle handle)
+// {
+//     delete reinterpret_cast<LoklightWrapper_s*>(handle); //Need unsafe conversion to allow C code to use C++ object
+// }
+
+// Get the handle of the singleton instance
+extern "C" LoklightHandle loklight_get_instance(void)
 {
-    delete reinterpret_cast<LoklightWrapper_s*>(handle); //Need unsafe conversion to allow C code to use C++ object
+    return reinterpret_cast<LoklightHandle>(Loklight::getInstancePtr()); //Need unsafe conversion to allow C code to use C++ object
 }
 
 // Initialization, call after creation and HW init
 extern "C" bool loklight_init(LoklightHandle handle, LedControlInitCfg_t* ledInitCfg)
 {
-    LoklightWrapper_s* wrapper = reinterpret_cast<LoklightWrapper_s*>(handle); //Need unsafe conversion to allow C code to use C++ object
     LoklightInitResult_t result;
-    result = wrapper->ll.init(ledInitCfg);
+    //LoklightWrapper_s* wrapper = reinterpret_cast<LoklightWrapper_s*>(handle); //Need unsafe conversion to allow C code to use C++ object
+    // result = wrapper->ll.init(ledInitCfg);
+    Loklight& ll_instance = Loklight::getInstance();
+    result = ll_instance.init(ledInitCfg);
     bool result_bool = (result == LOKLIGHT_INIT_OK)? true : false;
     return result_bool;
 }
 
 extern "C" bool loklight_step(LoklightHandle handle)
 {
-    LoklightWrapper_s* wrapper = reinterpret_cast<LoklightWrapper_s*>(handle); //Need unsafe conversion to allow C code to use C++ object
-    return wrapper->ll.step();
+    // LoklightWrapper_s* wrapper = reinterpret_cast<LoklightWrapper_s*>(handle); //Need unsafe conversion to allow C code to use C++ object
+    Loklight& ll_instance = Loklight::getInstance();
+    return ll_instance.step();
 }
 
 // Overwrite when using another hardware implementation

@@ -87,7 +87,7 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
-  LoklightHandle loklight_handle = loklight_create();
+  LoklightHandle loklight_handle = loklight_get_instance();
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */

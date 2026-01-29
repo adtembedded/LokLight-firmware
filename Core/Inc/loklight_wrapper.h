@@ -45,9 +45,12 @@ typedef struct LedControlInitCfg_s LedControlInitCfg_t;
 typedef void* LoklightHandle;
 
 // Create and destroy
-LoklightHandle loklight_create(void);
+// Not used as class is a singleton
+// LoklightHandle loklight_create(void);
+// void loklight_destroy(LoklightHandle handle);
 
-void loklight_destroy(LoklightHandle handle);
+// Get the handle of the singleton instance
+LoklightHandle loklight_get_instance(void);
 
 // Initialization, call after creation and HW init
 bool loklight_init(LoklightHandle handle, LedControlInitCfg_t* ledInitCfg);

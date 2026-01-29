@@ -23,6 +23,11 @@ Loklight::Loklight()
     // Constructor implementation (if needed)
 }
 
+Loklight::~Loklight()
+{
+    // Destructor implementation (if needed)
+}
+
 LoklightInitResult_t Loklight::init(LedControlInitCfg_t* ledInitCfg /*= nullptr*/)
 {
     // Validate input
