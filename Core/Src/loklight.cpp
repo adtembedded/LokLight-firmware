@@ -12,8 +12,9 @@
 #include "loklight.h"
 
 Loklight::Loklight()
-    : ledControl_(LedControl::getInstance()), // Initialize reference to singleton instance
-      loklightConfig_(LoklightConfig::getInstance())
+    :   ledControl_(LedControl::getInstance()), // Initialize reference to singleton instance
+        loklightConfig_(LoklightConfig::getInstance()),
+        dccInterface_(DccInterface::getInstance())
 {
 }
 
@@ -44,6 +45,7 @@ LoklightInitResult_t Loklight::init(LedControlInitCfg_t* ledInitCfg /*= nullptr*
         return LOKLIGHT_INIT_ERROR;
     }
 
+    isInitialized_ = true;
     return LOKLIGHT_INIT_OK;
 }
 
@@ -52,7 +54,7 @@ bool Loklight::step()
     // Perform periodic tasks
     
     // First check if we are initialized
-    if(!this->ledControl_.isInitialized())
+    if(!ledControl_.isInitialized())
     {
         return false; // Not initialized
     }
@@ -63,8 +65,11 @@ bool Loklight::step()
     
     //Dummy code to control LEDs
     static uint8_t brightness = 0;
-    this->ledControl_.setBrightness(LED1, brightness);
-    this->ledControl_.setBrightness(LED2, 255 - brightness++);
+    ledControl_.setBrightness(LED1, brightness);
+    ledControl_.setBrightness(LED2, 255 - brightness++);
+
+    //Dummy code for dcc read, discard result
+    dccInterface_.readBitTime();
 
     return true; // Return true if step was successful
 }

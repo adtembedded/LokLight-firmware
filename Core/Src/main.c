@@ -87,7 +87,7 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
-  LoklightHandle loklight_handle = loklight_get_instance();
+  // LoklightHandle loklight_handle = loklight_get_instance();
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
@@ -103,7 +103,8 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   //Set LED config (dummy in this hardware implementation, as STM Cube has already setup the PWM timer)
   LedControlInitCfg_t led_cfg = {0};  // Replace with real configuration if needed
-  bool init_result = loklight_init(loklight_handle, &led_cfg);
+  // bool init_result = loklight_init(loklight_handle, &led_cfg);
+  bool init_result = loklight_init(&led_cfg);
   if(!init_result)
   {
     while(1); // Error handling
@@ -115,11 +116,12 @@ int main(void)
 
   while (1)
   {
-    loklight_step(loklight_handle);
+    // loklight_step(loklight_handle);
+    loklight_step();
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-    HAL_Delay(10);
+    HAL_Delay(1);
   }
   /* USER CODE END 3 */
 }

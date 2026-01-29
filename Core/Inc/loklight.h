@@ -9,8 +9,8 @@
 *
 */
 
-#ifndef LOKLIGHT_HPP
-#define LOKLIGHT_HPP
+#ifndef LOKLIGHT_H
+#define LOKLIGHT_H
 
 #include <cstdint>  // For standard integer types
 #include "loklight_wrapper.h"   // For types
@@ -38,6 +38,8 @@ public:
         return &getInstance();  // this works because a reference Loklight& is a name which points to the object itself
     }
 
+    bool isInitialized(){return isInitialized_;}
+
     // Prevent copying and moving. This object interfaces with C-code, it should exist only once and be managed strictly per instance.
     Loklight(const Loklight&) = delete;
     Loklight(Loklight&&) = delete;
@@ -54,6 +56,9 @@ private:
 
     LedControl& ledControl_;            // LED control instance
     LoklightConfig& loklightConfig_;    // Configuration instance
+    DccInterface& dccInterface_;        // DCC interface instance
+
+    bool isInitialized_ = false;
 };
 
-#endif // LOKLIGHT_HPP
+#endif // LOKLIGHT_H

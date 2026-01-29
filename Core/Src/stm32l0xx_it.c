@@ -22,6 +22,7 @@
 #include "stm32l0xx_it.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "loklight_wrapper.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -146,12 +147,22 @@ void SysTick_Handler(void)
 void EXTI0_1_IRQHandler(void)
 {
   /* USER CODE BEGIN EXTI0_1_IRQn 0 */
+  static uint16_t prev_dcc_irq_time = 0;
   if(__HAL_GPIO_EXTI_GET_IT(DCC_SENSE_Pin))
+  {
+    if(loklight_init_status())
+    {
+      // uint32_t current_time = HAL_GetTick();
+      uint16_t current_time = __HAL_TIM_GET_COUNTER(&htim2);
+      uint16_t delta_t = current_time - prev_dcc_irq_time;
+      dcc_bit_queue_add(delta_t);
+      prev_dcc_irq_time =  __HAL_TIM_GET_COUNTER(&htim2);
+    }
+  }
     dcc_counter++;
   /* USER CODE END EXTI0_1_IRQn 0 */
   HAL_GPIO_EXTI_IRQHandler(DCC_SENSE_Pin);
   /* USER CODE BEGIN EXTI0_1_IRQn 1 */
-
   /* USER CODE END EXTI0_1_IRQn 1 */
 }
 

@@ -12,7 +12,7 @@
 #ifndef LED_CONTROL_H
 #define LED_CONTROL_H
 
-#include "loklight_wrapper.h"
+#include "loklight_wrapper.h"   // This is where generic loklight functions are bound to platform-dependent methods
 
 // class led
 class LedControl

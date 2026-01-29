@@ -20,7 +20,8 @@
 extern "C" {
 #endif
 
-#include <stdint.h> // bool
+#include <stdint.h> // std types
+#include <stdbool.h>
 
 /*
 
@@ -35,7 +36,7 @@ typedef struct LedControlInitCfg_s LedControlInitCfg_t;
 
 */
 // Opaque handle type for C
-typedef void* LoklightHandle;
+// typedef void* LoklightHandle;
 
 // Create and destroy
 // Not used as class is a singleton
@@ -43,13 +44,18 @@ typedef void* LoklightHandle;
 // void loklight_destroy(LoklightHandle handle);
 
 // Get the handle of the singleton instance
-LoklightHandle loklight_get_instance(void);
+// LoklightHandle loklight_get_instance(void);
 
 // Initialization, call after creation and HW init
-bool loklight_init(LoklightHandle handle, LedControlInitCfg_t* ledInitCfg);
+// bool loklight_init(LoklightHandle handle, LedControlInitCfg_t* ledInitCfg);
+bool loklight_init(LedControlInitCfg_t* ledInitCfg);
+
+// Check if init is complete
+bool loklight_init_status();
 
 // Step function, call periodically
-bool loklight_step(LoklightHandle handle);
+// bool loklight_step(LoklightHandle handle);
+bool loklight_step();
 
 /* 
 
@@ -80,7 +86,19 @@ inline bool led_control_init(LedControlInitCfg_t* led_cfg)
 }
 
 // Links a brightness change to a PWM update on the specific hardware
-void led_control_set_pwm(LedNumber_t ledNumber, uint8_t brightness);
+void led_control_set_pwm(LedNumber_t led_number, uint8_t brightness);
+
+/*
+
+    DCC Interface class
+
+*/
+// Function to add a DCC bit time to the queue 
+// Call this function from an ISR that fires when the dcc track polarity is inverted, for ex. a GPIO IRQ that detects both up- and down-going flanks
+// If the queue is full, this method will clear the queue completely to avoid processing inconsistent data
+// Returns true when bit-time was succesfully added
+// Returns false when the queue was full and has been cleared
+bool dcc_bit_queue_add(uint32_t bit_time);
 
 #ifdef __cplusplus
 }

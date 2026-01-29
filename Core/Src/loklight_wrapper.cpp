@@ -35,14 +35,15 @@
 //     delete reinterpret_cast<LoklightWrapper_s*>(handle); //Need unsafe conversion to allow C code to use C++ object
 // }
 
-// Get the handle of the singleton instance
-extern "C" LoklightHandle loklight_get_instance(void)
-{
-    return reinterpret_cast<LoklightHandle>(Loklight::getInstancePtr()); //Need unsafe conversion to allow C code to use C++ object
-}
+// Get the handle of the singleton instance (not needed)
+// extern "C" LoklightHandle loklight_get_instance(void)
+// {
+//     return reinterpret_cast<LoklightHandle>(Loklight::getInstancePtr()); //Need unsafe conversion to allow C code to use C++ object
+// }
 
 // Initialization, call after creation and HW init
-extern "C" bool loklight_init(LoklightHandle handle, LedControlInitCfg_t* ledInitCfg)
+// extern "C" bool loklight_init(LoklightHandle handle, LedControlInitCfg_t* ledInitCfg)
+extern "C" bool loklight_init(LedControlInitCfg_t* ledInitCfg)
 {
     LoklightInitResult_t result;
     //LoklightWrapper_s* wrapper = reinterpret_cast<LoklightWrapper_s*>(handle); //Need unsafe conversion to allow C code to use C++ object
@@ -53,7 +54,15 @@ extern "C" bool loklight_init(LoklightHandle handle, LedControlInitCfg_t* ledIni
     return result_bool;
 }
 
-extern "C" bool loklight_step(LoklightHandle handle)
+extern "C" bool loklight_init_status()
+{
+    Loklight& ll_instance = Loklight::getInstance();
+    bool result = ll_instance.isInitialized();
+    return result;
+}
+
+// extern "C" bool loklight_step(LoklightHandle handle)
+extern "C" bool loklight_step()
 {
     // LoklightWrapper_s* wrapper = reinterpret_cast<LoklightWrapper_s*>(handle); //Need unsafe conversion to allow C code to use C++ object
     Loklight& ll_instance = Loklight::getInstance();
@@ -61,7 +70,7 @@ extern "C" bool loklight_step(LoklightHandle handle)
 }
 
 // Overwrite when using another hardware implementation
-extern "C" void led_control_set_pwm(LedNumber_t ledNumber, uint8_t brightness)
+extern "C" void led_control_set_pwm(LedNumber_t led_number, uint8_t brightness)
 {
     //Use the STM32 HAL to set the PWM duty cycle at runtime
     //In this implementation, TIM2 is used on hardware PWM mode on channel 3 and 4
@@ -70,13 +79,20 @@ extern "C" void led_control_set_pwm(LedNumber_t ledNumber, uint8_t brightness)
     htimer.Instance = TIM2;
     uint16_t brightness_16b = (uint16_t) (brightness<<8) + brightness;  //Linearly scale 0x00-0xFF to 0x0000-0xFFFF
     
-    if(ledNumber == LED1)
+    if(led_number == LED1)
     {
         __HAL_TIM_SET_COMPARE(&htimer, TIM_CHANNEL_3, brightness_16b);
     }
     
-    if(ledNumber == LED2)
+    if(led_number == LED2)
     {
         __HAL_TIM_SET_COMPARE(&htimer, TIM_CHANNEL_4, brightness_16b);
     }
+}
+
+bool dcc_bit_queue_add(uint32_t bit_time)
+{
+    DccInterface& dcc_itf = DccInterface::getInstance();
+    bool result = dcc_itf.addBitTime(bit_time);
+    return result;
 }
