@@ -20,65 +20,35 @@
 #define CONFIG_H
 
 #include <cstdint> // For standard integer types
+#include <map>
 
-/*
+// /*
 
-    Constants and Variables for LokLight configuration and state management
+//     Constants and Variables for LokLight configuration and state management
 
-*/
-// Configuration structure for LokLight. It is stored in Flash memory and loaded into RAM at startup.
-// When CVs are written, the structure in RAM is updated and then saved back to Flash.
-typedef struct llConfig_s {
-    uint8_t  addrBasic;         // CV1     DCC Address (1-127 for short)
-    uint8_t  addrExt1;          // CV17    DCC Address (128-10239 for long, this is the 256 multiplier. Addr = (addrExt1-192) * 256 + addrExt2)
-    uint8_t  addrExt2;          // CV18    DCC Address (128-10239 for long, this is the added offset)
-    uint8_t  addrMode;          // CV29    Addressing mode
-    uint8_t  revDir;            // CV29    Reverse direction flag
-    uint8_t  analogMode1;       // CV13    Analog mode configuration for F1 .. F8
-    uint8_t  analogMode2;       // CV14    Analog mode configuration for F0F, F0R, F9 .. F12
-    uint8_t  led1FuncMap;       // CV33..37 Function mapping for LED1 bit0=F0F, bit1=F0R, bit2=F1, bit3=F2, bit4=F3
-    uint8_t  led2FuncMap;       // CV33..37 Function mapping for LED2
-    uint8_t  led1Max;           // CV112   Maximum brightness level (0-255)
-    uint8_t  led2Max;           // CV113   Maximum brightness level (0-255)
-    uint8_t  led1Min;           // CV122   Minimum brightness level (0-255)
-    uint8_t  led2Min;           // CV123   Minimum brightness level (0-255)
-    uint8_t  led1Fade;          // CV114    Fade-in/out time, 255=1 second
-    uint8_t  led2Fade;          // CV115    Fade-in/out time, 255=1 second
-    uint8_t  led1Dir;           // CV116    LED1 direction sensitivity bit 0..1
-    uint8_t  led2Dir;           // CV116    LED2 direction sensitivity bit 2..3
-} llConfig_t;
+// */
 
-// Default configuration values
-const llConfig_t llConfigDefaults = {
-    .addrBasic     = 3,        // Default DCC address 3
-    .addrExt1      = 192,      // Default extended address high byte (192*256=49152)
-    .addrExt2      = 0,        // Default extended address low byte
-    .addrMode      = 0,        // Default to short address mode
-    .revDir        = 0,        // Default no reverse direction
-    .analogMode1   = 0,        // Default analog mode, F1 .. F8 are off
-    .analogMode2   = 0b00000001,// Default analog mode for F0F, F0R, F9..F12. F0F is on as this is a front light by default, rest is off.
-    .led1FuncMap   = 0b00000001,// Default LED1 function mapping to F0F(bit0), F0R, F1, F2, F3(bit4). F0F is on as this is a front light by default, rest is off.
-    .led2FuncMap   = 0b00000001,// Default LED2 function mapping
-    .led1Max       = 128,      // Default LED1 max brightness (half power)
-    .led2Max       = 128,      // Default LED2 max brightness
-    .led1Min       = 0,        // Default LED1 min brightness (fully off)
-    .led2Min       = 0,        // Default LED2 min brightness
-    .led1Fade      = 25,      // Default LED1 fade time (~0.1 seconds)
-    .led2Fade      = 25,      // Default LED2 fade time (~0.1 seconds)
-    .led1Dir       = 0b00,     // Default LED1 direction sensitivity: off. By default, the front light sensitivity is implemented by mapping to F0F.
-    .led2Dir       = 0b00      // Default LED2 direction sensitivity: off
-}; 
 
-// Runtime state variables, stored in RAM only
-typedef struct llStateVars_s {
-    uint8_t  controlMode;       // Current control mode (DCC/Analog)
-    uint16_t addr;              // Current DCC address
-    int8_t   speed;             // Current speed step (-127 .. +127)
-    uint8_t  led1Brightness;    // Current brightness level for LED1 (0-255)
-    uint8_t  led2Brightness;    // Current brightness level for LED2 (0-255)
-    uint8_t  led1Enabled;       // LED1 is commanded to be on or off
-    uint8_t  led2Enabled;       // LED2 is commanded to be on or off
-} llStateVars_t;
+// // Default configuration values
+// const llConfig_t llConfigDefaults = {
+//     .addrBasic     = 3,        // Default DCC address 3
+//     .addrExt1      = 192,      // Default extended address high byte (192*256=49152)
+//     .addrExt2      = 0,        // Default extended address low byte
+//     .addrMode      = 0,        // Default to short address mode
+//     .revDir        = 0,        // Default no reverse direction
+//     .analogMode1   = 0,        // Default analog mode, F1 .. F8 are off
+//     .analogMode2   = 0b00000001,// Default analog mode for F0F, F0R, F9..F12. F0F is on as this is a front light by default, rest is off.
+//     .led1FuncMap   = 0b00000001,// Default LED1 function mapping to F0F(bit0), F0R, F1, F2, F3(bit4). F0F is on as this is a front light by default, rest is off.
+//     .led2FuncMap   = 0b00000001,// Default LED2 function mapping
+//     .led1Max       = 128,      // Default LED1 max brightness (half power)
+//     .led2Max       = 128,      // Default LED2 max brightness
+//     .led1Min       = 0,        // Default LED1 min brightness (fully off)
+//     .led2Min       = 0,        // Default LED2 min brightness
+//     .led1Fade      = 25,      // Default LED1 fade time (~0.1 seconds)
+//     .led2Fade      = 25,      // Default LED2 fade time (~0.1 seconds)
+//     .led1Dir       = 0b00,     // Default LED1 direction sensitivity: off. By default, the front light sensitivity is implemented by mapping to F0F.
+//     .led2Dir       = 0b00      // Default LED2 direction sensitivity: off
+// }; 
 
 
 /*
@@ -86,6 +56,84 @@ typedef struct llStateVars_s {
     Enums
 
 */
+typedef enum {
+    LL_CFG_INIT_ERROR = -1,
+    LL_CFG_INIT_STORED_CFG_LOADED = 0,
+    LL_CFG_INIT_NO_STORED_CFG_DEFAULTS_LOADED = 1
+} LoklightConfigInitResult_t;
+
+/* 
+
+    Classes 
+    
+*/
+
+class LoklightConfig
+{
+public:
+    // This is a singleton class
+    static LoklightConfig& getInstance(){ 
+        static LoklightConfig instance; // created once
+        return instance;
+    } 
+
+    // Prevent copying and moving. 
+    // This object interfaces with C-code, it should exist only once and be managed strictly per instance.
+    LoklightConfig(const LoklightConfig&) = delete;
+    LoklightConfig(LoklightConfig&&) = delete;
+    LoklightConfig& operator=(const LoklightConfig&) = delete;
+    LoklightConfig& operator=(LoklightConfig&&) = delete;
+
+    // Read from flash into RAM
+    // If no valid config is found in flash, load defaults
+    LoklightConfigInitResult_t init(void);
+
+private:
+    // This is a singleton class, make sure this object cannot be created except for getInstance
+    LoklightConfig();
+    ~LoklightConfig();
+
+    bool isInitialized_ = false;
+    static std::map<uint32_t, uint8_t> cvMap_;
+};
+
+/* 
+
+    CV/Config Types
+
+*/
+// This CV Map is part of the config class. This initialization is used to set defaults.
+// Change values / insert / delete as needed
+inline std::map<uint32_t, uint8_t> LoklightConfig::cvMap_ { 
+    {1, 3},     // CV1: DCC Address Basic (1-127 for short)
+    {17, 192},  // CV17: DCC Address Extended 1 DCC Address (128-10239 for long, this is the 256 multiplier. Addr = (addrExt1-192) * 256 + addrExt2)
+    {18, 0},    // CV18: DCC Address Extended 2 DCC Address (128-10239 for long, this is the added offset)
+    {29, 4},    // CV29: Configuration register
+                        // Bit0 Travel dir: 0 Normal direction of travel, 1 Reversed direction of travel
+                        // Bit1 Speed config: 0 for 14 speed steps DCC, 2 for 28 or 128 speed steps DCC
+                        // Bit2 Analog operation: 0 Disable analog operation, 4 Enable analog operation
+                        // Bit3 UNUSED RailCom: 0 to Disable RailCom®, 8 to Enable RailCom®
+                        // Bit4 UNUSED Speed curve: 0 for curve through CV 2, 5, 6; 16 for curve through CV 67-94
+                        // Bit5 Addressing mode: 0 Short addresses (CV 1) in DCC mode, 32 Long addresses (CV 17 + 18) in DCC mode
+                        // Bit6 UNUSED Reserved
+                        // Bit7 UNUSED Accessory Decoder: 0 for multipurpose decoder, 128 for accessory decoder
+    {13, 1},    // CV13: Analog mode F1..F8. 1 is on, 0 is off during analog mode. (bit0 = F1, bit1 = F2, ..., bit7 = F8)
+    {14, 3},    // CV14: Analog mode F0F, F0R, F9..F12 (bit0 = F0F, bit1 = F0R, bit2 = F9, bit3 = F10, bit4 = F11, bit5 = F12)
+    {33, 3},    // CV33: Function map. Maps F0 forward to outputs. FO1 and FO2 are the LEDs and normally they are linked only to forward motion
+    {34, 0},    // CV34: Function map. F0 backward. Refer to https://www.nmra.org/sites/default/files/s-9.2.2_2012_10.pdf
+    {35, 0},    // CV35: Function map. F1
+    {36, 0},    // CV36: Function map. F2
+    {37, 0},    // CV37: Function map. F3
+    {112, 128}, // CV112: LED1 Max brightness. Set to half power by default
+    {113, 128}, // CV113: LED2 Max brightness
+    {122, 0},   // CV122: LED1 Min brightness. Set to fully off by default
+    {123, 0},   // CV123: LED2 Min brightness
+    {114, 25},  // CV114: LED1 Fade time. Fade-in/out time. 0=instant, 255=1 second, scaling is linear
+    {115, 25},  // CV115: LED2 Fade time
+    {116, 15}   // CV116: LED Direction sensitivity. 
+                // LED1 direction sensitivity bit 0 F..1 R; By default set to 3 (sensitive to both directions)
+                // LED2 direction sensitivity bit 2 F..3 R; By default set to 3<<2 (sensitive to both directions)
+};
 
 
 #endif // CONFIG_H
