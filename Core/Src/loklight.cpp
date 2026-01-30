@@ -68,16 +68,25 @@ bool Loklight::step()
     // Check for new DCC commands, update LED states, etc.
     
     //TODO
-    
-    //Dummy code to control LEDs
-    static uint8_t brightness = 0;
-    ledControl_.setBrightness(LED1, brightness);
-    ledControl_.setBrightness(LED2, 255 - brightness++);
 
     //Dummy code for dcc read, discard result
+    static uint32_t bitsRead = 0;
     while(dccInterface_.elementsInQueue() > 0)
     {
         dccInterface_.readBitTime();
+        bitsRead++;
+        if(bitsRead > 25000)
+        {
+            ledControl_.enableLight(LED1, !ledControl_.isLightEnabled(LED1));
+            ledControl_.enableLight(LED2, !ledControl_.isLightEnabled(LED2));
+            bitsRead = 0;
+        }
+    }
+
+    // Update LED states
+    if(!ledControl_.step())
+    {
+        return false; // Return false if step failed, we should reset the device if this happens
     }
 
     return true; // Return true if step was successful

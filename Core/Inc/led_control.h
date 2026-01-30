@@ -18,7 +18,7 @@
 typedef struct ledControlCfg_s {
     uint8_t maxBrightness;
     uint8_t minBrightness;
-    uint8_t brightnessStep;
+    uint8_t brightnessRamp;
 } ledControlCfg_t;
 
 // class led
@@ -42,9 +42,8 @@ public:
     bool step();
     bool setConfig(ledControlCfg_t* cfg, uint8_t ledNumber);
     void enableLight(LedNumber_t ledNumber, bool enable);
-
+    bool isLightEnabled(LedNumber_t ledNumber) { return ledEnabled_[ledNumber]; }
     bool isInitialized() const { return isInitialized_; }
-    void setBrightness(LedNumber_t ledNumber, uint8_t brightness);
     uint8_t getBrightness(LedNumber_t ledNumber) const;
     
     private:
@@ -54,8 +53,12 @@ public:
     
     ledControlCfg_s ledControlCfg_[LED_COUNT] = {};
     uint8_t ledBrightness_[LED_COUNT] = {};
+    uint32_t ledUpdated_[LED_COUNT] = {};
+    bool ledEnabled_[LED_COUNT] = {};
+    uint32_t lastStepTime_ = 0;
     bool isInitialized_ = false;
-
+    
+    void setBrightness(LedNumber_t ledNumber, uint8_t brightness);
 };
 
 #endif

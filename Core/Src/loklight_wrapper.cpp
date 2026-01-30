@@ -15,6 +15,12 @@
 // use HAL includes here
 #include "stm32l0xx_hal.h"
 
+extern "C" uint32_t platform_get_tick_ms(void)
+{
+    // Change as needed to get a ms value for platform system time
+    return HAL_GetTick();
+}
+
 // Re-enable when create and destroy are used
 // struct LoklightWrapper_s
 // {

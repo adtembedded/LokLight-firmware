@@ -53,7 +53,92 @@ bool LedControl::init(ledHwInitCfg_t* initHwCfg /*= nullptr*/)
 
 bool LedControl::step()
 {
-    return false;
+    if(!isInitialized_)
+    {
+        return false;
+    }
+
+    // Get current system time
+    uint32_t currentTime = platform_get_tick_ms();
+    
+    // Calculate elapsed time since execution of this function
+    // At start, this might be a large difference but that doesn't matter
+    uint32_t elapsedTime = currentTime - lastStepTime_;
+    if(elapsedTime == 0)
+    {
+        //Not a millisecond has passed, skip updating
+        return true;
+    }
+    lastStepTime_ = currentTime;
+
+    // Update brightness for each LED
+    for(auto i = 0; i < LED_COUNT; ++i)
+    {
+        LedNumber_t ledNumber = static_cast<LedNumber_t>(i);
+        // To check for ramps if we actually want to update this LED
+        uint32_t elapsedTimeSinceLastLedUpdate = currentTime - ledUpdated_[i];
+
+        // Use one larger size than brightness type so we can do calculations without overflow
+        uint16_t currentBrightness = static_cast<uint16_t>(ledBrightness_[i]);
+        uint16_t targetBrightness = ledEnabled_[i] ? ledControlCfg_[i].maxBrightness : ledControlCfg_[i].minBrightness;
+        uint16_t brightnessRamp = ledControlCfg_[i].brightnessRamp;
+        uint16_t max = ledControlCfg_[i].maxBrightness;
+        uint16_t min = ledControlCfg_[i].minBrightness;
+
+        // Only update if there's a difference and we have a ramp rate
+        if(currentBrightness != targetBrightness && brightnessRamp > 0)
+        {
+            // Calculate brightness change based on elapsed time and brightnessStep
+            // brightnessStep is the amount to change per millisecond
+            // The factor 65 scales the brightnessStep to 0-255 for 0s to ~1s transitions
+            // The factor (max-min)/255 scales the step relative to the max and min brightness
+            uint32_t totalChange = (((max-min) * 65 * elapsedTimeSinceLastLedUpdate) / (brightnessRamp * 255));
+            // If the change would be 0, skip it. If we do not do this and the code is fast enough, we would
+            // only get 0-updates and the LEDs don't actually ramp
+            // Rather, we wait until the elapsed time is large enough for an update
+            if(totalChange == 0)
+            {
+                continue;
+            }
+
+            uint16_t newBrightness = targetBrightness;
+
+            if(currentBrightness < targetBrightness)
+            {
+                // Ramp up
+                newBrightness = currentBrightness + static_cast<uint16_t>(totalChange);
+                if(newBrightness >= targetBrightness)
+                {
+                    newBrightness = targetBrightness;
+                }
+                ledBrightness_[i] = static_cast<uint8_t>(newBrightness);
+            }
+            else
+            {
+                // Ramp down
+                if(currentBrightness > static_cast<uint16_t>(totalChange))
+                {
+                    newBrightness = currentBrightness - static_cast<uint16_t>(totalChange);
+                }
+                else
+                {
+                    newBrightness = 0;
+                }
+                ledBrightness_[i] = static_cast<uint8_t>(newBrightness);
+            }
+            // Keep track of time
+            ledUpdated_[i] = currentTime;
+        } // currentBrightness != targetBrightness && brightnessRamp > 0
+        else
+        {   // Either currentBrightness == targetBrightness or brightnessRamp == 0
+            // Set target directly in either case
+            ledBrightness_[i] = static_cast<uint8_t>(targetBrightness);
+            ledUpdated_[i] = currentTime;
+        }
+        led_control_set_pwm(ledNumber, ledBrightness_[i]);
+    }
+
+    return true;
 }
 
 bool LedControl::setConfig(ledControlCfg_t* cfg, uint8_t ledNumber)
@@ -93,5 +178,8 @@ uint8_t LedControl::getBrightness(LedNumber_t ledNumber) const
 
 void LedControl::enableLight(LedNumber_t ledNumber, bool enable)
 {
-    ;
+    if(isValidLed(ledNumber))
+    {
+        ledEnabled_[ledNumber] = enable;
+    }
 }

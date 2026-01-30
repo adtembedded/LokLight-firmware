@@ -25,10 +25,18 @@ extern "C" {
 
 /*
 
-    Forward declarations
+    Forward type declarations
 
 */
 typedef struct LedHwInitCfg_s LedHwInitCfg_t;
+
+/*
+
+    General platform functions
+
+*/
+// Get the current tick in ms
+uint32_t platform_get_tick_ms(void);
 
 /* 
 
