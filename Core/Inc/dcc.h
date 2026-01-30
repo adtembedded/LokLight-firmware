@@ -17,7 +17,7 @@
 
 // Size of the DCC bit time queue. Assume processing happens at least once per this number of polarity transitions
 // There can be up to 20 transitions per ms, so make this buffer large enough
-constexpr uint32_t DCC_BITTIME_QUEUE_SIZE = 64; 
+constexpr uint32_t DCC_BITTIME_QUEUE_SIZE = 128; 
 
 // // Runtime state variables, stored in RAM only
     // typedef struct llStateVars_s {
