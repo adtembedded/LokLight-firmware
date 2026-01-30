@@ -52,6 +52,47 @@ bool DccInterface::addBitTime(uint32_t t)
     return true;
 }
 
+uint32_t DccInterface::elementsInQueue()
+{
+    //buffer writeIdx (as the latter can be updated in an IRQ)
+    volatile uint16_t bufferedWriteIdx; //volatile to avoid weird optimizations by compiler
+    uint32_t retElements = 0;
+    do
+    {
+        bufferedWriteIdx = qWriteIdx_;
+
+        if(qIsEmpty_ || qErrorFlag_)
+        {
+            // There is nothing to read
+            retElements = 0;
+        }
+        else if(qIsFull_)
+        {
+            retElements =  DCC_BITTIME_QUEUE_SIZE;
+        }
+        else if(bufferedWriteIdx < qReadIdx_)
+        {
+            //Happens when both are not wrapped around
+            retElements = DCC_BITTIME_QUEUE_SIZE - (qReadIdx_ - bufferedWriteIdx);
+        }
+        else if(bufferedWriteIdx > qReadIdx_)
+        {
+            //Read has wrapped around, write hasn't
+            retElements = bufferedWriteIdx - qReadIdx_;
+        }
+        else
+        {
+            //We cannot end up here, unless a write has interrupted this function in the mean-time.
+            //We will detect this and recalculate the number of readable elements.
+            //For now, set to 0
+            retElements = 0;
+        }
+        // Check if we have been interrupted by a write.
+    } while(bufferedWriteIdx != qWriteIdx_);
+    //Can't end up here
+    return retElements;
+}
+
 uint32_t DccInterface::readBitTime()
 {
     if(qIsEmpty_ || qErrorFlag_)

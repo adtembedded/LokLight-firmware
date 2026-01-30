@@ -69,7 +69,10 @@ bool Loklight::step()
     ledControl_.setBrightness(LED2, 255 - brightness++);
 
     //Dummy code for dcc read, discard result
-    dccInterface_.readBitTime();
+    while(dccInterface_.elementsInQueue() > 0)
+    {
+        dccInterface_.readBitTime();
+    }
 
     return true; // Return true if step was successful
 }

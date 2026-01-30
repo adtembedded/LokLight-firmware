@@ -15,7 +15,9 @@
 #include "loklight_wrapper.h"   // This is where generic loklight functions are bound to platform-dependent methods
 #include <array>               // As memory-efficient queue between ISR and dcc processing w.r.t. bit-timing on tracks
 
-constexpr uint32_t DCC_BITTIME_QUEUE_SIZE = 32; // Size of the DCC bit time queue. Assume processing happens at least once per this number of polarity transitions
+// Size of the DCC bit time queue. Assume processing happens at least once per this number of polarity transitions
+// There can be up to 20 transitions per ms, so make this buffer large enough
+constexpr uint32_t DCC_BITTIME_QUEUE_SIZE = 64; 
 
 // // Runtime state variables, stored in RAM only
     // typedef struct llStateVars_s {
@@ -39,6 +41,10 @@ public:
     //Adds a bit-time to the queue. 
     //If the queue was full, an internal error flag is set and the dcc reader will re-initialize to avoid processing inconsistent data
     bool addBitTime(uint32_t t);
+
+    //Check if there is something to read
+    uint32_t elementsInQueue();
+
     //TODO move to private
     uint32_t readBitTime(); //returns the next bit for processing if one is available. Returns 0 when the queue was empty
 
@@ -51,7 +57,7 @@ private:
     bool isInitialized_ = false;
 
     //Bit-time Queue
-    std::array<uint32_t, DCC_BITTIME_QUEUE_SIZE> dccBitTimeQueue_; // Queue to store incoming DCC bits from ISR for processing in main loop
+    std::array<uint16_t, DCC_BITTIME_QUEUE_SIZE> dccBitTimeQueue_; // Queue to store incoming DCC bits from ISR for processing in main loop
     uint16_t qReadIdx_ = 0;     //read location to extract bit-times
     volatile uint16_t qWriteIdx_ = 0;    //write location to push bit-time. Volatile tells the compiler the value can be changed at any moment, and some code optimization should be skipped
     bool qIsFull_ = false;       //Indicates there are no more spaces in the array to write bit-times to
