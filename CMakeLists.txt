@@ -72,23 +72,42 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
     # Add user defined libraries
 )
 
+# first set overall optimization flags and override whatever else has been set so far
 set(CMAKE_C_FLAGS_DEBUG "-Og -g3") 
-set(CMAKE_C_FLAGS_RELEASE "-Oz -g0") 
-set(CMAKE_CXX_FLAGS_DEBUG "-Og -g3") 
-set(CMAKE_CXX_FLAGS_RELEASE "-Oz -g0")
-message(STATUS "Build type: ${CMAKE_BUILD_TYPE}") 
-if(CMAKE_BUILD_TYPE STREQUAL "Debug") 
-    message(STATUS "Active C flags: ${CMAKE_C_FLAGS} ${CMAKE_C_FLAGS_DEBUG}") 
-    message(STATUS "Active CXX flags: ${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_DEBUG}") 
+set(CMAKE_CXX_FLAGS_DEBUG "-Og -g3")
+set(CMAKE_C_FLAGS_RELEASE "-Os -g0") 
+set(CMAKE_CXX_FLAGS_RELEASE "-Os -g0")
+# For some reason, the flags below are ignored
+set(CMAKE_C_FLAGS_RELWITHDEBUGINFO "-Og -g3" CACHE STRING "Flags for RelWithDebInfo build" FORCE) 
+set(CMAKE_CXX_FLAGS_RELWITHDEBUGINFO "-Og -g3" CACHE STRING "Flags for RelWithDebInfo build" FORCE) 
+set(CMAKE_C_FLAGS_MINRELSIZE "-Oz -g0" CACHE STRING "Flags for MinRelSize build" FORCE)
+set(CMAKE_CXX_FLAGS_MINRELSIZE "-Oz -g0" CACHE STRING "Flags for MinRelSize build" FORCE)
+
+string(TOUPPER "${CMAKE_BUILD_TYPE}" build_type_upper_c)
+# message(STATUS "Build type: ${build_type_upper_c}") 
+
+# now set the flags for the STM HAL, which is enormous if not optimized
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    target_compile_options(stm32cubemx INTERFACE -Og -g3 -ffunction-sections -fdata-sections)
+    # Linker options to not make a difference?
+    # target_link_options(stm32cubemx INTERFACE -Wl,--gc-sections,--strip-all)
 elseif(CMAKE_BUILD_TYPE STREQUAL "Release") 
-    message(STATUS "Active C flags: ${CMAKE_C_FLAGS} ${CMAKE_C_FLAGS_RELEASE}") 
-    message(STATUS "Active CXX flags: ${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_RELEASE}") 
+    target_compile_options(stm32cubemx INTERFACE -Os -g0 -ffunction-sections -fdata-sections ) 
 elseif(CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo") 
-    message(STATUS "Active C flags: ${CMAKE_C_FLAGS} ${CMAKE_C_FLAGS_RELWITHDEBINFO}") 
-    message(STATUS "Active CXX flags: ${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_RELWITHDEBINFO}") 
+    target_compile_options(stm32cubemx INTERFACE -Os -g3 -ffunction-sections -fdata-sections ) 
 elseif(CMAKE_BUILD_TYPE STREQUAL "MinSizeRel") 
-    message(STATUS "Active C flags: ${CMAKE_C_FLAGS} ${CMAKE_C_FLAGS_MINSIZEREL}") 
-    message(STATUS "Active CXX flags: ${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_MINSIZEREL}") 
+    target_compile_options(stm32cubemx INTERFACE -Oz -g0 -ffunction-sections -fdata-sections ) 
 else() 
-    message(WARNING "Unknown build type: ${CMAKE_BUILD_TYPE}") 
+    message(WARNING "Unknown build type: ${CMAKE_BUILD_TYPE}")
+    # Default to debug
+    target_compile_options(stm32cubemx INTERFACE -Og -g3 -ffunction-sections -fdata-sections)
 endif()
+
+set(c_var_name "CMAKE_C_FLAGS_${build_type_upper_c}")
+set(cxx_var_name "CMAKE_CXX_FLAGS_${build_type_upper_c}")
+set(all_c_flags "${CMAKE_C_FLAGS} ${${c_var_name}}") 
+set(all_cxx_flags "${CMAKE_CXX_FLAGS} ${${cxx_var_name}}")
+message(STATUS "Active C flags: ${all_c_flags}") 
+message(STATUS "Active CXX flags: ${all_cxx_flags}") 
+get_target_property(flags stm32cubemx INTERFACE_COMPILE_OPTIONS) 
+message(STATUS "stm32cubemx compile flags: ${flags}")
