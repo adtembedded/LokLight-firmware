@@ -23,7 +23,7 @@ DccInterface::~DccInterface()
 bool DccInterface::addBitTime(uint32_t t)
 {
     // Check if there is actually space to store a bit-time measurement
-    if(qIsFull_)
+    if(qIsFull_ || qErrorFlag_)
     {
         qErrorFlag_ = true;
         return false;
@@ -36,61 +36,76 @@ bool DccInterface::addBitTime(uint32_t t)
     qWriteIdx_%=DCC_BITTIME_QUEUE_SIZE;
 
     //The queue now is not empty anymore. Here, we just reset the flag.
-    //The read function will handle concurrent access to this flag gracefully.
+    //Mind that this function is dominant (can preempt) over the read function, as it is called from an IRQ and the reads happen in threaded/non-irq context.
+    //As this function cannot be interrupted, there is no need for complex logic here.
     qIsEmpty_ = false;
 
     //Now check if the queue is full.
-    //This function has priority (can preempt) the read by being called from an IRQ, but not vice versa
-    //Therefore, if both indexes are equal now, it is because the write function has just done that and the queue is full
+    //If both indexes are equal now, it is because the write function has just done that and the queue is full
     //i.e. there are no scenarios to end up here where the indexes are the same because the queue is empty rather than full
     if(qReadIdx_ == qWriteIdx_)
         qIsFull_ = true;
 
     //We do not reset this flag here, as this function can only make it full
-    //The read function should reset the flag.
+    //The read function should reset the full-flag.
+
     return true;
 }
 
 uint32_t DccInterface::readBitTime()
 {
-    if(qIsEmpty_)
+    if(qIsEmpty_ || qErrorFlag_)
     {
-        //Nothing to read, should not end up here
+        //Nothing to read or an error occured, should not end up here
         return 0;
     }
+
+    //Mind, writing the queue is irq based, reading the queue happens in threaded mode. This function can therefore be interrupted by a write.
+    //The main assumption is that this code is fast enough so that only one interrupt by a write can occur for any single read.
+    //We therefore check if such an interrupt occured and handle any queue empty/full logic gracefully.
+    volatile uint16_t bufferedWriteIdx = qWriteIdx_; //Volatile shouldn't needed here because qWriteIdx_ is too. But just to be sure..
+    bool interruptedByWrite = false;
+    // Keep track of our actions so we can reset them in case of an interrupted read
+    bool qEmptyAfterRead = (qReadIdx_+1==bufferedWriteIdx);
+
+    // Note that checking the qIsFull flag alone is not enough.
+    // Between indexing bufferedWriteIdx and performing this check, it could be possible that a write has occured and the flag has been set false->true because the queue was ALMOST full
+    // For this special case, we know are going to perform a read and therefore the queue would not actually be full anymore by the end of the function.
+    // Therefore, verify that the queue was full by also checking the indexes.
+    bool qWasFullBeforeRead = ((qReadIdx_==bufferedWriteIdx) && qIsFull_);
     
     // First extract the bit to be returned
     uint32_t ret = dccBitTimeQueue_[qReadIdx_];
     qReadIdx_++;
     qReadIdx_%=DCC_BITTIME_QUEUE_SIZE;
 
-    //Mind, filling the queue is irq based. Therefore, the next part can potentially be interrupted
-    //and has to be constructed in such a way that this would be safe.
-    //To do that, we buffer the writeIdx and compare it at the end to detect if this loop has been interrupted.
-    volatile uint16_t bufferedWriteIdx; //Volatile shouldn't needed here because qWriteIdx_ is too. But just to be sure..
-    bool qWriteHappened;
-    do
-    {
-        //Set the indexed value equal to the writeIdx
-        bufferedWriteIdx = qWriteIdx_;
+    // Set the flags, assuming we haven't been interrupted
+    // Obviously queue can't be full anymore when we have removed one element
+    // If the queue was full before reading, and we are interrupted before resetting the full-flag, 
+    // the write function will still see a full queue and an error-flag will be set
+    // The queue and dcc-sync will then be reset by another method, so it does not lead to undefined behaviour.
+    qIsFull_ = false;
 
-        //Check if all has been read
-        //This happens when both indexes are equal, but it can also happen when the buffer is almost full and we have just been
-        //interrupted by the addBitTime() method which has made the buffer completely buffer.
-        //Therefore check qIsFull_, which is set when the latter scenario happens
-        if(qReadIdx_==bufferedWriteIdx && !qIsFull_)
+    if(qEmptyAfterRead)
+    {
+        qIsEmpty_ = true;
+    }
+
+    // The normal part is done here. Now check if we were actually interrupted and reset the flags if so
+    interruptedByWrite = (bufferedWriteIdx != qWriteIdx_);
+    if(interruptedByWrite)
+    {
+        if(qEmptyAfterRead)
         {
-            qIsEmpty_ = true;
-        }
-        if(qReadIdx_!=bufferedWriteIdx)
-        {
+            //The queue can't be empty anymore: there was a write while we were reading
             qIsEmpty_ = false;
         }
-        
-        //If the writeIdx was changed while performing above checks by handling the bit-time Irq, we will see it here.
-        //In that case, the loop will iterate again and set qIsEmpty_ = false again if it happened to be true in the first round.
-        qWriteHappened = (bufferedWriteIdx != qWriteIdx_);
-    } while (qWriteHappened);
+        if(qWasFullBeforeRead)
+        {
+            //The queue was full before reading. We read one bit, but another has been added in the mean-time, so it's full again
+            qIsFull_ = true;
+        }
+    }
 
     return ret;
 }
