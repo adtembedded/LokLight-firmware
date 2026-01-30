@@ -66,7 +66,8 @@ uint32_t DccInterface::readBitTime()
     volatile uint16_t bufferedWriteIdx = qWriteIdx_; //Volatile shouldn't needed here because qWriteIdx_ is too. But just to be sure..
     bool interruptedByWrite = false;
     // Keep track of our actions so we can reset them in case of an interrupted read
-    bool qEmptyAfterRead = (qReadIdx_+1==bufferedWriteIdx);
+    uint16_t nextReadIdx = (qReadIdx_ + 1) % DCC_BITTIME_QUEUE_SIZE;
+    bool qEmptyAfterRead = (nextReadIdx==bufferedWriteIdx);
 
     // Note that checking the qIsFull flag alone is not enough.
     // Between indexing bufferedWriteIdx and performing this check, it could be possible that a write has occured and the flag has been set false->true because the queue was ALMOST full
