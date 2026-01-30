@@ -89,7 +89,7 @@ uint32_t DccInterface::elementsInQueue()
         }
         // Check if we have been interrupted by a write.
     } while(bufferedWriteIdx != qWriteIdx_);
-    //Can't end up here
+    
     return retElements;
 }
 
