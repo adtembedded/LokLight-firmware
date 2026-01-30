@@ -28,7 +28,7 @@ extern "C" {
     Forward declarations
 
 */
-typedef struct LedControlInitCfg_s LedControlInitCfg_t;
+typedef struct LedHwInitCfg_s LedHwInitCfg_t;
 
 /* 
 
@@ -48,7 +48,7 @@ typedef struct LedControlInitCfg_s LedControlInitCfg_t;
 
 // Initialization, call after creation and HW init
 // bool loklight_init(LoklightHandle handle, LedControlInitCfg_t* ledInitCfg);
-bool loklight_init(LedControlInitCfg_t* ledInitCfg);
+bool loklight_init(LedHwInitCfg_t* ledHwInitCfg);
 
 // Check if init is complete
 bool loklight_init_status();
@@ -72,12 +72,12 @@ typedef enum {
 } LedNumber_t;
 
 // This struct must contain all platform-specific configuration data needed for LED control PWM timer initialization
-typedef struct LedControlInitCfg_s {
+typedef struct LedHwInitCfg_s {
     uint8_t dummy; // Placeholder member variable
-} LedControlInitCfg_t;
+} ledHwInitCfg_t;
 
 // Overwrite when using a specific hardware implementation
-inline bool led_control_init(LedControlInitCfg_t* led_cfg)
+inline bool led_hw_init(ledHwInitCfg_t* led_cfg)
 {
     // Placeholder implementation
     // On STM32, this is done already in main while initializing

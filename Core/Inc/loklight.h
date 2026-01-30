@@ -46,7 +46,7 @@ public:
     Loklight& operator=(const Loklight&) = delete;
     Loklight& operator=(Loklight&&) = delete;
 
-    LoklightInitResult_t init(LedControlInitCfg_t* ledInitCfg = nullptr);
+    LoklightInitResult_t init(ledHwInitCfg_t* ledHwInitCfg_t = nullptr);
     bool step();
 
 private:

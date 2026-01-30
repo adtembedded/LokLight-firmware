@@ -11,6 +11,7 @@
 
 #include "led_control.h"
 #include "loklight_wrapper.h" // For init and hardware PWM control
+#include <cstring>
 
 bool isValidLed(int value)
 { 
@@ -24,15 +25,15 @@ bool isValidLed(int value)
     }
 }
 
-bool LedControl::init(LedControlInitCfg_t* initCfg /*= nullptr*/)
+bool LedControl::init(ledHwInitCfg_t* initHwCfg /*= nullptr*/)
 {
-    if(initCfg)
+    if(initHwCfg)
     {
         // Initialize PWM timer for LED control
         isInitialized_ = false;
 
         // Call the hardware-specific initialization function
-        if(led_control_init(initCfg))
+        if(led_hw_init(initHwCfg))
         {
             // Set all LEDs to off initially
             for(auto i = 0; i < LED_COUNT; ++i)
@@ -48,6 +49,23 @@ bool LedControl::init(LedControlInitCfg_t* initCfg /*= nullptr*/)
     {
         return false;
     }
+}
+
+bool LedControl::step()
+{
+    return false;
+}
+
+bool LedControl::setConfig(ledControlCfg_t* cfg, uint8_t ledNumber)
+{
+    if(cfg != nullptr && isValidLed(ledNumber))
+    {
+
+        std::memcpy(&ledControlCfg_[ledNumber], cfg, sizeof(ledControlCfg_t));
+        return true;
+    }
+
+    return false;
 }
 
 void LedControl::setBrightness(LedNumber_t ledNumber, uint8_t brightness)
@@ -71,4 +89,9 @@ uint8_t LedControl::getBrightness(LedNumber_t ledNumber) const
     }
 
     return 0;
+}
+
+void LedControl::enableLight(LedNumber_t ledNumber, bool enable)
+{
+    ;
 }

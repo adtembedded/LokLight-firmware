@@ -22,10 +22,10 @@ Loklight::~Loklight()
 {
 }
 
-LoklightInitResult_t Loklight::init(LedControlInitCfg_t* ledInitCfg /*= nullptr*/)
+LoklightInitResult_t Loklight::init(ledHwInitCfg_t* ledHwInitCfg /*= nullptr*/)
 {
     // Validate input
-    if(ledInitCfg == nullptr)
+    if(ledHwInitCfg == nullptr)
     {
         return LOKLIGHT_INIT_ERROR;
     }
@@ -33,13 +33,19 @@ LoklightInitResult_t Loklight::init(LedControlInitCfg_t* ledInitCfg /*= nullptr*
     // Initialize configuration
     // Load configuration from Flash or set defaults
     //TODO
+    //For now, load led defaults
+    for(auto i = 0; i < LED_COUNT; ++i)
+    {
+        ledControlCfg_t ledCfg = {128, 0, 25};
+        ledControl_.setConfig(&ledCfg, static_cast<LedNumber_t>(i));
+    }
     
     // Initialize DCC decoder
     //TODO
 
     // Initialize LED control
     // This automatically sets brightness to 0 for all LEDs
-    bool ledInitResult = ledControl_.init(ledInitCfg);
+    bool ledInitResult = ledControl_.init(ledHwInitCfg);
     if(!ledInitResult)
     {
         return LOKLIGHT_INIT_ERROR;

@@ -14,6 +14,13 @@
 
 #include "loklight_wrapper.h"   // This is where generic loklight functions are bound to platform-dependent methods
 
+// types
+typedef struct ledControlCfg_s {
+    uint8_t maxBrightness;
+    uint8_t minBrightness;
+    uint8_t brightnessStep;
+} ledControlCfg_t;
+
 // class led
 class LedControl
 {
@@ -31,18 +38,24 @@ public:
     LedControl& operator=(const LedControl&) = delete;
     LedControl& operator=(LedControl&&) = delete;
 
-    bool init(LedControlInitCfg_t* initCfg = nullptr);
+    bool init(LedHwInitCfg_t* initHwCfg = nullptr);
+    bool step();
+    bool setConfig(ledControlCfg_t* cfg, uint8_t ledNumber);
+    void enableLight(LedNumber_t ledNumber, bool enable);
+
     bool isInitialized() const { return isInitialized_; }
     void setBrightness(LedNumber_t ledNumber, uint8_t brightness);
     uint8_t getBrightness(LedNumber_t ledNumber) const;
-
-private:
-    uint8_t ledBrightness_[LED_COUNT] = {};
-    bool isInitialized_ = false;
-
+    
+    private:
     //This class is a singleton
     LedControl(){;}
     ~LedControl(){;}
+    
+    ledControlCfg_s ledControlCfg_[LED_COUNT] = {};
+    uint8_t ledBrightness_[LED_COUNT] = {};
+    bool isInitialized_ = false;
+
 };
 
 #endif

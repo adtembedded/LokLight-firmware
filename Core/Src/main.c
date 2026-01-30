@@ -102,9 +102,9 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   //Set LED config (dummy in this hardware implementation, as STM Cube has already setup the PWM timer)
-  LedControlInitCfg_t led_cfg = {0};  // Replace with real configuration if needed
+  ledHwInitCfg_t led_hw_cfg = {0};  // Replace with real configuration if needed
   // bool init_result = loklight_init(loklight_handle, &led_cfg);
-  bool init_result = loklight_init(&led_cfg);
+  bool init_result = loklight_init(&led_hw_cfg);
   if(!init_result)
   {
     while(1); // Error handling
