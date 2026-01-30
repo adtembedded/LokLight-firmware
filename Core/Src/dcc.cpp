@@ -20,6 +20,26 @@ DccInterface::~DccInterface()
 {
 }
 
+bool DccInterface::init(DccHwInitCfg_t* initHwCfg /*= nullptr*/)
+{
+    if(initHwCfg)
+    {
+        // Initialize PWM timer for DCC reading
+        isInitialized_ = false;
+
+        // Call the hardware-specific initialization function
+        if(dcc_hw_init(initHwCfg))
+        {
+            // Nothing to do for now
+            // We could check if we can receive DCC bits, but on an analog track that would not work so skip that step.
+            isInitialized_ = true;
+        }
+        return isInitialized_;
+    }
+
+    return false;
+}
+
 bool DccInterface::addBitTime(uint32_t t)
 {
     // Check if there is actually space to store a bit-time measurement

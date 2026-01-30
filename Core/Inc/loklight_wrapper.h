@@ -29,6 +29,7 @@ extern "C" {
 
 */
 typedef struct LedHwInitCfg_s LedHwInitCfg_t;
+typedef struct DccHwInitCfg_s DccHwInitCfg_t;
 
 /*
 
@@ -56,7 +57,7 @@ uint32_t platform_get_tick_ms(void);
 
 // Initialization, call after creation and HW init
 // bool loklight_init(LoklightHandle handle, LedControlInitCfg_t* ledInitCfg);
-bool loklight_init(LedHwInitCfg_t* ledHwInitCfg);
+bool loklight_init(LedHwInitCfg_t* ledHwInitCfg, DccHwInitCfg_t* dccHwInitCfg);
 
 // Check if init is complete
 bool loklight_init_status();
@@ -82,10 +83,10 @@ typedef enum {
 // This struct must contain all platform-specific configuration data needed for LED control PWM timer initialization
 typedef struct LedHwInitCfg_s {
     uint8_t dummy; // Placeholder member variable
-} ledHwInitCfg_t;
+} LedHwInitCfg_t;
 
 // Overwrite when using a specific hardware implementation
-inline bool led_hw_init(ledHwInitCfg_t* led_cfg)
+inline bool led_hw_init(LedHwInitCfg_t* led_cfg)
 {
     // Placeholder implementation
     // On STM32, this is done already in main while initializing
@@ -101,6 +102,19 @@ void led_control_set_pwm(LedNumber_t led_number, uint8_t brightness);
     DCC Interface class
 
 */
+// This struct must contain all platform-specific configuration data needed for DCC timer + I/O initialization
+typedef struct DccHwInitCfg_s {
+    uint8_t dummy; // Placeholder member variable
+} DccHwInitCfg_t;
+
+// Overwrite when using a specific hardware implementation
+inline bool dcc_hw_init(DccHwInitCfg_t* dcc_cfg)
+{
+    // Placeholder implementation
+    // On STM32, this is done already in main while initializing
+    // Therefore, assume the timer has been initialized sucessfully
+    return true;
+}
 // Function to add a DCC bit time to the queue 
 // Call this function from an ISR that fires when the dcc track polarity is inverted, for ex. a GPIO IRQ that detects both up- and down-going flanks
 // If the queue is full, this method will clear the queue completely to avoid processing inconsistent data

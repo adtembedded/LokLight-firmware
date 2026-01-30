@@ -25,7 +25,7 @@ bool isValidLed(int value)
     }
 }
 
-bool LedControl::init(ledHwInitCfg_t* initHwCfg /*= nullptr*/)
+bool LedControl::init(LedHwInitCfg_t* initHwCfg /*= nullptr*/)
 {
     if(initHwCfg)
     {
@@ -43,12 +43,11 @@ bool LedControl::init(ledHwInitCfg_t* initHwCfg /*= nullptr*/)
 
             isInitialized_ = true;
         }
+
         return isInitialized_;
     }
-    else
-    {
-        return false;
-    }
+
+    return false;
 }
 
 bool LedControl::step()

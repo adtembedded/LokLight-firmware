@@ -22,10 +22,10 @@ Loklight::~Loklight()
 {
 }
 
-LoklightInitResult_t Loklight::init(ledHwInitCfg_t* ledHwInitCfg /*= nullptr*/)
+LoklightInitResult_t Loklight::init(LedHwInitCfg_t* ledHwInitCfg, DccHwInitCfg_t* dccHwInitCfg)
 {
     // Validate input
-    if(ledHwInitCfg == nullptr)
+    if(ledHwInitCfg == nullptr || dccHwInitCfg == nullptr)
     {
         return LOKLIGHT_INIT_ERROR;
     }
@@ -41,7 +41,11 @@ LoklightInitResult_t Loklight::init(ledHwInitCfg_t* ledHwInitCfg /*= nullptr*/)
     }
     
     // Initialize DCC decoder
-    //TODO
+    bool dccInitResult = dccInterface_.init(dccHwInitCfg);
+    if(!dccInitResult)
+    {
+        return LOKLIGHT_INIT_ERROR;
+    }
 
     // Initialize LED control
     // This automatically sets brightness to 0 for all LEDs

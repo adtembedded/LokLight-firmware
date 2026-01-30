@@ -36,7 +36,7 @@ public:
         return instance;
     }
 
-    bool init();
+    bool init(DccHwInitCfg_t* initHwCfg = nullptr);
 
     //Adds a bit-time to the queue. 
     //If the queue was full, an internal error flag is set and the dcc reader will re-initialize to avoid processing inconsistent data

@@ -49,13 +49,13 @@ extern "C" uint32_t platform_get_tick_ms(void)
 
 // Initialization, call after creation and HW init
 // extern "C" bool loklight_init(LoklightHandle handle, LedControlInitCfg_t* ledInitCfg)
-extern "C" bool loklight_init(LedHwInitCfg_t* ledHwInitCfg)
+extern "C" bool loklight_init(LedHwInitCfg_t* ledHwInitCfg, DccHwInitCfg_t* dccHwInitCfg)
 {
     LoklightInitResult_t result;
     //LoklightWrapper_s* wrapper = reinterpret_cast<LoklightWrapper_s*>(handle); //Need unsafe conversion to allow C code to use C++ object
     // result = wrapper->ll.init(ledInitCfg);
     Loklight& ll_instance = Loklight::getInstance();
-    result = ll_instance.init(ledHwInitCfg);
+    result = ll_instance.init(ledHwInitCfg, dccHwInitCfg);
     bool result_bool = (result == LOKLIGHT_INIT_OK)? true : false;
     return result_bool;
 }
