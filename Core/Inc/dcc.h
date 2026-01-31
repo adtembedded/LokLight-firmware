@@ -30,13 +30,114 @@ constexpr uint32_t DCC_BITTIME_T0_MIN = (uint32_t)((DCC_TIMER_FREQ_MIN*90ull)/10
 constexpr uint32_t DCC_BITTIME_T0_MAX = (uint32_t)((DCC_TIMER_FREQ_MAX*10000ull)/1000000ull);         // 10.000us for halfbit
 constexpr uint32_t DCC_BITTIME_T0_MAX_TOTAL = (uint32_t)((DCC_TIMER_FREQ_MAX*12000ull)/1000000ull);   // 12.000us For total bit (two "0"-half bits with 0 stretching)
 
-// // Runtime state variables, stored in RAM only
-    // typedef struct llStateVars_s {
-    //     uint8_t  controlMode;       // Current control mode (DCC/Analog)
-    //     direction 
-    //     uint16_t addr;              // Current DCC address
-    //     int8_t   speed;             // Current speed step (-127 .. +127)
-    // } llStateVars_t;
+// Run-time config
+typedef enum DccControlMode_e : uint8_t{
+    DCC_CONTROL_MODE_ANALOG = 0,
+    DCC_CONTROL_MODE_DCC_14SS = 1,
+    DCC_CONTROL_MODE_DCC_128SS = 2  //Also for 28 speed steps
+} DccControlMode_t;
+
+constexpr uint16_t DCC_DEFAULT_ADDR = 3; //Default DCC address if none is set on init
+
+typedef enum DccDirection_e : bool {
+    DCC_DIRECTION_FORWARD = 0,
+    DCC_DIRECTION_REVERSE = 1
+} DccDirection_t;
+
+typedef struct DccConfig_s {
+    uint8_t  controlMode;       // Current control mode (DCC/Analog)
+    bool     direction;         // Current direction (false is normal, true is reverse)
+    uint16_t addr;              // Current DCC address
+} DccConfig_t;
+
+// Run-time variables
+typedef enum DccFuncMask_e : uint32_t {
+    DCC_FUNC_F0F = (1ul << 0),
+    DCC_FUNC_F0R = (1ul << 1),
+    DCC_FUNC_F1  = (1ul << 2),
+    DCC_FUNC_F2  = (1ul << 3),
+    DCC_FUNC_F3  = (1ul << 4),
+    DCC_FUNC_F4  = (1ul << 5),
+    DCC_FUNC_F5  = (1ul << 6),
+    DCC_FUNC_F6  = (1ul << 7),
+    DCC_FUNC_F7  = (1ul << 8),
+    DCC_FUNC_F8  = (1ul << 9),
+    DCC_FUNC_F9  = (1ul << 10),
+    DCC_FUNC_F10 = (1ul << 11),
+    DCC_FUNC_F11 = (1ul << 12),
+    DCC_FUNC_F12 = (1ul << 13),
+    DCC_FUNC_F13 = (1ul << 14),
+    DCC_FUNC_F14 = (1ul << 15),
+    DCC_FUNC_F15 = (1ul << 16),
+    DCC_FUNC_F16 = (1ul << 17),
+    DCC_FUNC_F17 = (1ul << 18),
+    DCC_FUNC_F18 = (1ul << 19),
+    DCC_FUNC_F19 = (1ul << 20),
+    DCC_FUNC_F20 = (1ul << 21),
+    DCC_FUNC_F21 = (1ul << 22),
+    DCC_FUNC_F22 = (1ul << 23),
+    DCC_FUNC_F23 = (1ul << 24),
+    DCC_FUNC_F24 = (1ul << 25),
+    DCC_FUNC_F25 = (1ul << 26),
+    DCC_FUNC_F26 = (1ul << 27),
+    DCC_FUNC_F27 = (1ul << 28)
+} DccFuncMask_t;
+
+typedef struct DccState_s {
+    int8_t   speed;             // Current speed step (-127 .. +127, -28 .. +28 or -14 .. +14 depending on speed step mode)
+    uint32_t funcEnanbled;      // Current function bits (F0F, F0R, F1 ..F27). These are masked bits, so bit 0 is F0F, bit 1 is F0R, bit 2 is F1, etc.
+} DccVarState_t;
+
+//Message processing
+// state machine enumeration
+constexpr uint8_t NUM_ONES_VALID_PREAMBLE = 12;
+constexpr uint8_t MAX_BYTESIZE_ADDR = 2;
+constexpr uint8_t MAX_BYTESIZE_DATA = 7;
+constexpr uint8_t MAX_BYTESIZE_CMD_ARG = 4;
+
+typedef enum DccReaderState_e : uint8_t {
+    reader_reset = 0,
+    read_preamble = 1,
+    read_start = 2,
+    read_byte = 3,
+    read_sync = 4,
+    check_crc = 5
+} DccReaderState_t;
+
+typedef enum DccHalfbitState_e : uint8_t {
+    halfbit_uninitialized = 0,
+    half_bit = 1,
+    valid_1 = 2,
+    valid_0 = 3,
+    invalid_bit = 4
+} DccHalfbit_t;
+
+//This enum is a combination of message type and, if a message was received, what cmd it was
+typedef enum DccMsgType_e : int8_t {
+    dcc_reader_error = -3,  //Error status
+    no_new_dcc_msg = -2,    //no new message
+    dcc_msg_idle = -1,      //idle message
+    dcc_msg_dcci = 0b000,   //000 Decoder and Consist Control Instruction
+    dcc_msg_aoi = 0b001,    //001 Advanced Operation Instructions
+    dcc_msg_sdir = 0b010,   //010 Speed and Direction Instruction for reverse operation & 
+    dcc_msg_sdif = 0b011,   //011 Speed and Direction Instruction for forward operation
+    dcc_msg_fgi1 = 0b100,   //100 Function Group One Instruction 
+    dcc_msg_fgi2 = 0b101,   //101 Function Group Two Instruction 
+    dcc_msg_fexp = 0b110,   //110 Future Expansion 
+    dcc_msg_cvai = 0b111,   //111 Configuration Variable Access Instruction
+} DccMsgType_t;
+
+typedef struct DccMsg_s {
+    uint16_t addr;
+    uint8_t cmd;
+    DccMsgType_t msg_type;
+    uint8_t cmd_arg[MAX_BYTESIZE_CMD_ARG];
+    int8_t speed;
+    uint8_t af_group1;
+    uint8_t af_group2;
+    uint8_t validMsg;
+} DccMsg_t;
+
 
 class DccInterface
 {
@@ -46,17 +147,20 @@ public:
         static DccInterface instance; // created once
         return instance;
     }
-
-    bool init(DccHwInitCfg_t* initHwCfg = nullptr);
-
-    //Adds a bit-time to the queue. 
-    //If the queue was full, an internal error flag is set and the dcc reader will re-initialize to avoid processing inconsistent data
+    
+    bool init(DccHwInitCfg_t* initHwCfg = nullptr, DccConfig_t* initCfg = nullptr);
+    const DccMsg_t& getLastMsg() const {return lastDccMsg_;}
+    const DccReaderState_t& getReaderState() const {return dccReaderState_;}
+    
+    //Adds a bit-time to the queue. This func must be exposed to the hardware wrapper
+    //If the queue was full when calling this function, an internal error flag is set and the dcc reader 
+    //will re-initialize to avoid processing inconsistent data
     bool addBitTime(uint32_t t);
 
+    
+    //TODO move to private
     //Check if there is something to read
     uint32_t elementsInQueue();
-
-    //TODO move to private
     uint32_t readBitTime(); //returns the next bit for processing if one is available. Returns 0 when the queue was empty
 
 private:
@@ -71,6 +175,17 @@ private:
     bool is0HalfBit(uint32_t t);
     bool valid1BitDelta(uint32_t t11, uint32_t t12);
     bool valid0BitTotal(uint32_t t01, uint32_t t02);
+
+    //DCC processing funcs
+    DccHalfbit_t feedHalfbit(uint32_t t);
+    DccMsg_t feedBit(DccHalfbit_t bit);
+
+    //Config and run-time state
+    DccConfig_t dccConfig_ = {DCC_CONTROL_MODE_DCC_128SS, DCC_DIRECTION_FORWARD, DCC_DEFAULT_ADDR};
+    DccVarState_t dccVarState_ = {0, 0};  //Set speed to 0, all functions off
+    DccReaderState_t dccReaderState_ = reader_reset;
+    DccMsg_t dccMsgBuf_ = {0, 0, no_new_dcc_msg, {0}, 0, 0, 0, 0};  //Buffer for processing incoming messages
+    DccMsg_t lastDccMsg_ = {0, 0, no_new_dcc_msg, {0}, 0, 0, 0, 0}; //Last valid message received
 
     //Bit-time Queue
     std::array<uint16_t, DCC_BITTIME_QUEUE_SIZE> dccBitTimeQueue_; // Queue to store incoming DCC bits from ISR for processing in main loop

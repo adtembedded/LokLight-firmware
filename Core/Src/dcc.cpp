@@ -20,7 +20,7 @@ DccInterface::~DccInterface()
 {
 }
 
-bool DccInterface::init(DccHwInitCfg_t* initHwCfg /*= nullptr*/)
+bool DccInterface::init(DccHwInitCfg_t* initHwCfg /*= nullptr*/, DccConfig_t* initCfg /*= nullptr*/)
 {
     if(initHwCfg)
     {
