@@ -102,6 +102,18 @@ void led_control_set_pwm(LedNumber_t led_number, uint8_t brightness);
     DCC Interface class
 
 */
+// This is the timer frequency that is used on the target hardware to time the DCC bit times
+#define DCC_TIMER_FREQ_F (3e6) // 6 MHz for STM32L0xx with 24MHz clock and prescaler of 8 X2
+
+// Frequency tolerance in %
+// 20% unfortunately, as the internal hf timers on STM32L0xx are not very accurate. This should be fine for DCC decoding.
+// Measurement on the PCB that this code is developed on showed 12% higher than nominal frequency
+#define DCC_TIMER_TOLERANCE_PCT (0.15f)
+
+// Calculate the upper and lower bounds for the DCC timer frequency
+#define DCC_TIMER_FREQ_MIN ((uint64_t)(DCC_TIMER_FREQ_F * (1.0f - DCC_TIMER_TOLERANCE_PCT)))
+#define DCC_TIMER_FREQ_MAX ((uint64_t)(DCC_TIMER_FREQ_F * (1.0f + DCC_TIMER_TOLERANCE_PCT)))
+
 // This struct must contain all platform-specific configuration data needed for DCC timer + I/O initialization
 typedef struct DccHwInitCfg_s {
     uint8_t dummy; // Placeholder member variable

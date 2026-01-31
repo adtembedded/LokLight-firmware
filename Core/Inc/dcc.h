@@ -19,6 +19,16 @@
 // There can be up to 20 transitions per ms, so make this buffer large enough
 constexpr uint32_t DCC_BITTIME_QUEUE_SIZE = 128; 
 
+// Expected ticks for DCC bit transitions
+// Refer to https://www.nmra.org/sites/default/files/standards/sandrp/DCC/S/s-9.1_electrical_standards_for_digital_command_control.pdf
+// We use timer frequency and include the tolerance to calculate the min and max ticks for each bit type
+constexpr uint32_t DCC_BITTIME_T1_MIN = (uint32_t)((DCC_TIMER_FREQ_MIN*52ull)/1000000ull);            // 52us for halfbit
+constexpr uint32_t DCC_BITTIME_T1_MAX = (uint32_t)((DCC_TIMER_FREQ_MAX*64ull)/1000000ull);            // 64us for halfbit
+constexpr uint32_t DCC_BITTIME_T1_MAX_DELTA = (uint32_t)((DCC_TIMER_FREQ_MAX*6ull)/1000000ull);       // 6us for max time difference between two "1"-half-bits
+constexpr uint32_t DCC_BITTIME_T0_MIN = (uint32_t)((DCC_TIMER_FREQ_MIN*90ull)/1000000ull);            // 90us for halfbit
+constexpr uint32_t DCC_BITTIME_T0_MAX = (uint32_t)((DCC_TIMER_FREQ_MAX*10000ull)/1000000ull);         // 10.000us for halfbit
+constexpr uint32_t DCC_BITTIME_T0_MAX_TOTAL = (uint32_t)((DCC_TIMER_FREQ_MAX*12000ull)/1000000ull);   // 12.000us For total bit (two "0"-half bits with 0 stretching)
+
 // // Runtime state variables, stored in RAM only
     // typedef struct llStateVars_s {
     //     uint8_t  controlMode;       // Current control mode (DCC/Analog)
@@ -53,8 +63,13 @@ private:
     DccInterface();
     ~DccInterface();
 
-
     bool isInitialized_ = false;
+
+    //DCC helper funcs
+    bool is1HalfBit(uint32_t t);
+    bool is0HalfBit(uint32_t t);
+    bool valid1BitDelta(uint32_t t11, uint32_t t12);
+    bool valid0BitTotal(uint32_t t01, uint32_t t02);
 
     //Bit-time Queue
     std::array<uint16_t, DCC_BITTIME_QUEUE_SIZE> dccBitTimeQueue_; // Queue to store incoming DCC bits from ISR for processing in main loop

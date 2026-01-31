@@ -27,6 +27,12 @@ bool DccInterface::init(DccHwInitCfg_t* initHwCfg /*= nullptr*/)
         // Initialize PWM timer for DCC reading
         isInitialized_ = false;
 
+        // Make sure the timer settings make sense.
+        // We want at least 50 ticks per halfbit, which is ~1MHz timer frequency minimum
+        // Then we want the max bit-stretched "0" half-bit (10ms) to still fit in a uint16_t, which is ~6.5MHz maximum
+        static_assert(DCC_TIMER_FREQ_MIN >= 1000000ul, "DCC timer frequency too low for reliable DCC decoding");
+        static_assert(DCC_TIMER_FREQ_MAX <= 6500000ul, "DCC timer frequency too high for reliable DCC decoding");
+
         // Call the hardware-specific initialization function
         if(dcc_hw_init(initHwCfg))
         {
@@ -170,4 +176,30 @@ uint32_t DccInterface::readBitTime()
     }
 
     return ret;
+}
+
+bool DccInterface::is1HalfBit(uint32_t t)
+{
+    // Check if bit time is within valid interval for a "1" half-bit (52us - 64us)
+    return (t >= DCC_BITTIME_T1_MIN) && (t <= DCC_BITTIME_T1_MAX);
+}
+
+bool DccInterface::is0HalfBit(uint32_t t)
+{
+    // Check if bit time is within valid interval for a "0" half-bit (90us - 10.000us)
+    return (t >= DCC_BITTIME_T0_MIN) && (t <= DCC_BITTIME_T0_MAX);
+}
+
+bool DccInterface::valid1BitDelta(uint32_t t11, uint32_t t12)
+{
+    // Check if the difference between two "1" half-bits is within the allowed delta (6us)
+    uint32_t delta = (t11 > t12) ? (t11 - t12) : (t12 - t11);
+    return (delta <= DCC_BITTIME_T1_MAX_DELTA);
+}
+
+bool DccInterface::valid0BitTotal(uint32_t t01, uint32_t t02)
+{
+    // Check if the total time of two "0" half-bits is within the allowed total (12.000us)
+    uint32_t total = t01 + t02;
+    return (total <= DCC_BITTIME_T0_MAX_TOTAL);
 }
