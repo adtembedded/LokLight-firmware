@@ -22,6 +22,7 @@ constexpr uint32_t DCC_BITTIME_QUEUE_SIZE = 128;
 // Expected ticks for DCC bit transitions
 // Refer to https://www.nmra.org/sites/default/files/standards/sandrp/DCC/S/s-9.1_electrical_standards_for_digital_command_control.pdf
 // We use timer frequency and include the tolerance to calculate the min and max ticks for each bit type
+// Note that we assume the timer type can be uint16_t, even if we use a uint32_t here
 constexpr uint32_t DCC_BITTIME_T1_MIN = (uint32_t)((DCC_TIMER_FREQ_MIN*52ull)/1000000ull);            // 52us for halfbit
 constexpr uint32_t DCC_BITTIME_T1_MAX = (uint32_t)((DCC_TIMER_FREQ_MAX*64ull)/1000000ull);            // 64us for halfbit
 constexpr uint32_t DCC_BITTIME_T1_MAX_DELTA = (uint32_t)((DCC_TIMER_FREQ_MAX*6ull)/1000000ull);       // 6us for max time difference between two "1"-half-bits

@@ -103,7 +103,7 @@ void led_control_set_pwm(LedNumber_t led_number, uint8_t brightness);
 
 */
 // This is the timer frequency that is used on the target hardware to time the DCC bit times
-#define DCC_TIMER_FREQ_F (3e6) // 6 MHz for STM32L0xx with 24MHz clock and prescaler of 8 X2
+#define DCC_TIMER_FREQ_F (4e6) // 4 MHz for STM32L0xx with 16MHz clock and prescaler of 8 X2
 
 // Frequency tolerance in %
 // 20% unfortunately, as the internal hf timers on STM32L0xx are not very accurate. This should be fine for DCC decoding.
