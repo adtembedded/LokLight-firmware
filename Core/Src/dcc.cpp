@@ -22,6 +22,13 @@ DccInterface::~DccInterface()
 
 bool DccInterface::init(DccHwInitCfg_t* initHwCfg /*= nullptr*/, DccConfig_t* initCfg /*= nullptr*/)
 {
+    //Set software config. This is optional
+    if(initCfg)
+    {
+        dccConfig_ = *initCfg;  //Copy the data
+    }
+    
+    //Initialize hardware, this is mandatory
     if(initHwCfg)
     {
         // Initialize PWM timer for DCC reading
@@ -42,7 +49,7 @@ bool DccInterface::init(DccHwInitCfg_t* initHwCfg /*= nullptr*/, DccConfig_t* in
         }
         return isInitialized_;
     }
-
+    // Hardware init config missing
     return false;
 }
 
