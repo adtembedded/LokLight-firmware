@@ -22,18 +22,23 @@ DccInterface::~DccInterface()
 
 bool DccInterface::init(DccHwInitCfg_t* initHwCfg /*= nullptr*/, DccConfig_t* initCfg /*= nullptr*/)
 {
+    isInitialized_ = false;
+    
     //Set software config. This is optional
     if(initCfg)
     {
         dccConfig_ = *initCfg;  //Copy the data
     }
+
+    //Reset runtime state of reader
+    dccVarState_ = {0, 0};  //Set speed to 0, all functions off
+    lastHalfbitState_ = halfbit_uninitialized;
+    dccReaderState_ = reader_reset;
+    //Do not reset the config. It has default values and the caller can overwrite them if needed. The settings are preserved across inits.
     
-    //Initialize hardware, this is mandatory
+   // Initialize PWM timer for DCC reading, this is mandatory
     if(initHwCfg)
     {
-        // Initialize PWM timer for DCC reading
-        isInitialized_ = false;
-
         // Make sure the timer settings make sense.
         // We want at least 50 ticks per halfbit, which is ~1MHz timer frequency minimum
         // Then we want the max bit-stretched "0" half-bit (10ms) to still fit in a uint16_t, which is ~6.5MHz maximum
@@ -47,10 +52,31 @@ bool DccInterface::init(DccHwInitCfg_t* initHwCfg /*= nullptr*/, DccConfig_t* in
             // We could check if we can receive DCC bits, but on an analog track that would not work so skip that step.
             isInitialized_ = true;
         }
-        return isInitialized_;
     }
-    // Hardware init config missing
-    return false;
+
+    return isInitialized_;
+}
+
+bool DccInterface::step()
+{
+    if(!isInitialized_)
+    {
+        return false;
+    }
+
+    // Process incoming DCC bits from the queue
+
+    // Update halfbit processor
+    
+    // Update bit processor
+
+    // Check for activity and revert to analog mode if none is detected.
+    // Note, analog polarity could change without the dcc reader loosing power. Therefore we check for 
+    // Activity after filtering for valid DCC bits, not on polarity changes directly.
+
+    // Update message processing
+
+    return true;
 }
 
 bool DccInterface::addBitTime(uint32_t t)

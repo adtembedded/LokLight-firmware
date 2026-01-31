@@ -149,6 +149,7 @@ public:
     }
     
     bool init(DccHwInitCfg_t* initHwCfg = nullptr, DccConfig_t* initCfg = nullptr);
+    bool step();
     const DccMsg_t& getLastMsg() const {return lastDccMsg_;}
     const DccReaderState_t& getReaderState() const {return dccReaderState_;}
     
@@ -183,6 +184,7 @@ private:
     //Config and run-time state
     DccConfig_t dccConfig_ = {DCC_CONTROL_MODE_DCC_128SS, DCC_DIRECTION_FORWARD, DCC_DEFAULT_ADDR};
     DccVarState_t dccVarState_ = {0, 0};  //Set speed to 0, all functions off
+    DccHalfbit_t lastHalfbitState_ = halfbit_uninitialized;
     DccReaderState_t dccReaderState_ = reader_reset;
     DccMsg_t dccMsgBuf_ = {0, 0, no_new_dcc_msg, {0}, 0, 0, 0, 0};  //Buffer for processing incoming messages
     DccMsg_t lastDccMsg_ = {0, 0, no_new_dcc_msg, {0}, 0, 0, 0, 0}; //Last valid message received
