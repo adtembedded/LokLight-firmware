@@ -74,18 +74,18 @@ bool Loklight::step()
     //TODO
 
     //Dummy code for dcc read, discard result
-    static uint32_t bitsRead = 0;
-    while(dccInterface_.elementsInQueue() > 0)
-    {
-        dccInterface_.readBitTime();
-        bitsRead++;
-        if(bitsRead > 25000)
-        {
-            ledControl_.enableLight(LED1, !ledControl_.isLightEnabled(LED1));
-            ledControl_.enableLight(LED2, !ledControl_.isLightEnabled(LED2));
-            bitsRead = 0;
-        }
-    }
+    // static uint32_t bitsRead = 0;
+    // while(dccInterface_.elementsInQueue() > 0)
+    // {
+    //     dccInterface_.readBitTime();
+    //     bitsRead++;
+    //     if(bitsRead > 25000)
+    //     {
+    //         ledControl_.enableLight(LED1, !ledControl_.isLightEnabled(LED1));
+    //         ledControl_.enableLight(LED2, !ledControl_.isLightEnabled(LED2));
+    //         bitsRead = 0;
+    //     }
+    // }
 
     // Update LED states
     if(!ledControl_.step())

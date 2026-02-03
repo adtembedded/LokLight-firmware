@@ -132,27 +132,29 @@ public:
 
     
     //TODO move to private
-    //Check if there is something to read
-    uint32_t elementsInQueue();
-    uint32_t readBitTime(); //returns the next bit for processing if one is available. Returns 0 when the queue was empty
-
-private:
+    
+    private:
     // This is a singleton class, make sure this object cannot be created except for getInstance
     DccInterface();
     ~DccInterface();
-
+    
     bool isInitialized_ = false;
-
+        
+    //DCC processing funcs
+    void resetDccReader(bool resetLastMsg = false);
+    DccHalfbit_t feedHalfbit(uint32_t t);
+    DccMsg_t feedBit(DccHalfbit_t bit);
+    
     //DCC helper funcs
     bool is1HalfBit(uint32_t t);
     bool is0HalfBit(uint32_t t);
     bool valid1BitDelta(uint32_t t11, uint32_t t12);
     bool valid0BitTotal(uint32_t t01, uint32_t t02);
 
-    //DCC processing funcs
-    DccHalfbit_t feedHalfbit(uint32_t t);
-    DccMsg_t feedBit(DccHalfbit_t bit);
+    // Bit-time queue funcs
     void resetQueue();
+    uint32_t elementsInQueue();
+    uint32_t readBitTime(); //returns the next bit for processing if one is available. Returns 0 when the queue was empty
 
     //Config and run-time state
     DccConfig_t dccConfig_ = {DCC_CONTROL_MODE_DCC_128SS, DCC_DIRECTION_FORWARD, DCC_DEFAULT_ADDR};

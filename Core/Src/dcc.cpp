@@ -22,8 +22,8 @@ DccInterface::~DccInterface()
 
 bool DccInterface::init(DccHwInitCfg_t* initHwCfg /*= nullptr*/, DccConfig_t* initCfg /*= nullptr*/)
 {
-    isInitialized_ = false;
-    
+    isInitialized_ = false; //Setting this flag will also prevent writes to the bit-time queue
+
     //Set software config. This is optional
     if(initCfg)
     {
@@ -31,15 +31,12 @@ bool DccInterface::init(DccHwInitCfg_t* initHwCfg /*= nullptr*/, DccConfig_t* in
     }
 
     //Reset runtime state of reader
+    resetQueue();
+    resetDccReader(true);
     dccVarState_ = {0, 0};  //Set speed to 0, all functions off
-    lastHalfbitState_ = halfbit_uninitialized;
-    dccReaderState_ = reader_reset;
     //Do not reset the config. It has default values and the caller can overwrite them if needed. The settings are preserved across inits.
-    dccMsgBuf_ = {0, 0, no_new_dcc_msg, {0}, 0, 0, 0, 0}; 
-    lastDccMsg_ = {0, 0, no_new_dcc_msg, {0}, 0, 0, 0, 0};
-    cvWriteInProgress_ = false;
     
-   // Initialize PWM timer for DCC reading, this is mandatory
+    // Initialize PWM timer for DCC reading, this is mandatory
     if(initHwCfg)
     {
         // Make sure the timer settings make sense.
@@ -47,7 +44,7 @@ bool DccInterface::init(DccHwInitCfg_t* initHwCfg /*= nullptr*/, DccConfig_t* in
         // Then we want the max bit-stretched "0" half-bit (10ms) to still fit in a uint16_t, which is ~6.5MHz maximum
         static_assert(DCC_TIMER_FREQ_MIN >= 1000000ul, "DCC timer frequency too low for reliable DCC decoding");
         static_assert(DCC_TIMER_FREQ_MAX <= 6500000ul, "DCC timer frequency too high for reliable DCC decoding");
-
+        
         // Call the hardware-specific initialization function
         if(dcc_hw_init(initHwCfg))
         {
@@ -71,14 +68,16 @@ bool DccInterface::step()
     if(qErrorFlag_)
     {
         // An error occured in the queue, reset the DCC reader to avoid processing inconsistent data
-        dccReaderState_ = reader_reset;
+        resetDccReader(false);
         resetQueue();
     }
 
     // Update halfbit processor
     while(elementsInQueue() > 0)
     {
-        ;
+        uint32_t bitTime = readBitTime();
+        DccHalfbit_t halfbit = feedHalfbit(bitTime);
+        DccMsg_t msg = feedBit(halfbit);
     }
     
     // Update bit processor
@@ -94,8 +93,8 @@ bool DccInterface::step()
 
 bool DccInterface::addBitTime(uint32_t t)
 {
-    // Check if there is actually space to store a bit-time measurement
-    if(qIsFull_ || qErrorFlag_)
+    // Check if there is actually space to store a bit-time measurement and verify we are initialized
+    if(qIsFull_ || qErrorFlag_ || !isInitialized_)
     {
         qErrorFlag_ = true;
         return false;
@@ -235,6 +234,17 @@ void DccInterface::resetQueue()
     qErrorFlag_ = false;
 }
 
+void DccInterface::resetDccReader(bool resetLastMsg)
+{
+    lastHalfbitState_ = halfbit_uninitialized;
+    dccReaderState_ = reader_reset;
+    dccMsgBuf_ = {0, 0, no_new_dcc_msg, {0}, 0, 0, 0, 0}; 
+    if(resetLastMsg) {
+        lastDccMsg_ = {0, 0, no_new_dcc_msg, {0}, 0, 0, 0, 0};
+    }
+    cvWriteInProgress_ = false;
+}
+
 bool DccInterface::is1HalfBit(uint32_t t)
 {
     // Check if bit time is within valid interval for a "1" half-bit (52us - 64us)
@@ -259,4 +269,17 @@ bool DccInterface::valid0BitTotal(uint32_t t01, uint32_t t02)
     // Check if the total time of two "0" half-bits is within the allowed total (12.000us)
     uint32_t total = t01 + t02;
     return (total <= DCC_BITTIME_T0_MAX_TOTAL);
+}
+
+DccHalfbit_t DccInterface::feedHalfbit(uint32_t t)
+{
+    //TODO
+    return halfbit_uninitialized;
+}
+
+DccMsg_t DccInterface::feedBit(DccHalfbit_t bit)
+{
+    //TODO
+    DccMsg_t emptyMsg = {0, 0, no_new_dcc_msg, {0}, 0, 0, 0, 0};
+    return emptyMsg;
 }
