@@ -35,6 +35,9 @@ bool DccInterface::init(DccHwInitCfg_t* initHwCfg /*= nullptr*/, DccConfig_t* in
     lastHalfbitState_ = halfbit_uninitialized;
     dccReaderState_ = reader_reset;
     //Do not reset the config. It has default values and the caller can overwrite them if needed. The settings are preserved across inits.
+    dccMsgBuf_ = {0, 0, no_new_dcc_msg, {0}, 0, 0, 0, 0}; 
+    lastDccMsg_ = {0, 0, no_new_dcc_msg, {0}, 0, 0, 0, 0};
+    cvWriteInProgress_ = false;
     
    // Initialize PWM timer for DCC reading, this is mandatory
     if(initHwCfg)
@@ -65,8 +68,18 @@ bool DccInterface::step()
     }
 
     // Process incoming DCC bits from the queue
+    if(qErrorFlag_)
+    {
+        // An error occured in the queue, reset the DCC reader to avoid processing inconsistent data
+        dccReaderState_ = reader_reset;
+        resetQueue();
+    }
 
     // Update halfbit processor
+    while(elementsInQueue() > 0)
+    {
+        ;
+    }
     
     // Update bit processor
 
@@ -209,6 +222,17 @@ uint32_t DccInterface::readBitTime()
     }
 
     return ret;
+}
+
+void DccInterface::resetQueue()
+{
+    qErrorFlag_ = true; //Set error flag to avoid writes during reset
+    qReadIdx_ = 0;
+    qWriteIdx_ = 0;
+    qIsFull_ = false;
+    qIsEmpty_ = true;
+    // Resetting the error flag must happen last, from this point onwards writes are possible again
+    qErrorFlag_ = false;
 }
 
 bool DccInterface::is1HalfBit(uint32_t t)
