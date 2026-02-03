@@ -10,6 +10,7 @@
 */
 
 #include "dcc.h"
+#include <cstring>  // For memset
 
 DccInterface::DccInterface()
     : dccBitTimeQueue_()
@@ -70,14 +71,24 @@ bool DccInterface::step()
         // An error occured in the queue, reset the DCC reader to avoid processing inconsistent data
         resetDccReader(false);
         resetQueue();
+        // Stop processing here
+        return false;
     }
 
     // Update halfbit processor
     while(elementsInQueue() > 0)
     {
         uint32_t bitTime = readBitTime();
-        DccHalfbit_t halfbit = feedHalfbit(bitTime);
-        DccMsg_t msg = feedBit(halfbit);
+        DccHalfbit_t bitStatus = feedHalfbit(bitTime);
+        if(bitStatus == dcc_valid_0 || bitStatus == dcc_valid_1)
+        {
+            // Process msg if valid
+            if(feedBit(bitStatus) == reader_new_msg)
+            {
+                //TODO
+                ;
+            }
+        }
     }
     
     // Update bit processor
@@ -236,7 +247,7 @@ void DccInterface::resetQueue()
 
 void DccInterface::resetDccReader(bool resetLastMsg)
 {
-    lastHalfbitState_ = halfbit_uninitialized;
+    lastHalfbitState_ = dcc_halfbit_uninitialized;
     dccReaderState_ = reader_reset;
     dccMsgBuf_ = {0, 0, no_new_dcc_msg, {0}, 0, 0, 0, 0}; 
     if(resetLastMsg) {
@@ -273,13 +284,219 @@ bool DccInterface::valid0BitTotal(uint32_t t01, uint32_t t02)
 
 DccHalfbit_t DccInterface::feedHalfbit(uint32_t t)
 {
-    //TODO
-    return halfbit_uninitialized;
+    static uint32_t lastHalfbitTime = 0;    // 0 will denote invalid/uninitialized
+    // Check if the last time we processed a bit-time resulted in a valid bit
+    
+    switch(lastHalfbitState_)
+    {   
+        case dcc_halfbit_uninitialized:
+        case dcc_valid_0:
+        case dcc_valid_1:
+        case dcc_invalid_bit:
+        {
+            // Note the following subtlety:
+            // DCC 0s and 1s consist of two half-bits. If we start here, we may be out of sync, starting to read the second half-bit of a DCC bit.
+            // If we are to set half0 or half1, we will detect an error as soon as the next 0 or 1 is received. Therefore, in case of an
+            // invalid bit we must immediately be ready to accept both half-bits in the next cycle. If we were to leave the invalid case to default and 
+            // reset it to uninitialized there, it would take two halfbits to be able to read another, which would then be out of sync again.
+            
+            // First half-bit received
+            if(is1HalfBit(t))
+            {
+                lastHalfbitState_ = dcc_half1_bit;
+            }
+            else if(is0HalfBit(t))
+            {
+                lastHalfbitState_ = dcc_half0_bit;
+            }
+            else
+            {
+                lastHalfbitState_ = dcc_invalid_bit;
+            }
+            break;
+        }
+        case dcc_half1_bit:
+        {
+            // Second half-bit received for a "1" bit
+            if(is1HalfBit(t) && valid1BitDelta(t, lastHalfbitTime))
+            {
+                lastHalfbitState_ = dcc_valid_1;
+            }
+            else
+            {
+                lastHalfbitState_ = dcc_invalid_bit;
+            }
+            break;
+        }
+        case dcc_half0_bit:
+        {
+            // Second half-bit received for a "0" bit
+            if(is0HalfBit(t) &&  valid0BitTotal(t, lastHalfbitTime))
+            {
+                lastHalfbitState_ = dcc_valid_0;
+            }
+            else
+            {
+                lastHalfbitState_ = dcc_invalid_bit;
+            }
+            break;
+        }
+        default:
+        {
+            // Invalid state, reset to uninitialized
+            lastHalfbitState_ = dcc_halfbit_uninitialized;
+            break;
+        }
+    }
+
+    // Check if we are in a valid state after processing the half bit. If not, we must also reset the reader
+    bool validState = (lastHalfbitState_ == dcc_valid_0) || (lastHalfbitState_ == dcc_valid_1) ||
+                      (lastHalfbitState_ == dcc_half0_bit) || (lastHalfbitState_ == dcc_half1_bit);
+    if(!validState)
+    {
+        // Reset the DCC bit reader to avoid processing inconsistent data
+        resetDccReader(false);
+    }
+
+    // Store the last half-bit time for delta calculations
+    lastHalfbitTime = t;
+
+    return lastHalfbitState_;
 }
 
-DccMsg_t DccInterface::feedBit(DccHalfbit_t bit)
+DccReaderState_t DccInterface::feedBit(DccHalfbit_t bit)
 {
-    //TODO
-    DccMsg_t emptyMsg = {0, 0, no_new_dcc_msg, {0}, 0, 0, 0, 0};
-    return emptyMsg;
+    // Process full bits only
+    bool validBit = (bit == dcc_valid_0) || (bit == dcc_valid_1);
+    if(!validBit)
+    {
+        return dccReaderState_;
+    }
+
+    // reader_reset = 0,
+    // read_preamble = 1,
+    // read_start = 2,
+    // read_byte = 3,
+    // read_sync = 4,
+    // check_crc = 5
+
+    static uint8_t data[MAX_BYTESIZE_DATA];
+    static uint8_t crc;
+    static uint8_t rxByteCnt = 0;
+    static uint8_t bitPos = 0;
+
+    // Start with resetting to a valid state, also do this after a message has been received
+    if(dccReaderState_ == reader_reset || dccReaderState_ == reader_new_msg)
+    {
+        memset(data, 0, sizeof(data));
+        crc = 0;
+        rxByteCnt = 0;
+        bitPos = 0;
+        dccReaderState_ = read_preamble;
+    }
+
+    // We must always receive at least a preamble of 10 "1" bits before any valid data
+    if(dccReaderState_ == read_preamble)
+    {
+        static uint8_t preambleCount = 0;
+        if(bit == dcc_valid_1)
+        {
+            preambleCount++;
+            if(preambleCount >= NUM_ONES_VALID_PREAMBLE)
+            {
+                dccReaderState_ = read_start;
+                preambleCount = 0; //reset for next time
+            }
+        }
+        else
+        {
+            // Invalid bit during preamble, reset count
+            preambleCount = 0;
+        }
+
+        // The bit is consumed, exit here
+        return dccReaderState_;
+    }
+
+    // After reading enough preamble bits, we simply wait until we receive a start bit (0)
+    if(dccReaderState_ == read_start)
+    {
+        if(bit == dcc_valid_0)
+        {
+            // Start bit detected, move to reading data bytes
+            dccReaderState_ = read_byte;
+            bitPos = 0;
+        }
+
+        // The bit is consumed, exit here
+        return dccReaderState_;
+    }
+
+    // After a start bit or a sync bit, we read a full byte
+    if(dccReaderState_ == read_byte)
+    {
+        // If we received a 1, set the bit. By default bits are 0 so no action needed there.
+        if(bit == dcc_valid_1)
+        {
+            data[rxByteCnt] |= (1 << (7 - bitPos));
+        }
+
+        bitPos++;
+        if(bitPos >= 8)
+        {
+            // Byte complete, check if we are within limits
+            bitPos = 0;
+            rxByteCnt++;
+            if(rxByteCnt >= MAX_BYTESIZE_DATA)
+            {
+                // Too many bytes received, reset reader
+                resetDccReader(false);
+            }
+            
+            // We now wait for a divider
+            dccReaderState_ = read_sync;
+        }
+
+        // The bit is consumed, exit here
+        return dccReaderState_;
+    }
+
+    // Between bytes, we expect a sync bit (0) or the end of a frame (1)
+    if(dccReaderState_ == read_sync)
+    {
+        if(bit == dcc_valid_0)
+        {
+            // Sync bit detected, move to reading next byte
+            dccReaderState_ = read_byte;
+
+            // Bit is consumed, exit here
+            return dccReaderState_;
+        }
+        else if(bit == dcc_valid_1)
+        {
+            // End of frame detected, move to CRC check
+            dccReaderState_ = check_crc;
+
+            // Bit is NOT consumed, process CRC next
+        }
+        else
+        {
+            // This cannot happen, reset reader
+            dccReaderState_ = reader_reset;
+            
+            // Bit is consumed, exit here
+            return dccReaderState_;
+        }
+    }
+
+    if(dccReaderState_ == check_crc)
+    {
+        //TODO: Implement CRC check and message extraction
+        // For now, just indicate we have a new message
+        dccReaderState_ = reader_new_msg;
+    }
+
+    // Finally, check the CRC byte
+
+    return dccReaderState_;
 }

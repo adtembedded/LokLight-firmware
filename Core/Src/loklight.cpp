@@ -71,7 +71,10 @@ bool Loklight::step()
     
     // Check for new DCC commands, update LED states, etc.
     
-    //TODO
+    if(!dccInterface_.step())
+    {
+        return false; // DCC step failed
+    }
 
     //Dummy code for dcc read, discard result
     // static uint32_t bitsRead = 0;

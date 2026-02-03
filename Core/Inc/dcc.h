@@ -78,8 +78,8 @@ constexpr uint32_t DCC_BITTIME_T0_MAX_TOTAL = (uint32_t)((DCC_TIMER_FREQ_MAX*120
 // state machine enumeration for DCC definitions
 constexpr uint8_t NUM_ONES_VALID_PREAMBLE = 10; // At receiver side. There should be 12 or more preamble bits by the controller
 constexpr uint8_t MAX_BYTESIZE_ADDR = 2;
-constexpr uint8_t MAX_BYTESIZE_DATA = 7;
-constexpr uint8_t MAX_BYTESIZE_CMD_ARG = 4;
+constexpr uint8_t MAX_BYTESIZE_DATA = 6; //2 address bytes, 3 data bytes
+constexpr uint8_t MAX_BYTESIZE_CMD_ARG = 3;
 
 
 typedef enum DccReaderState_e : uint8_t {
@@ -88,15 +88,17 @@ typedef enum DccReaderState_e : uint8_t {
     read_start = 2,
     read_byte = 3,
     read_sync = 4,
-    check_crc = 5
+    check_crc = 5,
+    reader_new_msg = 6
 } DccReaderState_t;
 
 typedef enum DccHalfbitState_e : uint8_t {
-    halfbit_uninitialized = 0,
-    half_bit = 1,
-    valid_1 = 2,
-    valid_0 = 3,
-    invalid_bit = 4
+    dcc_halfbit_uninitialized = 0,
+    dcc_half1_bit = 1,
+    dcc_half0_bit = 2,
+    dcc_valid_1 = 3,
+    dcc_valid_0 = 4,
+    dcc_invalid_bit = 5
 } DccHalfbit_t;
 
 typedef struct DccMsg_s {
@@ -143,7 +145,7 @@ public:
     //DCC processing funcs
     void resetDccReader(bool resetLastMsg = false);
     DccHalfbit_t feedHalfbit(uint32_t t);
-    DccMsg_t feedBit(DccHalfbit_t bit);
+    DccReaderState_t feedBit(DccHalfbit_t bit);
     
     //DCC helper funcs
     bool is1HalfBit(uint32_t t);
@@ -159,7 +161,7 @@ public:
     //Config and run-time state
     DccConfig_t dccConfig_ = {DCC_CONTROL_MODE_DCC_128SS, DCC_DIRECTION_FORWARD, DCC_DEFAULT_ADDR};
     DccVarState_t dccVarState_ = {0, 0};  //Set speed to 0, all functions off
-    DccHalfbit_t lastHalfbitState_ = halfbit_uninitialized;
+    DccHalfbit_t lastHalfbitState_ = dcc_halfbit_uninitialized;
     DccReaderState_t dccReaderState_ = reader_reset;
     DccMsg_t dccMsgBuf_ = {0, 0, no_new_dcc_msg, {0}, 0, 0, 0, 0};  //Buffer for processing incoming messages
     DccMsg_t lastDccMsg_ = {0, 0, no_new_dcc_msg, {0}, 0, 0, 0, 0}; //Last valid message received
