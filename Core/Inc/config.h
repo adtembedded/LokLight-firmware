@@ -103,7 +103,7 @@ inline std::map<uint32_t, uint8_t> LoklightConfig::cvMap_ {
     {18, 0},    // CV18: DCC Address Extended 2 DCC Address (128-10239 for long, this is the added offset)
     {29, 4},    // CV29: Configuration register
                         // Bit0 Travel dir: 0 Normal direction of travel, 1 Reversed direction of travel
-                        // Bit1 Speed config: 0 for 14 speed steps DCC, 2 for 28 or 128 speed steps DCC
+                        // Bit1 Speed config: 0 for 14 speed steps DCC and FL = bit4 of dcc speed data, 2 for 28 or 128 speed steps DCC and FL is bit 4 in function group 1 instruction message.
                         // Bit2 Analog operation: 0 Disable analog operation, 4 Enable analog operation
                         // Bit3 UNUSED RailCom: 0 to Disable RailCom®, 8 to Enable RailCom®
                         // Bit4 UNUSED Speed curve: 0 for curve through CV 2, 5, 6; 16 for curve through CV 67-94
