@@ -23,6 +23,7 @@
 /* USER CODE BEGIN Includes */
 #include <stdbool.h>
 #include "loklight_wrapper.h"
+#include "SEGGER_RTT.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -109,19 +110,21 @@ int main(void)
   {
     while(1); // Error handling
   }
+  SEGGER_RTT_Init();
+  SEGGER_RTT_ConfigUpBuffer(0, NULL, NULL, 0, SEGGER_RTT_MODE_BLOCK_IF_FIFO_FULL);
 
+  
   HAL_GPIO_WritePin(GPIOB, EN_LED1_Pin, GPIO_PIN_SET);
   HAL_GPIO_WritePin(GPIOB, EN_LED2_Pin, GPIO_PIN_SET);
   //static uint8_t led_state = 0;
-
+  
   while (1)
   {
     // loklight_step(loklight_handle);
     loklight_step();
     /* USER CODE END WHILE */
-
+    
     /* USER CODE BEGIN 3 */
-    HAL_Delay(1);
   }
   /* USER CODE END 3 */
 }
