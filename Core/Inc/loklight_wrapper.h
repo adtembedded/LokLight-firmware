@@ -22,6 +22,8 @@ extern "C" {
 
 #include <stdint.h> // std types
 #include <stdbool.h>
+#include "SEGGER_RTT.h" // Debug print
+#include <stdarg.h>     // va_list for debug print
 
 /*
 
@@ -133,6 +135,21 @@ inline bool dcc_hw_init(DccHwInitCfg_t* dcc_cfg)
 // Returns true when bit-time was succesfully added
 // Returns false when the queue was full and has been cleared
 bool dcc_bit_queue_add(uint32_t bit_time);
+
+/*
+
+    Debugging
+
+*/
+inline void dcc_debug_print(const char* sFormat, ...)
+{
+    // Placeholder implementation
+    // You can implement this using SEGGER RTT, UART, or any other debugging output method you prefer
+    va_list ParamList;
+    va_start(ParamList, sFormat);
+    SEGGER_RTT_vprintf(0, sFormat, &ParamList);
+    va_end(ParamList);
+}
 
 #ifdef __cplusplus
 }
