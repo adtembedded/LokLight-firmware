@@ -153,13 +153,12 @@ void EXTI0_1_IRQHandler(void)
     if(loklight_init_status())
     {
       // uint32_t current_time = HAL_GetTick();
-      uint16_t current_time = __HAL_TIM_GET_COUNTER(&htim2);
-      uint16_t delta_t = current_time - prev_dcc_irq_time;
+      uint32_t current_time = __HAL_TIM_GET_COUNTER(&htim2);
+      uint32_t delta_t = current_time - prev_dcc_irq_time;
       dcc_bit_queue_add(delta_t);
-      prev_dcc_irq_time =  __HAL_TIM_GET_COUNTER(&htim2);
+      prev_dcc_irq_time = current_time;
     }
   }
-    dcc_counter++;
   /* USER CODE END EXTI0_1_IRQn 0 */
   HAL_GPIO_EXTI_IRQHandler(DCC_SENSE_Pin);
   /* USER CODE BEGIN EXTI0_1_IRQn 1 */
