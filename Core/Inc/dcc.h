@@ -22,6 +22,11 @@
 // If the main loop is executed with with a 1ms delay, the number of elements is up to 28
 constexpr uint32_t DCC_BITTIME_QUEUE_SIZE = 48; 
 
+constexpr bool DCC_PRINT_DEBUG_INFO = true; // Set to true to enable periodic printing of DCC reader debug info through platform debug channel
+constexpr uint32_t DCC_DEBUG_PERIOD_MS = 500; //Period for printing debug info about DCC reader state
+constexpr bool DCC_DEBUG_HALFBITS = true; // Set to true to enable printing of debug info about halfbit processing
+constexpr bool DCC_DEBUG_MESSAGES = true; // Set to true to enable printing of debug info about message processing
+
 // Run-time config
 typedef enum DccControlMode_e : uint8_t{
     DCC_CONTROL_MODE_ANALOG = 0,
@@ -78,20 +83,21 @@ constexpr uint32_t DCC_BITTIME_T0_MAX = (uint32_t)((DCC_TIMER_FREQ_MAX*10000ull)
 constexpr uint32_t DCC_BITTIME_T0_MAX_TOTAL = (uint32_t)((DCC_TIMER_FREQ_MAX*12000ull)/1000000ull);   // 12.000us For total bit (two "0"-half bits with 0 stretching)
 
 // state machine enumeration for DCC definitions
-constexpr uint8_t NUM_ONES_VALID_PREAMBLE = 10; // At receiver side. There should be 12 or more preamble bits by the controller
+constexpr uint8_t NUM_ONES_VALID_PREAMBLE = 10; // At receiver side. There should be 14 or more preamble bits by the controller
 constexpr uint8_t MAX_BYTESIZE_ADDR = 2;
 constexpr uint8_t MAX_BYTESIZE_DATA = 6; //2 address bytes, 3 data bytes
+constexpr uint8_t MIN_BYTESIZE_DATA = 3; //At least the address, one byte of data, and one byte of CRC
 constexpr uint8_t MAX_BYTESIZE_CMD_ARG = 3;
 
 
 typedef enum DccReaderState_e : uint8_t {
-    reader_reset = 0,
-    read_preamble = 1,
-    read_start = 2,
-    read_byte = 3,
-    read_sync = 4,
-    check_crc = 5,
-    reader_new_msg = 6
+    dcc_reader_reset = 0,
+    dcc_read_preamble = 1,
+    dcc_read_start = 2,
+    dcc_read_byte = 3,
+    dcc_read_sync = 4,
+    dcc_check_crc = 5,
+    dcc_reader_new_msg = 6
 } DccReaderState_t;
 
 typedef enum DccHalfbitState_e : uint8_t {
@@ -116,13 +122,22 @@ typedef struct DccMsg_s {
 
 // Debugging info
 typedef struct DccDebugInfo_s {
-    uint32_t totalHalfBitsReceived; // Total number of half-bits received, including invalid ones
-    uint32_t valid1BitsReceived;    // Total number of valid full "1"-bits received
-    uint32_t valid0BitsReceived;    // Total number of valid full "0" bits received
-    uint32_t invalidBitTimes;       // Total number of half-bits received with an invalid time (not within the defined intervals for "0" or "1" half-bits)
-    uint32_t deltaViolations;       // Total number of times a "1" bit was received where the time difference between the two half-bits was larger than the allowed delta
-    uint32_t totTimeViolations;     // Total number of times a "0" bit was received where the total time of the two half-bits was larger than the allowed total
-    uint32_t badSyncHalfBits;       // Total number of times a "0" or "1" bit was received where the second half-bit was not valid for that bit type (e.g. receiving a "1" bit where the second half-bit was not a valid "1" half-bit)
+    uint32_t RxHbTotHalfBits;   // Total number of half-bits received, including invalid ones
+    uint32_t RxHbValid1Bits;    // Total number of valid full "1"-bits received
+    uint32_t RxHbValid0Bits;    // Total number of valid full "0" bits received
+    uint32_t EHbBitTimeViolations;        // Total number of half-bits received with an invalid time (not within the defined intervals for "0" or "1" half-bits)
+    uint32_t EHbDeltaViolations;        // Total number of times a "1" bit was received where the time difference between the two half-bits was larger than the allowed delta
+    uint32_t EHbTotTimeViolations;      // Total number of times a "0" bit was received where the total time of the two half-bits was larger than the allowed total
+    uint32_t EHbBadSyncHalfBits;        // Total number of times a "0" or "1" bit was received where the second half-bit was not valid for that bit type (e.g. receiving a "1" bit where the second half-bit was not a valid "1" half-bit)
+    uint32_t RxMsgTotBytes;     // Total number of full bytes received (for valid and invalid messages)
+    uint32_t RxMsgValidFrames;  // Total number of valid frames received (frame is valid when it has a valid preamble, valid bytes and a correct CRC)
+    uint32_t RxMsgValidMsgs;    // Total number of valid messages received (valid msg type, amount of bytes, etc.)
+    uint32_t RxMsgTotMsgsForThisUnit;   // Total number of valid messages received that are relevant for this unit (e.g. correct address, or broadcast message)
+    uint32_t EMsgInvalidPreambles;      // Amount of times an invalid preamble was received (e.g. not enough "1" bits)
+    uint32_t EMsgInvalidBytes;           // Amount of times the reception of a message was interrupted while receiving a byte, causing that byte to be faulty
+    uint32_t EMsgInvalidFrames;         // Amount of times a faulty frame was received (for ex too long)
+    uint32_t EMsgInvalidCRC;            // Amount of times a faulty byte was received (e.g. more than 8 bits, invalid start bit, etc.)
+    uint32_t EMsgInvalidMsgType;        // Amount of times a faulty message was received
 } DccDebugInfo_t;
 
 
@@ -173,14 +188,14 @@ public:
 
     // Debug functions
     void printDccDebugInfo();
-    const uint32_t dccDebugPrintPeriod_ = 500;   //ms
-    DccDebugInfo_t dccDebugInfo_ = {0, 0, 0, 0, 0, 0, 0};
+    const uint32_t dccDebugPrintPeriod_ = DCC_DEBUG_PERIOD_MS;   //ms
+    DccDebugInfo_t dccDebugInfo_ = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
     //Config and run-time state
     DccConfig_t dccConfig_ = {DCC_CONTROL_MODE_DCC_128SS, DCC_DIRECTION_FORWARD, DCC_DEFAULT_ADDR};
     DccVarState_t dccVarState_ = {0, 0};  //Set speed to 0, all functions off
     DccHalfbit_t halfbitState_ = dcc_halfbit_uninitialized;
-    DccReaderState_t dccReaderState_ = reader_reset;
+    DccReaderState_t dccReaderState_ = dcc_reader_reset;
     DccMsg_t dccMsgBuf_ = {0, 0, no_new_dcc_msg, {0}, 0, 0, 0, 0};  //Buffer for processing incoming messages
     DccMsg_t lastDccMsg_ = {0, 0, no_new_dcc_msg, {0}, 0, 0, 0, 0}; //Last valid message received
     bool cvWriteInProgress_ = false; //Indicates a CV write operation is ongoing. Flag is set after reception of the first messsage, and cleared after the second required cmd message was received OR when the write is invalidated.

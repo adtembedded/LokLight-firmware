@@ -85,7 +85,7 @@ bool DccInterface::step()
         if(bitStatus == dcc_valid_0 || bitStatus == dcc_valid_1)
         {
             // Process msg if valid
-            if(feedBit(bitStatus) == reader_new_msg)
+            if(feedBit(bitStatus) == dcc_reader_new_msg)
             {
                 //TODO
                 ;
@@ -250,7 +250,7 @@ void DccInterface::resetQueue()
 void DccInterface::resetDccReader(bool resetLastMsg)
 {
     halfbitState_ = dcc_halfbit_uninitialized;
-    dccReaderState_ = reader_reset;
+    dccReaderState_ = dcc_reader_reset;
     dccMsgBuf_ = {0, 0, no_new_dcc_msg, {0}, 0, 0, 0, 0}; 
     if(resetLastMsg) {
         lastDccMsg_ = {0, 0, no_new_dcc_msg, {0}, 0, 0, 0, 0};
@@ -287,7 +287,7 @@ bool DccInterface::valid0BitTotal(uint32_t t01, uint32_t t02)
 DccHalfbit_t DccInterface::feedHalfbit(uint32_t t)
 {
     static uint32_t lastHalfbitTime = 0;    // 0 will denote invalid/uninitialized
-    dccDebugInfo_.totalHalfBitsReceived++;
+    dccDebugInfo_.RxHbTotHalfBits++;
 
     // First check if we are processing a valid bit-time
     bool validHalfbit = is1HalfBit(t) || is0HalfBit(t);
@@ -295,7 +295,7 @@ DccHalfbit_t DccInterface::feedHalfbit(uint32_t t)
     {
         // Stop processing here, invalid half-bit time
         halfbitState_ = dcc_invalid_bit;
-        dccDebugInfo_.invalidBitTimes++;
+        dccDebugInfo_.EHbBitTimeViolations++;
         // loklight_debug_print("Invalid half-bit time: %lu\r\n", t);
         // Resetting the state will happen below
     }
@@ -329,7 +329,7 @@ DccHalfbit_t DccInterface::feedHalfbit(uint32_t t)
                     // Happens when we found a time that is neither a 0 nor 1 half-bit
                     // Actually cannot not end up here because of the validHalfbit check above
                     halfbitState_ = dcc_invalid_bit;
-                    dccDebugInfo_.invalidBitTimes++;
+                    dccDebugInfo_.EHbBitTimeViolations++;
                     // loklight_debug_print("Invalid half-bit time: %lu\r\n", t);
                 }
                 break;
@@ -338,24 +338,42 @@ DccHalfbit_t DccInterface::feedHalfbit(uint32_t t)
             {
                 // Second half-bit received for a "1" bit
                 bool valid1Halfbit = is1HalfBit(t);
+                bool valid0Halfbit = is0HalfBit(t);
                 bool validDelta = valid1BitDelta(t, lastHalfbitTime);
                 if(valid1Halfbit && validDelta)
                 {
                     halfbitState_ = dcc_valid_1;
-                    dccDebugInfo_.valid1BitsReceived++;
+                    dccDebugInfo_.RxHbValid1Bits++;
+                }
+                else if(valid0Halfbit)
+                {
+                    // This can happen in a special case where we are receiving the pre-amble and the dcc control station is sending
+                    // an uneven number of 1 halfbits in the idle time between subsequent frames.
+                    if(dccReaderState_ == dcc_read_start)
+                    {
+                        // Accept the previous half-bit as a valid 1 half-bit, and this one as a valid 0 half-bit, to stay in sync with the controller.
+                        halfbitState_ = dcc_half0_bit;
+                        // loklight_debug_print("Receiving inverse polarity preamble!\r\n");
+                    }
+                    else
+                    {
+                        halfbitState_ = dcc_invalid_bit;
+                        dccDebugInfo_.EHbBadSyncHalfBits++;
+                        // loklight_debug_print("Received 1-halfbit and 0-halfbit but not while reading preamble: %lu %lu %u\r\n", lastHalfbitTime, t, dccReaderState_);
+                    }
                 }
                 else
                 {
                     halfbitState_ = dcc_invalid_bit;
                     if(!valid1Halfbit)
                     {
-                        dccDebugInfo_.badSyncHalfBits++;
-                        // loklight_debug_print("Receiving 1bit, second half not 1bit: %lu %lu\r\n", lastHalfbitTime, t);
+                        dccDebugInfo_.EHbBadSyncHalfBits++;
+                        // loklight_debug_print("Receiving 1bit, second half not 1bit nor 0bit: %lu %lu\r\n", lastHalfbitTime, t);
                     }
                     else
-                    {
-                        uint32_t delta = (lastHalfbitTime > t) ? (lastHalfbitTime - t) : (t - lastHalfbitTime);
-                        dccDebugInfo_.deltaViolations++;
+                    {   //This can only happen if the delta was invalid
+                        dccDebugInfo_.EHbDeltaViolations++;
+                        // uint32_t delta = (lastHalfbitTime > t) ? (lastHalfbitTime - t) : (t - lastHalfbitTime);
                         // loklight_debug_print("Receiving 1bit, delta invalid: %lu %lu %lu\r\n", lastHalfbitTime, t, delta);
                     }
                 }
@@ -369,19 +387,19 @@ DccHalfbit_t DccInterface::feedHalfbit(uint32_t t)
                 if(valid0Halfbit && validTotal)
                 {
                     halfbitState_ = dcc_valid_0;
-                    dccDebugInfo_.valid0BitsReceived++;
+                    dccDebugInfo_.RxHbValid0Bits++;
                 }
                 else
                 {
                     halfbitState_ = dcc_invalid_bit;
                     if(!valid0Halfbit)
                     {
-                        dccDebugInfo_.badSyncHalfBits++;
+                        dccDebugInfo_.EHbBadSyncHalfBits++;
                         // loklight_debug_print("Receiving 0bit, second half not 0bit: %lu %lu\r\n", lastHalfbitTime, t);
                     }
                     else
                     {
-                        dccDebugInfo_.totTimeViolations++;
+                        dccDebugInfo_.EHbTotTimeViolations++;
                         uint32_t total = t + lastHalfbitTime;
                         loklight_debug_print("Receiving 0bit, total invalid: %lu %lu %lu\r\n", lastHalfbitTime, t, total);
                     }
@@ -422,30 +440,23 @@ DccReaderState_t DccInterface::feedBit(DccHalfbit_t bit)
         return dccReaderState_;
     }
 
-    // reader_reset = 0,
-    // read_preamble = 1,
-    // read_start = 2,
-    // read_byte = 3,
-    // read_sync = 4,
-    // check_crc = 5
-
     static uint8_t data[MAX_BYTESIZE_DATA];
-    static uint8_t crc;
     static uint8_t rxByteCnt = 0;
     static uint8_t bitPos = 0;
+    static uint8_t crc;
 
     // Start with resetting to a valid state, also do this after a message has been received
-    if(dccReaderState_ == reader_reset || dccReaderState_ == reader_new_msg)
+    if(dccReaderState_ == dcc_reader_reset || dccReaderState_ == dcc_reader_new_msg)
     {
         memset(data, 0, sizeof(data));
         crc = 0;
         rxByteCnt = 0;
         bitPos = 0;
-        dccReaderState_ = read_preamble;
+        dccReaderState_ = dcc_read_preamble;
     }
 
     // We must always receive at least a preamble of 10 "1" bits before any valid data
-    if(dccReaderState_ == read_preamble)
+    if(dccReaderState_ == dcc_read_preamble)
     {
         static uint8_t preambleCount = 0;
         if(bit == dcc_valid_1)
@@ -453,13 +464,14 @@ DccReaderState_t DccInterface::feedBit(DccHalfbit_t bit)
             preambleCount++;
             if(preambleCount >= NUM_ONES_VALID_PREAMBLE)
             {
-                dccReaderState_ = read_start;
+                dccReaderState_ = dcc_read_start;
                 preambleCount = 0; //reset for next time
             }
         }
         else
         {
             // Invalid bit during preamble, reset count
+            dccDebugInfo_.EMsgInvalidPreambles++;
             preambleCount = 0;
         }
 
@@ -468,12 +480,12 @@ DccReaderState_t DccInterface::feedBit(DccHalfbit_t bit)
     }
 
     // After reading enough preamble bits, we simply wait until we receive a start bit (0)
-    if(dccReaderState_ == read_start)
+    if(dccReaderState_ == dcc_read_start)
     {
         if(bit == dcc_valid_0)
         {
             // Start bit detected, move to reading data bytes
-            dccReaderState_ = read_byte;
+            dccReaderState_ = dcc_read_byte;
             bitPos = 0;
         }
 
@@ -482,7 +494,7 @@ DccReaderState_t DccInterface::feedBit(DccHalfbit_t bit)
     }
 
     // After a start bit or a sync bit, we read a full byte
-    if(dccReaderState_ == read_byte)
+    if(dccReaderState_ == dcc_read_byte)
     {
         // If we received a 1, set the bit. By default bits are 0 so no action needed there.
         if(bit == dcc_valid_1)
@@ -499,11 +511,12 @@ DccReaderState_t DccInterface::feedBit(DccHalfbit_t bit)
             if(rxByteCnt >= MAX_BYTESIZE_DATA)
             {
                 // Too many bytes received, reset reader
+                dccDebugInfo_.EMsgInvalidFrames++;
                 resetDccReader(false);
             }
             
             // We now wait for a divider
-            dccReaderState_ = read_sync;
+            dccReaderState_ = dcc_read_sync;
         }
 
         // The bit is consumed, exit here
@@ -511,61 +524,94 @@ DccReaderState_t DccInterface::feedBit(DccHalfbit_t bit)
     }
 
     // Between bytes, we expect a sync bit (0) or the end of a frame (1)
-    if(dccReaderState_ == read_sync)
+    if(dccReaderState_ == dcc_read_sync)
     {
         if(bit == dcc_valid_0)
         {
             // Sync bit detected, move to reading next byte
-            dccReaderState_ = read_byte;
+            dccReaderState_ = dcc_read_byte;
 
             // Bit is consumed, exit here
             return dccReaderState_;
         }
-        else if(bit == dcc_valid_1)
+        else if(bit == dcc_valid_1) // End of frame indicated by a "1" bit after reading at least one byte
         {
-            // End of frame detected, move to CRC check
-            dccReaderState_ = check_crc;
+            if(rxByteCnt >= MIN_BYTESIZE_DATA)
+            {
+                // We have received a valid frame, move to CRC check
+                dccReaderState_ = dcc_check_crc;
 
-            // Bit is NOT consumed, process CRC next
+                // Bit is NOT consumed, process CRC next
+            }
+            else
+            {
+                // Not enough bytes received, reset reader
+                dccDebugInfo_.EMsgInvalidFrames++;
+                resetDccReader(false);
+
+                // Bit is consumed, exit here
+                return dccReaderState_;
+            }
         }
         else
         {
             // This cannot happen, reset reader
-            dccReaderState_ = reader_reset;
+            dccReaderState_ = dcc_reader_reset;
             
             // Bit is consumed, exit here
             return dccReaderState_;
         }
     }
-
-    if(dccReaderState_ == check_crc)
+    
+    // Finally, check the CRC byte
+    if(dccReaderState_ == dcc_check_crc)
     {
         //TODO: Implement CRC check and message extraction
         // For now, just indicate we have a new message
-        dccReaderState_ = reader_new_msg;
+        dccReaderState_ = dcc_reader_new_msg;
+        dccDebugInfo_.RxMsgValidFrames++;
     }
-
-    // Finally, check the CRC byte
 
     return dccReaderState_;
 }
 
 void DccInterface::printDccDebugInfo()
 {
+    if(!DCC_PRINT_DEBUG_INFO)
+    {
+        return;
+    }
+    
     static uint32_t lastPrintTime = 0;
     uint32_t currentTime = platform_get_tick_ms();
     if(currentTime - lastPrintTime >= dccDebugPrintPeriod_)
     {
         lastPrintTime = currentTime;
-        // Print debug information about the DCC reader state, queue status, etc.
-        // loklight_debug_print("QElem: %u, BitSM: %u, ReadSM: %u\n", elementsInQueue(), halfbitState_, dccReaderState_);
-        loklight_debug_print("TOTRX:%u, TOT1:%u, TOT0:%u, ET:%u, E1DT:%u, E0TOT:%u, ESYNC:%u\r\n", 
-            dccDebugInfo_.totalHalfBitsReceived, 
-            dccDebugInfo_.valid1BitsReceived, 
-            dccDebugInfo_.valid0BitsReceived, 
-            dccDebugInfo_.invalidBitTimes, 
-            dccDebugInfo_.deltaViolations, 
-            dccDebugInfo_.totTimeViolations, 
-            dccDebugInfo_.badSyncHalfBits);
+        if(DCC_DEBUG_HALFBITS)
+        {
+            // Print debug information about the DCC reader state, queue status, etc.
+            // loklight_debug_print("QElem: %u, BitSM: %u, ReadSM: %u\n", elementsInQueue(), halfbitState_, dccReaderState_);
+            loklight_debug_print("TOTBRX:%u, TOTB1:%u, TOTB0:%u, EBT:%u, EB1DT:%u, EB0TOT:%u, EBSYNC:%u, ", 
+                dccDebugInfo_.RxHbTotHalfBits, 
+                dccDebugInfo_.RxHbValid1Bits, 
+                dccDebugInfo_.RxHbValid0Bits, 
+                dccDebugInfo_.EHbBitTimeViolations, 
+                dccDebugInfo_.EHbDeltaViolations, 
+                dccDebugInfo_.EHbTotTimeViolations, 
+                dccDebugInfo_.EHbBadSyncHalfBits);
+        }
+        if(DCC_DEBUG_MESSAGES)
+        {
+            loklight_debug_print("TOTFR:%u, TOTMSG:%u, TOTMSGTHIS:%u, EPRE:%u, EBYTE:%u, EFRAME:%u, ECRC:%u, EMSG:%u, ", 
+                dccDebugInfo_.RxMsgValidFrames, 
+                dccDebugInfo_.RxMsgValidMsgs, 
+                dccDebugInfo_.RxMsgTotMsgsForThisUnit, 
+                dccDebugInfo_.EMsgInvalidPreambles,
+                dccDebugInfo_.EMsgInvalidBytes, 
+                dccDebugInfo_.EMsgInvalidFrames, 
+                dccDebugInfo_.EMsgInvalidCRC, 
+                dccDebugInfo_.EMsgInvalidMsgType);
+        }
+        loklight_debug_print("\r\n");
     }
 }
