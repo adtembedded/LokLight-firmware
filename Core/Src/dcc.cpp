@@ -624,13 +624,12 @@ void DccInterface::printDccDebugInfo()
         }
         if(DCC_DEBUG_MESSAGES)
         {
-            loklight_debug_print("TOTBYTE: %u, TOTFR:%u, TOTMSG:%u, TOTMSGTHIS:%u, EPRE:%u, EBYTE:%u, EFRAME:%u, ECRC:%u, EMSG:%u, ", 
+            loklight_debug_print("TOTBYTE: %u, TOTFR:%u, TOTMSG:%u, TOTMSGTHIS:%u, EPRE:%u, EFRAME:%u, ECRC:%u, EMSG:%u, ", 
                 dccDebugInfo_.RxMsgTotBytes,
                 dccDebugInfo_.RxMsgValidFrames, 
                 dccDebugInfo_.RxMsgValidMsgs, 
                 dccDebugInfo_.RxMsgTotMsgsForThisUnit, 
                 dccDebugInfo_.EMsgInvalidPreambles,
-                dccDebugInfo_.EMsgInvalidBytes, 
                 dccDebugInfo_.EMsgInvalidFrames, 
                 dccDebugInfo_.EMsgInvalidCRC, 
                 dccDebugInfo_.EMsgInvalidMsgType);
