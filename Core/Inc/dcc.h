@@ -72,7 +72,7 @@ typedef struct DccState_s {
 // Note that we assume the timer type can be uint16_t, even if we use a uint32_t here
 constexpr uint32_t DCC_BITTIME_T1_MIN = (uint32_t)((DCC_TIMER_FREQ_MIN*52ull)/1000000ull);            // 52us for halfbit
 constexpr uint32_t DCC_BITTIME_T1_MAX = (uint32_t)((DCC_TIMER_FREQ_MAX*64ull)/1000000ull);            // 64us for halfbit
-constexpr uint32_t DCC_BITTIME_T1_MAX_DELTA = (uint32_t)((DCC_TIMER_FREQ_MAX*6ull)/1000000ull);       // 6us for max time difference between two "1"-half-bits
+constexpr uint32_t DCC_BITTIME_T1_MAX_DELTA = (uint32_t)((DCC_TIMER_FREQ_MAX*10ull)/1000000ull);      // 6us in dcc spec for max time difference between two "1"-half-bits, but use 10us to avoid false negatives due to timer inaccuracies
 constexpr uint32_t DCC_BITTIME_T0_MIN = (uint32_t)((DCC_TIMER_FREQ_MIN*90ull)/1000000ull);            // 90us for halfbit
 constexpr uint32_t DCC_BITTIME_T0_MAX = (uint32_t)((DCC_TIMER_FREQ_MAX*10000ull)/1000000ull);         // 10.000us for halfbit
 constexpr uint32_t DCC_BITTIME_T0_MAX_TOTAL = (uint32_t)((DCC_TIMER_FREQ_MAX*12000ull)/1000000ull);   // 12.000us For total bit (two "0"-half bits with 0 stretching)
@@ -160,10 +160,14 @@ public:
     uint32_t elementsInQueue();
     uint32_t readBitTime(); //returns the next bit for processing if one is available. Returns 0 when the queue was empty
 
+    // Debug functions
+    void printDccDebugInfo();
+    const uint32_t dccDebugPrintPeriod_ = 200;   //ms
+
     //Config and run-time state
     DccConfig_t dccConfig_ = {DCC_CONTROL_MODE_DCC_128SS, DCC_DIRECTION_FORWARD, DCC_DEFAULT_ADDR};
     DccVarState_t dccVarState_ = {0, 0};  //Set speed to 0, all functions off
-    DccHalfbit_t lastHalfbitState_ = dcc_halfbit_uninitialized;
+    DccHalfbit_t halfbitState_ = dcc_halfbit_uninitialized;
     DccReaderState_t dccReaderState_ = reader_reset;
     DccMsg_t dccMsgBuf_ = {0, 0, no_new_dcc_msg, {0}, 0, 0, 0, 0};  //Buffer for processing incoming messages
     DccMsg_t lastDccMsg_ = {0, 0, no_new_dcc_msg, {0}, 0, 0, 0, 0}; //Last valid message received

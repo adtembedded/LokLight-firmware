@@ -75,6 +75,8 @@ bool DccInterface::step()
         return false;
     }
 
+    //Print debug info here, as we want to see the number of elements in the queue
+    printDccDebugInfo();
     // Update halfbit processor
     while(elementsInQueue() > 0)
     {
@@ -171,7 +173,7 @@ uint32_t DccInterface::elementsInQueue()
         }
         // Check if we have been interrupted by a write.
     } while(bufferedWriteIdx != qWriteIdx_);
-    
+
     return retElements;
 }
 
@@ -247,7 +249,7 @@ void DccInterface::resetQueue()
 
 void DccInterface::resetDccReader(bool resetLastMsg)
 {
-    lastHalfbitState_ = dcc_halfbit_uninitialized;
+    halfbitState_ = dcc_halfbit_uninitialized;
     dccReaderState_ = reader_reset;
     dccMsgBuf_ = {0, 0, no_new_dcc_msg, {0}, 0, 0, 0, 0}; 
     if(resetLastMsg) {
@@ -285,83 +287,121 @@ bool DccInterface::valid0BitTotal(uint32_t t01, uint32_t t02)
 DccHalfbit_t DccInterface::feedHalfbit(uint32_t t)
 {
     static uint32_t lastHalfbitTime = 0;    // 0 will denote invalid/uninitialized
-    // Check if the last time we processed a bit-time resulted in a valid bit
     
-    switch(lastHalfbitState_)
-    {   
-        case dcc_halfbit_uninitialized:
-        case dcc_valid_0:
-        case dcc_valid_1:
-        case dcc_invalid_bit:
-        {
-            // Note the following subtlety:
-            // DCC 0s and 1s consist of two half-bits. If we start here, we may be out of sync, starting to read the second half-bit of a DCC bit.
-            // If we are to set half0 or half1, we will detect an error as soon as the next 0 or 1 is received. Therefore, in case of an
-            // invalid bit we must immediately be ready to accept both half-bits in the next cycle. If we were to leave the invalid case to default and 
-            // reset it to uninitialized there, it would take two halfbits to be able to read another, which would then be out of sync again.
-            
-            // First half-bit received
-            if(is1HalfBit(t))
-            {
-                lastHalfbitState_ = dcc_half1_bit;
-            }
-            else if(is0HalfBit(t))
-            {
-                lastHalfbitState_ = dcc_half0_bit;
-            }
-            else
-            {
-                lastHalfbitState_ = dcc_invalid_bit;
-            }
-            break;
-        }
-        case dcc_half1_bit:
-        {
-            // Second half-bit received for a "1" bit
-            if(is1HalfBit(t) && valid1BitDelta(t, lastHalfbitTime))
-            {
-                lastHalfbitState_ = dcc_valid_1;
-            }
-            else
-            {
-                lastHalfbitState_ = dcc_invalid_bit;
-            }
-            break;
-        }
-        case dcc_half0_bit:
-        {
-            // Second half-bit received for a "0" bit
-            if(is0HalfBit(t) &&  valid0BitTotal(t, lastHalfbitTime))
-            {
-                lastHalfbitState_ = dcc_valid_0;
-            }
-            else
-            {
-                lastHalfbitState_ = dcc_invalid_bit;
-            }
-            break;
-        }
-        default:
-        {
-            // Invalid state, reset to uninitialized
-            lastHalfbitState_ = dcc_halfbit_uninitialized;
-            break;
-        }
+    // First check if we are processing a valid bit-time
+    bool validHalfbit = is1HalfBit(t) || is0HalfBit(t);
+    if(!validHalfbit)
+    {
+        // Stop processing here, invalid half-bit time
+        halfbitState_ = dcc_invalid_bit;
+        loklight_debug_print("Invalid half-bit time: %lu\r\n", t);
+        // Resetting the state will happen below
     }
+    else
+    {
+        // We are processing a valid bit
+        switch(halfbitState_)
+        {   
+            // Upon init, after processing valid bits and after an invalid bit, we need to start over detection.
+            case dcc_halfbit_uninitialized:
+            case dcc_valid_0:
+            case dcc_valid_1:
+            case dcc_invalid_bit:
+            {
+                // Note the following subtlety:
+                // DCC 0s and 1s consist of two half-bits. If we start here, we may be out of sync, starting to read the second half-bit of a DCC bit.
+                // If we are to set half0 or half1, we may detect an error upon the next halfbit, if it is a different one. Therefore, in case of an
+                // invalid bit we must immediately be ready to accept both half-bits again on the next call to get in sync.
+                
+                // First half-bit received
+                if(is1HalfBit(t))
+                {
+                    halfbitState_ = dcc_half1_bit;
+                }
+                else if(is0HalfBit(t))
+                {
+                    halfbitState_ = dcc_half0_bit;
+                }
+                else
+                {
+                    // Actually cannot not end up here because of the validHalfbit check above
+                    halfbitState_ = dcc_invalid_bit;
+                    // Happens when we found a time that is neither a 0 nor 1 half-bit
+                    loklight_debug_print("Invalid half-bit time: %lu\r\n", t);
+                }
+                break;
+            }
+            case dcc_half1_bit:
+            {
+                // Second half-bit received for a "1" bit
+                bool valid1Halfbit = is1HalfBit(t);
+                bool validDelta = valid1BitDelta(t, lastHalfbitTime);
+                if(valid1Halfbit && validDelta)
+                {
+                    halfbitState_ = dcc_valid_1;
+                }
+                else
+                {
+                    halfbitState_ = dcc_invalid_bit;
+                    if(!valid1Halfbit)
+                    {
+                        loklight_debug_print("Receiving 1bit, second half not 1bit: %lu %lu\r\n", lastHalfbitTime, t);
+                    }
+                    else
+                    {
+                        uint32_t delta = (lastHalfbitTime > t) ? (lastHalfbitTime - t) : (t - lastHalfbitTime);
+                        loklight_debug_print("Receiving 1bit, delta invalid: %lu %lu %lu\r\n", lastHalfbitTime, t, delta);
+                    }
+                }
+                break;
+            }
+            case dcc_half0_bit:
+            {
+                // Second half-bit received for a "0" bit
+                bool valid0Halfbit = is0HalfBit(t);
+                bool validTotal = valid0BitTotal(t, lastHalfbitTime);
+                if(valid0Halfbit && validTotal)
+                {
+                    halfbitState_ = dcc_valid_0;
+                }
+                else
+                {
+                    halfbitState_ = dcc_invalid_bit;
+                    if(!valid0Halfbit)
+                    {
+                        loklight_debug_print("Receiving 0bit, second half not 0bit: %lu %lu\r\n", lastHalfbitTime, t);
+                    }
+                    else
+                    {
+                        uint32_t total = t + lastHalfbitTime;
+                        loklight_debug_print("Receiving 0bit, total invalid: %lu %lu %lu\r\n", lastHalfbitTime, t, total);
+                    }
+                }
+                break;
+            }
+            default:
+            {
+                // We cannot end up here, but just in case reset to uninitialized
+                halfbitState_ = dcc_halfbit_uninitialized;
+                break;
+            }
+        }        
+    }   // If validHalfbit
 
     // Check if we are in a valid state after processing the half bit. If not, we must also reset the reader
-    bool validState = (lastHalfbitState_ == dcc_valid_0) || (lastHalfbitState_ == dcc_valid_1) ||
-                      (lastHalfbitState_ == dcc_half0_bit) || (lastHalfbitState_ == dcc_half1_bit);
+    bool validState =   (halfbitState_ == dcc_valid_0)      || (halfbitState_ == dcc_valid_1) ||
+                        (halfbitState_ == dcc_half0_bit)    || (halfbitState_ == dcc_half1_bit);
     if(!validState)
     {
         // Reset the DCC bit reader to avoid processing inconsistent data
+        // Note this also resets the halfbit state to uninitialized
         resetDccReader(false);
     }
 
     // Store the last half-bit time for delta calculations
     lastHalfbitTime = t;
 
-    return lastHalfbitState_;
+    return halfbitState_;
 }
 
 DccReaderState_t DccInterface::feedBit(DccHalfbit_t bit)
@@ -499,4 +539,16 @@ DccReaderState_t DccInterface::feedBit(DccHalfbit_t bit)
     // Finally, check the CRC byte
 
     return dccReaderState_;
+}
+
+void DccInterface::printDccDebugInfo()
+{
+    static uint32_t lastPrintTime = 0;
+    uint32_t currentTime = platform_get_tick_ms();
+    if(currentTime - lastPrintTime >= dccDebugPrintPeriod_)
+    {
+        lastPrintTime = currentTime;
+        // Print debug information about the DCC reader state, queue status, etc.
+        loklight_debug_print("QElem: %u, BitSM: %u, ReadSM: %u\n", elementsInQueue(), halfbitState_, dccReaderState_);
+    }
 }
