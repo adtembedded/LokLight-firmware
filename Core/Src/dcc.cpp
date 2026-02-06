@@ -103,6 +103,14 @@ bool DccInterface::step()
     return true;
 }
 
+bool DccInterface::addBitTime(uint32_t t)
+{
+    if(!isInitialized_)
+    {
+        return false;
+    }
+    return bitTimeQueue_.addBitTime(t);
+}
 
 void DccInterface::resetDccReader(bool resetLastMsg)
 {

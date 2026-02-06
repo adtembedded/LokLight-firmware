@@ -181,7 +181,7 @@ public:
     const DccReaderState_t& getReaderState() const {return dccReaderState_;}
 
     // This function must be exposed to the wrapper, as it is called from the DCC bit-time ISR to add new bit-times to the queue
-    bool addBitTime(uint32_t t){ return bitTimeQueue_.addBitTime(t); }
+    bool addBitTime(uint32_t t);
     
 private:
     // This is a singleton class, make sure this object cannot be created except for getInstance
