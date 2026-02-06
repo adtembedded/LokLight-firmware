@@ -85,9 +85,9 @@ constexpr uint32_t DCC_BITTIME_T0_MAX_TOTAL = (uint32_t)((DCC_TIMER_FREQ_MAX*120
 // state machine enumeration for DCC definitions
 constexpr uint8_t NUM_ONES_VALID_PREAMBLE = 10; // At receiver side. There should be 14 or more preamble bits by the controller
 constexpr uint8_t MAX_BYTESIZE_ADDR = 2;
-constexpr uint8_t MAX_BYTESIZE_DATA = 6; //2 address bytes, 3 data bytes
-constexpr uint8_t MIN_BYTESIZE_DATA = 3; //At least the address, one byte of data, and one byte of CRC
 constexpr uint8_t MAX_BYTESIZE_CMD_ARG = 3;
+constexpr uint8_t MAX_BYTESIZE_DATA = MAX_BYTESIZE_ADDR + MAX_BYTESIZE_CMD_ARG + 1; //2 address bytes, 3 data bytes
+constexpr uint8_t MIN_BYTESIZE_DATA = 3; //At least the address, one byte of data, and one byte of CRC
 
 
 typedef enum DccReaderState_e : uint8_t {
@@ -211,7 +211,7 @@ private:
     DccVarState_t dccVarState_ = {0, 0};  //Set speed to 0, all functions off
     DccHalfbit_t halfbitState_ = dcc_halfbit_uninitialized;
     DccReaderState_t dccReaderState_ = dcc_reader_reset;
-    DccMsg_t dccMsgBuf_ = {0, 0, no_new_dcc_msg, {0}, 0, 0, 0, 0};  //Buffer for processing incoming messages
+    uint8_t dccMsgBuf_[MAX_BYTESIZE_DATA] = {0}; //Buffer to store incoming bytes while processing a message. Size is max addr bytes + max data bytes
     DccMsg_t lastDccMsg_ = {0, 0, no_new_dcc_msg, {0}, 0, 0, 0, 0}; //Last valid message received
     DccBitTimeQueue bitTimeQueue_;
     bool cvWriteInProgress_ = false; //Indicates a CV write operation is ongoing. Flag is set after reception of the first messsage, and cleared after the second required cmd message was received OR when the write is invalidated.

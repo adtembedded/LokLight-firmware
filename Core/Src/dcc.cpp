@@ -116,7 +116,7 @@ void DccInterface::resetDccReader(bool resetLastMsg)
 {
     halfbitState_ = dcc_halfbit_uninitialized;
     dccReaderState_ = dcc_reader_reset;
-    dccMsgBuf_ = {0, 0, no_new_dcc_msg, {0}, 0, 0, 0, 0}; 
+    memset(dccMsgBuf_, 0, sizeof(dccMsgBuf_)); // Clear the message buffer
     if(resetLastMsg) {
         lastDccMsg_ = {0, 0, no_new_dcc_msg, {0}, 0, 0, 0, 0};
     }
@@ -458,6 +458,13 @@ DccReaderState_t DccInterface::feedBit(DccHalfbit_t bit)
             dccDebugInfo_.EMsgInvalidCRC++;
             resetDccReader(false);
         }
+    }
+
+    // If there is a new message, copy the data to the internal message buffer
+    memset(dccMsgBuf_, 0, sizeof(dccMsgBuf_)); // Clear the message buffer
+    for(auto i = 0; i < rxByteCnt; i++)
+    {
+        dccMsgBuf_[i] = data[i];
     }
 
     return dccReaderState_;

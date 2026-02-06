@@ -76,7 +76,7 @@ typedef enum DccMsgType_e : int8_t {
     no_new_dcc_msg = -2,    //no new message
     dcc_msg_idle = -1,      //idle message
     dcc_msg_dcci = 0b000,   //000 Decoder and Consist Control Instruction. Not supported by Loklight
-    dcc_msg_aoi = 0b001,    //001 Advanced Operation Instructions
+    dcc_msg_aoi = 0b001,    //001 Advanced Operation Instructions (contains 128 speed step instruction among other things)
     dcc_msg_sdir = 0b010,   //010 Speed and Direction Instruction for reverse operation & 
     dcc_msg_sdif = 0b011,   //011 Speed and Direction Instruction for forward operation
     dcc_msg_fgi1 = 0b100,   //100 Function Group One Instruction 
