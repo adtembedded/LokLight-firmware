@@ -139,6 +139,32 @@ typedef struct DccDebugInfo_s {
     uint32_t EMsgInvalidMsgType;        // Amount of times a faulty message was received
 } DccDebugInfo_t;
 
+class DccBitTimeQueue
+{
+public:
+    DccBitTimeQueue(){;}
+    ~DccBitTimeQueue(){;}
+
+    // Bit-time queue funcs
+    bool queueIsFull(){ return qIsFull_; }
+    bool queueIsEmpty(){ return qIsEmpty_; }
+    bool queueHasError(){ return qErrorFlag_; }
+    void resetQueue();
+
+    //If the queue was full when calling this function, an internal error flag is set
+    bool addBitTime(uint32_t bit_time); //returns true when bit-time was succesfully added, false when full or error was set
+    uint32_t elementsInQueue();     // Returns the number of elements currently in the queue
+    uint32_t readBitTime();         //returns the next bit for processing if one is available. Returns 0 when the queue was empty
+private:
+    //Bit-time Queue
+    std::array<uint16_t, DCC_BITTIME_QUEUE_SIZE> dccBitTimeQueue_{}; // Queue to store incoming DCC bits from ISR for processing in main loop
+    uint16_t qReadIdx_ = 0;     //read location to extract bit-times
+    volatile uint16_t qWriteIdx_ = 0;    //write location to push bit-time. Volatile tells the compiler the value can be changed at any moment, and some code optimization should be skipped
+    bool qIsFull_ = false;       //Indicates there are no more spaces in the array to write bit-times to
+    bool qErrorFlag_ = false;    //Indicates a write has been attempted while there was no more space in the bit-time array
+    bool qIsEmpty_ = true;       //Indicates whether or not new bit-time data is available
+};
+
 
 class DccInterface
 {
@@ -153,37 +179,26 @@ public:
     bool step();
     const DccMsg_t& getLastMsg() const {return lastDccMsg_;}
     const DccReaderState_t& getReaderState() const {return dccReaderState_;}
-    
-    //Adds a bit-time to the queue. This func must be exposed to the hardware wrapper
-    //If the queue was full when calling this function, an internal error flag is set and the dcc reader 
-    //will re-initialize to avoid processing inconsistent data
-    bool addBitTime(uint32_t t);
 
+    // This function must be exposed to the wrapper, as it is called from the DCC bit-time ISR to add new bit-times to the queue
+    bool addBitTime(uint32_t t){ return bitTimeQueue_.addBitTime(t); }
     
-    //TODO move to private
-    
-    private:
+private:
     // This is a singleton class, make sure this object cannot be created except for getInstance
     DccInterface();
     ~DccInterface();
-    
+
     bool isInitialized_ = false;
-        
     //DCC processing funcs
     void resetDccReader(bool resetLastMsg = false);
     DccHalfbit_t feedHalfbit(uint32_t t);
     DccReaderState_t feedBit(DccHalfbit_t bit);
-    
+
     //DCC helper funcs
     bool is1HalfBit(uint32_t t);
     bool is0HalfBit(uint32_t t);
     bool valid1BitDelta(uint32_t t11, uint32_t t12);
     bool valid0BitTotal(uint32_t t01, uint32_t t02);
-
-    // Bit-time queue funcs
-    void resetQueue();
-    uint32_t elementsInQueue();
-    uint32_t readBitTime(); //returns the next bit for processing if one is available. Returns 0 when the queue was empty
 
     // Debug functions
     void printDccDebugInfo();
@@ -197,15 +212,9 @@ public:
     DccReaderState_t dccReaderState_ = dcc_reader_reset;
     DccMsg_t dccMsgBuf_ = {0, 0, no_new_dcc_msg, {0}, 0, 0, 0, 0};  //Buffer for processing incoming messages
     DccMsg_t lastDccMsg_ = {0, 0, no_new_dcc_msg, {0}, 0, 0, 0, 0}; //Last valid message received
+    DccBitTimeQueue bitTimeQueue_;
     bool cvWriteInProgress_ = false; //Indicates a CV write operation is ongoing. Flag is set after reception of the first messsage, and cleared after the second required cmd message was received OR when the write is invalidated.
 
-    //Bit-time Queue
-    std::array<uint16_t, DCC_BITTIME_QUEUE_SIZE> dccBitTimeQueue_; // Queue to store incoming DCC bits from ISR for processing in main loop
-    uint16_t qReadIdx_ = 0;     //read location to extract bit-times
-    volatile uint16_t qWriteIdx_ = 0;    //write location to push bit-time. Volatile tells the compiler the value can be changed at any moment, and some code optimization should be skipped
-    bool qIsFull_ = false;       //Indicates there are no more spaces in the array to write bit-times to
-    bool qErrorFlag_ = false;    //Indicates a write has been attempted while there was no more space in the bit-time array
-    bool qIsEmpty_ = true;       //Indicates whether or not new bit-time data is available
 };
 
 #endif // DCC_H
