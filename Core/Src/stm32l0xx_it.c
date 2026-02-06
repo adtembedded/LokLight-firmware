@@ -152,9 +152,8 @@ void EXTI0_1_IRQHandler(void)
   {
     if(loklight_init_status())
     {
-      // uint32_t current_time = HAL_GetTick();
-      uint32_t current_time = __HAL_TIM_GET_COUNTER(&htim2);
-      uint32_t delta_t = current_time - prev_dcc_irq_time;
+      uint16_t current_time = __HAL_TIM_GET_COUNTER(&htim2);
+      uint16_t delta_t = current_time - prev_dcc_irq_time;
       dcc_bit_queue_add(delta_t);
       prev_dcc_irq_time = current_time;
     }
