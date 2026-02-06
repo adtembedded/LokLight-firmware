@@ -45,7 +45,7 @@
 TIM_HandleTypeDef htim2;
 
 /* USER CODE BEGIN PV */
-uint32_t dcc_counter = 0;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -119,6 +119,7 @@ int main(void)
   {
     // loklight_step(loklight_handle);
     loklight_step();
+    // HAL_Delay(1);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

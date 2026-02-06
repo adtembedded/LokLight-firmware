@@ -18,7 +18,9 @@
 
 // Size of the DCC bit time queue. Assume processing happens at least once per this number of polarity transitions
 // There can be up to 20 transitions per ms, so make this buffer large enough
-constexpr uint32_t DCC_BITTIME_QUEUE_SIZE = 128; 
+// Testing showed that the number of elements in the queue is 0..1 during normal operation.
+// If the main loop is executed with with a 1ms delay, the number of elements is up to 28
+constexpr uint32_t DCC_BITTIME_QUEUE_SIZE = 48; 
 
 // Run-time config
 typedef enum DccControlMode_e : uint8_t{
