@@ -114,6 +114,17 @@ typedef struct DccMsg_s {
     uint8_t validMsg;
 } DccMsg_t;
 
+// Debugging info
+typedef struct DccDebugInfo_s {
+    uint32_t totalHalfBitsReceived; // Total number of half-bits received, including invalid ones
+    uint32_t valid1BitsReceived;    // Total number of valid full "1"-bits received
+    uint32_t valid0BitsReceived;    // Total number of valid full "0" bits received
+    uint32_t invalidBitTimes;       // Total number of half-bits received with an invalid time (not within the defined intervals for "0" or "1" half-bits)
+    uint32_t deltaViolations;       // Total number of times a "1" bit was received where the time difference between the two half-bits was larger than the allowed delta
+    uint32_t totTimeViolations;     // Total number of times a "0" bit was received where the total time of the two half-bits was larger than the allowed total
+    uint32_t badSyncHalfBits;       // Total number of times a "0" or "1" bit was received where the second half-bit was not valid for that bit type (e.g. receiving a "1" bit where the second half-bit was not a valid "1" half-bit)
+} DccDebugInfo_t;
+
 
 class DccInterface
 {
@@ -162,7 +173,8 @@ public:
 
     // Debug functions
     void printDccDebugInfo();
-    const uint32_t dccDebugPrintPeriod_ = 200;   //ms
+    const uint32_t dccDebugPrintPeriod_ = 500;   //ms
+    DccDebugInfo_t dccDebugInfo_ = {0, 0, 0, 0, 0, 0, 0};
 
     //Config and run-time state
     DccConfig_t dccConfig_ = {DCC_CONTROL_MODE_DCC_128SS, DCC_DIRECTION_FORWARD, DCC_DEFAULT_ADDR};

@@ -287,14 +287,16 @@ bool DccInterface::valid0BitTotal(uint32_t t01, uint32_t t02)
 DccHalfbit_t DccInterface::feedHalfbit(uint32_t t)
 {
     static uint32_t lastHalfbitTime = 0;    // 0 will denote invalid/uninitialized
-    
+    dccDebugInfo_.totalHalfBitsReceived++;
+
     // First check if we are processing a valid bit-time
     bool validHalfbit = is1HalfBit(t) || is0HalfBit(t);
     if(!validHalfbit)
     {
         // Stop processing here, invalid half-bit time
         halfbitState_ = dcc_invalid_bit;
-        loklight_debug_print("Invalid half-bit time: %lu\r\n", t);
+        dccDebugInfo_.invalidBitTimes++;
+        // loklight_debug_print("Invalid half-bit time: %lu\r\n", t);
         // Resetting the state will happen below
     }
     else
@@ -324,10 +326,11 @@ DccHalfbit_t DccInterface::feedHalfbit(uint32_t t)
                 }
                 else
                 {
+                    // Happens when we found a time that is neither a 0 nor 1 half-bit
                     // Actually cannot not end up here because of the validHalfbit check above
                     halfbitState_ = dcc_invalid_bit;
-                    // Happens when we found a time that is neither a 0 nor 1 half-bit
-                    loklight_debug_print("Invalid half-bit time: %lu\r\n", t);
+                    dccDebugInfo_.invalidBitTimes++;
+                    // loklight_debug_print("Invalid half-bit time: %lu\r\n", t);
                 }
                 break;
             }
@@ -339,18 +342,21 @@ DccHalfbit_t DccInterface::feedHalfbit(uint32_t t)
                 if(valid1Halfbit && validDelta)
                 {
                     halfbitState_ = dcc_valid_1;
+                    dccDebugInfo_.valid1BitsReceived++;
                 }
                 else
                 {
                     halfbitState_ = dcc_invalid_bit;
                     if(!valid1Halfbit)
                     {
-                        loklight_debug_print("Receiving 1bit, second half not 1bit: %lu %lu\r\n", lastHalfbitTime, t);
+                        dccDebugInfo_.badSyncHalfBits++;
+                        // loklight_debug_print("Receiving 1bit, second half not 1bit: %lu %lu\r\n", lastHalfbitTime, t);
                     }
                     else
                     {
                         uint32_t delta = (lastHalfbitTime > t) ? (lastHalfbitTime - t) : (t - lastHalfbitTime);
-                        loklight_debug_print("Receiving 1bit, delta invalid: %lu %lu %lu\r\n", lastHalfbitTime, t, delta);
+                        dccDebugInfo_.deltaViolations++;
+                        // loklight_debug_print("Receiving 1bit, delta invalid: %lu %lu %lu\r\n", lastHalfbitTime, t, delta);
                     }
                 }
                 break;
@@ -363,16 +369,19 @@ DccHalfbit_t DccInterface::feedHalfbit(uint32_t t)
                 if(valid0Halfbit && validTotal)
                 {
                     halfbitState_ = dcc_valid_0;
+                    dccDebugInfo_.valid0BitsReceived++;
                 }
                 else
                 {
                     halfbitState_ = dcc_invalid_bit;
                     if(!valid0Halfbit)
                     {
-                        loklight_debug_print("Receiving 0bit, second half not 0bit: %lu %lu\r\n", lastHalfbitTime, t);
+                        dccDebugInfo_.badSyncHalfBits++;
+                        // loklight_debug_print("Receiving 0bit, second half not 0bit: %lu %lu\r\n", lastHalfbitTime, t);
                     }
                     else
                     {
+                        dccDebugInfo_.totTimeViolations++;
                         uint32_t total = t + lastHalfbitTime;
                         loklight_debug_print("Receiving 0bit, total invalid: %lu %lu %lu\r\n", lastHalfbitTime, t, total);
                     }
@@ -549,6 +558,14 @@ void DccInterface::printDccDebugInfo()
     {
         lastPrintTime = currentTime;
         // Print debug information about the DCC reader state, queue status, etc.
-        loklight_debug_print("QElem: %u, BitSM: %u, ReadSM: %u\n", elementsInQueue(), halfbitState_, dccReaderState_);
+        // loklight_debug_print("QElem: %u, BitSM: %u, ReadSM: %u\n", elementsInQueue(), halfbitState_, dccReaderState_);
+        loklight_debug_print("TOTRX:%u, TOT1:%u, TOT0:%u, ET:%u, E1DT:%u, E0TOT:%u, ESYNC:%u\r\n", 
+            dccDebugInfo_.totalHalfBitsReceived, 
+            dccDebugInfo_.valid1BitsReceived, 
+            dccDebugInfo_.valid0BitsReceived, 
+            dccDebugInfo_.invalidBitTimes, 
+            dccDebugInfo_.deltaViolations, 
+            dccDebugInfo_.totTimeViolations, 
+            dccDebugInfo_.badSyncHalfBits);
     }
 }
