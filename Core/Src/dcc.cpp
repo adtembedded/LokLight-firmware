@@ -117,7 +117,7 @@ void DccInterface::resetDccReader(bool resetLastMsg)
     dccReaderState_ = dcc_reader_reset;
     memset(dccMsgBuf_, 0, sizeof(dccMsgBuf_)); // Clear the message buffer
     if(resetLastMsg) {
-        lastDccMsg_ = {0, 0, no_new_dcc_msg, {0}, 0, 0, 0, 0};
+        lastDccMsg_ = {0, false, no_new_dcc_msg, {0}, 0, 0, 0, 0};
     }
     cvWriteInProgress_ = false;
     dccDebugInfo_.EFrReaderResets++;
@@ -476,9 +476,31 @@ bool DccInterface::isMsgForThisUnit()
 
 bool DccInterface::processDccMsg()
 {
-    // Assume a valid message
-    bool ret = true;
+    // Step 0: reset the buffer
+    lastDccMsg_ = {0, false, no_new_dcc_msg, {0}, 0, 0, 0, 0};
+    
+    // Step 1: determine the address
+    // After this step, the address can be found in lastDccMsg_.addr
+    if(!processAddress())
+    {
+        return false;
+    }
 
+    // Step 2: determine the command type
+    // After this step, the command type can be found in lastDccMsg_.msg_type
+    if(!processCmdType())
+    {
+        return false;
+    }
+
+    lastDccMsg_.validMsg = true;
+    dccDebugInfo_.RxMsgValidMsgs++;
+
+    return true;
+}
+
+bool DccInterface::processAddress()
+{
     // Unpack the address
     uint8_t addrByte1 = dccMsgBuf_[0];
 
@@ -486,6 +508,7 @@ bool DccInterface::processDccMsg()
     {
         // Broadcast message, address is 0
         lastDccMsg_.addr = dcc_short_addr_all;
+        lastDccMsg_.longAddr = false;
         dccDebugInfo_.RxMsgBroadcast++;
     }
     else if(addrByte1 >= dcc_short_addr_multipurp_start && addrByte1 <= dcc_short_addr_multipurp_end)
@@ -493,6 +516,7 @@ bool DccInterface::processDccMsg()
         // In range of multipurpose decoder with short addresses.
         // The address is encoded in the first byte
         lastDccMsg_.addr = addrByte1;
+        lastDccMsg_.longAddr = false;
         dccDebugInfo_.RxMsgForMpDecoder++;
     }
     else if(addrByte1 >= dcc_short_addr_accessory_start && addrByte1 <= dcc_short_addr_accessory_end)
@@ -507,6 +531,7 @@ bool DccInterface::processDccMsg()
         addr |= (addrByte2 & 0x06)>>1; // A1 and A0
         addr |= (addrByte2 & 0x70)<<4; // A10, A9, A8
         lastDccMsg_.addr = addr;
+        lastDccMsg_.longAddr = true;
     }
     else if(addrByte1 >= dcc_short_addr_14bmulti_start && addrByte1 <= dcc_short_addr_14bmulti_end)
     {
@@ -517,29 +542,63 @@ bool DccInterface::processDccMsg()
         uint16_t addr = ((addrByte1 - 192) << 8) + addrByte2;
         lastDccMsg_.addr = addr;
         dccDebugInfo_.RxMsgForMpDecoder++;
+        lastDccMsg_.longAddr = true;
     }
     else if(addrByte1 == dcc_short_addr_idle)
     {
         // Idle packet, address is 0
         lastDccMsg_.addr = dcc_short_addr_idle;
         dccDebugInfo_.RxMsgIdle++;
+        lastDccMsg_.longAddr = false;
     }
     else
     {
         // For reserved space, advanced addressing space, idle packets. Not supported
         lastDccMsg_.addr = 0;
+        lastDccMsg_.longAddr = false;
         lastDccMsg_.validMsg = false;
         dccDebugInfo_.EMsgInvalidMsgType++;
         return false;
     }
-    
-    // TODO
-    // unpack the type and arg data
 
-    dccDebugInfo_.RxMsgValidMsgs++;
-
-    return ret; 
+    return true; 
 }
+
+bool DccInterface::processCmdType()
+{
+    // Filter out idle messages
+    if(lastDccMsg_.addr == dcc_short_addr_idle)
+    {
+        // Idle packet, no command type
+        lastDccMsg_.msg_type = dcc_msg_idle;
+    }
+    else
+    {
+        // Continue for other message types
+        uint8_t cmdIdx = lastDccMsg_.longAddr ? 2 : 1; // Command byte is preceeded by 1 address byte for short addresses, and 2 address bytes for long addresses
+        uint8_t cmdBits = (dccMsgBuf_[cmdIdx]>>5) & 0x07; // Command bits are bit 7..5 of the command byte
+        switch(cmdBits)
+        {
+            case dcc_msg_dcci:
+            case dcc_msg_aoi:
+            case dcc_msg_sdir:
+            case dcc_msg_sdif:
+            case dcc_msg_fgi1:
+            case dcc_msg_fgi2:
+            case dcc_msg_fexp:
+            case dcc_msg_cvai:
+                lastDccMsg_.msg_type = static_cast<DccMsgType_t>(cmdBits);
+                break;
+            default:
+                lastDccMsg_.msg_type = dcc_reader_error;
+                dccDebugInfo_.EMsgInvalidMsgType++;
+                return false; // Unsupported message type
+        }
+    }
+
+    return true;
+}
+
 bool DccInterface::processBaselineMsg()
 {
     return false; //TODO

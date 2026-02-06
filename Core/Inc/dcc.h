@@ -112,7 +112,7 @@ typedef enum DccHalfbitState_e : uint8_t {
 
 typedef struct DccMsg_s {
     uint16_t addr;
-    uint8_t cmd;
+    bool longAddr = false;
     DccMsgType_t msg_type;
     uint8_t cmd_arg[MAX_BYTESIZE_CMD_ARG];
     int8_t speed;
@@ -208,6 +208,8 @@ private:
     //Message processing funcs
     bool isMsgForThisUnit();
     bool processDccMsg();
+    bool processAddress();
+    bool processCmdType();
     bool processBaselineMsg();
     bool processAdvancedMsg();
     bool processFuncGroupMsg();
@@ -225,7 +227,7 @@ private:
     DccHalfbit_t halfbitState_ = dcc_halfbit_uninitialized;
     DccReaderState_t dccReaderState_ = dcc_reader_reset;
     uint8_t dccMsgBuf_[MAX_BYTESIZE_DATA] = {0}; //Buffer to store incoming bytes while processing a message. Size is max addr bytes + max data bytes
-    DccMsg_t lastDccMsg_ = {0, 0, no_new_dcc_msg, {0}, 0, 0, 0, 0}; //Last valid message received
+    DccMsg_t lastDccMsg_ = {0, false, no_new_dcc_msg, {0}, 0, 0, 0, 0}; //Last valid message received
     DccBitTimeQueue bitTimeQueue_;
     bool cvWriteInProgress_ = false; //Indicates a CV write operation is ongoing. Flag is set after reception of the first messsage, and cleared after the second required cmd message was received OR when the write is invalidated.
 
