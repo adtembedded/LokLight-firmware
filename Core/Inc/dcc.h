@@ -24,8 +24,9 @@ constexpr uint32_t DCC_BITTIME_QUEUE_SIZE = 48;
 
 constexpr bool DCC_PRINT_DEBUG_INFO = true; // Set to true to enable periodic printing of DCC reader debug info through platform debug channel
 constexpr uint32_t DCC_DEBUG_PERIOD_MS = 500; //Period for printing debug info about DCC reader state
-constexpr bool DCC_DEBUG_HALFBITS = false; // Set to true to enable printing of debug info about halfbit processing
-constexpr bool DCC_DEBUG_MESSAGES = true; // Set to true to enable printing of debug info about message processing
+constexpr bool DCC_DEBUG_HALFBITS = false;  // Set to true to enable printing of debug info about halfbit processing
+constexpr bool DCC_DEBUG_FRAMES = false;    // Set to true to enable printing of debug info about byte processing of DCC frames
+constexpr bool DCC_DEBUG_MESSAGES = true;  // Set to true to enable printing of debug info about message processing
 
 // Run-time config
 typedef enum DccControlMode_e : uint8_t{
@@ -125,18 +126,21 @@ typedef struct DccDebugInfo_s {
     uint32_t RxHbTotHalfBits;   // Total number of half-bits received, including invalid ones
     uint32_t RxHbValid1Bits;    // Total number of valid full "1"-bits received
     uint32_t RxHbValid0Bits;    // Total number of valid full "0" bits received
-    uint32_t EHbBitTimeViolations;        // Total number of half-bits received with an invalid time (not within the defined intervals for "0" or "1" half-bits)
+    uint32_t EHbBitTimeViolations;      // Total number of half-bits received with an invalid time (not within the defined intervals for "0" or "1" half-bits)
     uint32_t EHbDeltaViolations;        // Total number of times a "1" bit was received where the time difference between the two half-bits was larger than the allowed delta
     uint32_t EHbTotTimeViolations;      // Total number of times a "0" bit was received where the total time of the two half-bits was larger than the allowed total
     uint32_t EHbBadSyncHalfBits;        // Total number of times a "0" or "1" bit was received where the second half-bit was not valid for that bit type (e.g. receiving a "1" bit where the second half-bit was not a valid "1" half-bit)
-    uint32_t RxMsgTotBytes;     // Total number of full bytes received (for valid and invalid messages)
-    uint32_t RxMsgValidFrames;  // Total number of valid frames received (frame is valid when it has a valid preamble, valid bytes and a correct CRC)
-    uint32_t RxMsgValidMsgs;    // Total number of valid messages received (valid msg type, amount of bytes, etc.)
+    uint32_t RxFrTotBytes;             // Total number of full bytes received (for valid and invalid messages)
+    uint32_t RxFrValidFrames;          // Total number of valid frames received (frame is valid when it has a valid preamble, valid bytes and a correct CRC)
+    uint32_t RxMsgValidMsgs;            // Total number of valid messages received (valid msg type, amount of bytes, etc.)
+    uint32_t RxMsgIdle;                 // Total number of idle messages received (address byte is 255)
+    uint32_t RxMsgBroadcast;            // Total number of broadcast messages received 
+    uint32_t RxMsgForMpDecoder;         // Total number of valid messages for a multipurpose decoder
     uint32_t RxMsgTotMsgsForThisUnit;   // Total number of valid messages received that are relevant for this unit (e.g. correct address, or broadcast message)
-    uint32_t EMsgReaderResets;          // Total number of times the DCC reader was reset for whatever reason
-    uint32_t EMsgInvalidPreambles;      // Amount of times an invalid preamble was received (e.g. not enough "1" bits). We can expect this to happen for any of the DCC reader resets
-    uint32_t EMsgInvalidFrames;         // Amount of times a faulty frame was received (for ex too long)
-    uint32_t EMsgInvalidCRC;            // Amount of times a faulty byte was received (e.g. more than 8 bits, invalid start bit, etc.)
+    uint32_t EFrReaderResets;          // Total number of times the DCC reader was reset for whatever reason
+    uint32_t EFrInvalidPreambles;      // Amount of times an invalid preamble was received (e.g. not enough "1" bits). We can expect this to happen for any of the DCC reader resets
+    uint32_t EFrInvalidFrames;         // Amount of times a faulty frame was received (for ex too long)
+    uint32_t EFrInvalidCRC;            // Amount of times a faulty byte was received (e.g. more than 8 bits, invalid start bit, etc.)
     uint32_t EMsgInvalidMsgType;        // Amount of times a faulty message was received
 } DccDebugInfo_t;
 
@@ -200,6 +204,15 @@ private:
     bool is0HalfBit(uint32_t t);
     bool valid1BitDelta(uint32_t t11, uint32_t t12);
     bool valid0BitTotal(uint32_t t01, uint32_t t02);
+
+    //Message processing funcs
+    bool isMsgForThisUnit();
+    bool processDccMsg();
+    bool processBaselineMsg();
+    bool processAdvancedMsg();
+    bool processFuncGroupMsg();
+    bool processCvWriteMsg();
+
 
     // Debug functions
     void printDccDebugInfo();

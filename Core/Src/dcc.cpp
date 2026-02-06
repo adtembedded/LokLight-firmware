@@ -86,8 +86,7 @@ bool DccInterface::step()
             // Process msg if valid
             if(feedBit(bitStatus) == dcc_reader_new_msg)
             {
-                //TODO
-                ;
+                processDccMsg();
             }
         }
     }
@@ -121,33 +120,7 @@ void DccInterface::resetDccReader(bool resetLastMsg)
         lastDccMsg_ = {0, 0, no_new_dcc_msg, {0}, 0, 0, 0, 0};
     }
     cvWriteInProgress_ = false;
-    dccDebugInfo_.EMsgReaderResets++;
-}
-
-bool DccInterface::is1HalfBit(uint32_t t)
-{
-    // Check if bit time is within valid interval for a "1" half-bit (52us - 64us)
-    return (t >= DCC_BITTIME_T1_MIN) && (t <= DCC_BITTIME_T1_MAX);
-}
-
-bool DccInterface::is0HalfBit(uint32_t t)
-{
-    // Check if bit time is within valid interval for a "0" half-bit (90us - 10.000us)
-    return (t >= DCC_BITTIME_T0_MIN) && (t <= DCC_BITTIME_T0_MAX);
-}
-
-bool DccInterface::valid1BitDelta(uint32_t t11, uint32_t t12)
-{
-    // Check if the difference between two "1" half-bits is within the allowed delta (6us)
-    uint32_t delta = (t11 > t12) ? (t11 - t12) : (t12 - t11);
-    return (delta <= DCC_BITTIME_T1_MAX_DELTA);
-}
-
-bool DccInterface::valid0BitTotal(uint32_t t01, uint32_t t02)
-{
-    // Check if the total time of two "0" half-bits is within the allowed total (12.000us)
-    uint32_t total = t01 + t02;
-    return (total <= DCC_BITTIME_T0_MAX_TOTAL);
+    dccDebugInfo_.EFrReaderResets++;
 }
 
 DccHalfbit_t DccInterface::feedHalfbit(uint32_t t)
@@ -340,7 +313,7 @@ DccReaderState_t DccInterface::feedBit(DccHalfbit_t bit)
         else
         {
             // Invalid bit during preamble, reset count
-            dccDebugInfo_.EMsgInvalidPreambles++;
+            dccDebugInfo_.EFrInvalidPreambles++;
             preambleCount = 0;
         }
 
@@ -377,12 +350,12 @@ DccReaderState_t DccInterface::feedBit(DccHalfbit_t bit)
             // Byte complete, check if we are within limits
             bitPos = 0;
             rxByteCnt++;
-            dccDebugInfo_.RxMsgTotBytes++;
+            dccDebugInfo_.RxFrTotBytes++;
 
             if(rxByteCnt >= MAX_BYTESIZE_DATA)
             {
                 // Too many bytes received, reset reader
-                dccDebugInfo_.EMsgInvalidFrames++;
+                dccDebugInfo_.EFrInvalidFrames++;
                 resetDccReader(false);
             }
             
@@ -418,7 +391,7 @@ DccReaderState_t DccInterface::feedBit(DccHalfbit_t bit)
             else
             {
                 // Not enough bytes received, reset reader
-                dccDebugInfo_.EMsgInvalidFrames++;
+                dccDebugInfo_.EFrInvalidFrames++;
                 resetDccReader(false);
 
                 // Bit is consumed, exit here
@@ -450,12 +423,12 @@ DccReaderState_t DccInterface::feedBit(DccHalfbit_t bit)
         {
             // CRC has expecte value. This is a valid DCC frame
             dccReaderState_ = dcc_reader_new_msg;
-            dccDebugInfo_.RxMsgValidFrames++;
+            dccDebugInfo_.RxFrValidFrames++;
         }
         else
         {
             // CRC does not match, invalid frame
-            dccDebugInfo_.EMsgInvalidCRC++;
+            dccDebugInfo_.EFrInvalidCRC++;
             resetDccReader(false);
         }
     }
@@ -468,6 +441,122 @@ DccReaderState_t DccInterface::feedBit(DccHalfbit_t bit)
     }
 
     return dccReaderState_;
+}
+
+bool DccInterface::is1HalfBit(uint32_t t)
+{
+    // Check if bit time is within valid interval for a "1" half-bit (52us - 64us)
+    return (t >= DCC_BITTIME_T1_MIN) && (t <= DCC_BITTIME_T1_MAX);
+}
+
+bool DccInterface::is0HalfBit(uint32_t t)
+{
+    // Check if bit time is within valid interval for a "0" half-bit (90us - 10.000us)
+    return (t >= DCC_BITTIME_T0_MIN) && (t <= DCC_BITTIME_T0_MAX);
+}
+
+bool DccInterface::valid1BitDelta(uint32_t t11, uint32_t t12)
+{
+    // Check if the difference between two "1" half-bits is within the allowed delta (6us)
+    uint32_t delta = (t11 > t12) ? (t11 - t12) : (t12 - t11);
+    return (delta <= DCC_BITTIME_T1_MAX_DELTA);
+}
+
+bool DccInterface::valid0BitTotal(uint32_t t01, uint32_t t02)
+{
+    // Check if the total time of two "0" half-bits is within the allowed total (12.000us)
+    uint32_t total = t01 + t02;
+    return (total <= DCC_BITTIME_T0_MAX_TOTAL);
+}
+
+bool DccInterface::isMsgForThisUnit()
+{
+    return false; //TODO
+}
+
+bool DccInterface::processDccMsg()
+{
+    // Assume a valid message
+    bool ret = true;
+
+    // Unpack the address
+    uint8_t addrByte1 = dccMsgBuf_[0];
+
+    if(addrByte1 == dcc_short_addr_all)
+    {
+        // Broadcast message, address is 0
+        lastDccMsg_.addr = dcc_short_addr_all;
+        dccDebugInfo_.RxMsgBroadcast++;
+    }
+    else if(addrByte1 >= dcc_short_addr_multipurp_start && addrByte1 <= dcc_short_addr_multipurp_end)
+    {
+        // In range of multipurpose decoder with short addresses.
+        // The address is encoded in the first byte
+        lastDccMsg_.addr = addrByte1;
+        dccDebugInfo_.RxMsgForMpDecoder++;
+    }
+    else if(addrByte1 >= dcc_short_addr_accessory_start && addrByte1 <= dcc_short_addr_accessory_end)
+    {
+        // In range of accessory decoder addresses. The address is encoded in the first two bytes as follows
+        // byte1 [1, 0, A7, A6, A5, A4, A3, A2] 
+        // byte 2 [1, A10, A9, A8, D A1, A0, R]     We ignore D and R, not relevant for Loklight
+        uint8_t addrByte2 = dccMsgBuf_[1];
+        uint16_t addr = 0;
+
+        addr = (addrByte1 & 0x3F)<<2; // Take the last 6 bits of byte 1
+        addr |= (addrByte2 & 0x06)>>1; // A1 and A0
+        addr |= (addrByte2 & 0x70)<<4; // A10, A9, A8
+        lastDccMsg_.addr = addr;
+    }
+    else if(addrByte1 >= dcc_short_addr_14bmulti_start && addrByte1 <= dcc_short_addr_14bmulti_end)
+    {
+        // In range of 14-bit multi-purpose decoder addresses. The address is encoded in the first two bytes
+        // The formula for the address is as follows:
+        // [byte1 - 192]*256 + byte2
+        uint8_t addrByte2 = dccMsgBuf_[1];
+        uint16_t addr = ((addrByte1 - 192) << 8) + addrByte2;
+        lastDccMsg_.addr = addr;
+        dccDebugInfo_.RxMsgForMpDecoder++;
+    }
+    else if(addrByte1 == dcc_short_addr_idle)
+    {
+        // Idle packet, address is 0
+        lastDccMsg_.addr = dcc_short_addr_idle;
+        dccDebugInfo_.RxMsgIdle++;
+    }
+    else
+    {
+        // For reserved space, advanced addressing space, idle packets. Not supported
+        lastDccMsg_.addr = 0;
+        lastDccMsg_.validMsg = false;
+        dccDebugInfo_.EMsgInvalidMsgType++;
+        return false;
+    }
+    
+    // TODO
+    // unpack the type and arg data
+
+    dccDebugInfo_.RxMsgValidMsgs++;
+
+    return ret; 
+}
+bool DccInterface::processBaselineMsg()
+{
+    return false; //TODO
+}
+
+bool DccInterface::processAdvancedMsg()
+{
+    return false; //TODO
+}
+
+bool DccInterface::processFuncGroupMsg()
+{
+    return false; //TODO
+}
+bool DccInterface::processCvWriteMsg()
+{
+    return false; //TODO
 }
 
 void DccInterface::printDccDebugInfo()
@@ -495,18 +584,25 @@ void DccInterface::printDccDebugInfo()
                 dccDebugInfo_.EHbTotTimeViolations, 
                 dccDebugInfo_.EHbBadSyncHalfBits);
         }
+        if(DCC_DEBUG_FRAMES)
+        {
+            loklight_debug_print("TOTBYTE: %u, TOTFR:%u, ERESET:%u, EPRE:%u, EFRAME:%u, ECRC:%u, ", 
+                dccDebugInfo_.RxFrTotBytes,
+                dccDebugInfo_.RxFrValidFrames, 
+                dccDebugInfo_.EFrReaderResets, 
+                dccDebugInfo_.EFrInvalidPreambles,
+                dccDebugInfo_.EFrInvalidFrames, 
+                dccDebugInfo_.EFrInvalidCRC);
+        }
         if(DCC_DEBUG_MESSAGES)
         {
-            loklight_debug_print("TOTBYTE: %u, TOTFR:%u, TOTMSG:%u, TOTMSGTHIS:%u, ERESET:%u, EPRE:%u, EFRAME:%u, ECRC:%u, EMSG:%u, ", 
-                dccDebugInfo_.RxMsgTotBytes,
-                dccDebugInfo_.RxMsgValidFrames, 
+            loklight_debug_print("TOTMSG: %u, TOTIDLE:%u, TOTALL:%u, TOTDEC:%u, TOTTHIS:%u, EMSG:%u, ",
                 dccDebugInfo_.RxMsgValidMsgs, 
-                dccDebugInfo_.RxMsgTotMsgsForThisUnit,
-                dccDebugInfo_.EMsgReaderResets, 
-                dccDebugInfo_.EMsgInvalidPreambles,
-                dccDebugInfo_.EMsgInvalidFrames, 
-                dccDebugInfo_.EMsgInvalidCRC, 
-                dccDebugInfo_.EMsgInvalidMsgType);
+                dccDebugInfo_.RxMsgIdle, 
+                dccDebugInfo_.RxMsgBroadcast, 
+                dccDebugInfo_.RxMsgForMpDecoder,
+                dccDebugInfo_.RxMsgTotMsgsForThisUnit,  
+                dccDebugInfo_.EMsgInvalidMsgType); 
         }
         loklight_debug_print("\r\n");
     }
