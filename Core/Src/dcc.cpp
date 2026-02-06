@@ -121,6 +121,7 @@ void DccInterface::resetDccReader(bool resetLastMsg)
         lastDccMsg_ = {0, 0, no_new_dcc_msg, {0}, 0, 0, 0, 0};
     }
     cvWriteInProgress_ = false;
+    dccDebugInfo_.EMsgReaderResets++;
 }
 
 bool DccInterface::is1HalfBit(uint32_t t)
@@ -489,11 +490,12 @@ void DccInterface::printDccDebugInfo()
         }
         if(DCC_DEBUG_MESSAGES)
         {
-            loklight_debug_print("TOTBYTE: %u, TOTFR:%u, TOTMSG:%u, TOTMSGTHIS:%u, EPRE:%u, EFRAME:%u, ECRC:%u, EMSG:%u, ", 
+            loklight_debug_print("TOTBYTE: %u, TOTFR:%u, TOTMSG:%u, TOTMSGTHIS:%u, ERESET:%u, EPRE:%u, EFRAME:%u, ECRC:%u, EMSG:%u, ", 
                 dccDebugInfo_.RxMsgTotBytes,
                 dccDebugInfo_.RxMsgValidFrames, 
                 dccDebugInfo_.RxMsgValidMsgs, 
-                dccDebugInfo_.RxMsgTotMsgsForThisUnit, 
+                dccDebugInfo_.RxMsgTotMsgsForThisUnit,
+                dccDebugInfo_.EMsgReaderResets, 
                 dccDebugInfo_.EMsgInvalidPreambles,
                 dccDebugInfo_.EMsgInvalidFrames, 
                 dccDebugInfo_.EMsgInvalidCRC, 

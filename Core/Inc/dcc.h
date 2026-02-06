@@ -133,7 +133,8 @@ typedef struct DccDebugInfo_s {
     uint32_t RxMsgValidFrames;  // Total number of valid frames received (frame is valid when it has a valid preamble, valid bytes and a correct CRC)
     uint32_t RxMsgValidMsgs;    // Total number of valid messages received (valid msg type, amount of bytes, etc.)
     uint32_t RxMsgTotMsgsForThisUnit;   // Total number of valid messages received that are relevant for this unit (e.g. correct address, or broadcast message)
-    uint32_t EMsgInvalidPreambles;      // Amount of times an invalid preamble was received (e.g. not enough "1" bits)
+    uint32_t EMsgReaderResets;          // Total number of times the DCC reader was reset for whatever reason
+    uint32_t EMsgInvalidPreambles;      // Amount of times an invalid preamble was received (e.g. not enough "1" bits). We can expect this to happen for any of the DCC reader resets
     uint32_t EMsgInvalidFrames;         // Amount of times a faulty frame was received (for ex too long)
     uint32_t EMsgInvalidCRC;            // Amount of times a faulty byte was received (e.g. more than 8 bits, invalid start bit, etc.)
     uint32_t EMsgInvalidMsgType;        // Amount of times a faulty message was received
