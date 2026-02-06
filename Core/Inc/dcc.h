@@ -24,7 +24,7 @@ constexpr uint32_t DCC_BITTIME_QUEUE_SIZE = 48;
 
 constexpr bool DCC_PRINT_DEBUG_INFO = true; // Set to true to enable periodic printing of DCC reader debug info through platform debug channel
 constexpr uint32_t DCC_DEBUG_PERIOD_MS = 500; //Period for printing debug info about DCC reader state
-constexpr bool DCC_DEBUG_HALFBITS = true; // Set to true to enable printing of debug info about halfbit processing
+constexpr bool DCC_DEBUG_HALFBITS = false; // Set to true to enable printing of debug info about halfbit processing
 constexpr bool DCC_DEBUG_MESSAGES = true; // Set to true to enable printing of debug info about message processing
 
 // Run-time config
@@ -134,7 +134,6 @@ typedef struct DccDebugInfo_s {
     uint32_t RxMsgValidMsgs;    // Total number of valid messages received (valid msg type, amount of bytes, etc.)
     uint32_t RxMsgTotMsgsForThisUnit;   // Total number of valid messages received that are relevant for this unit (e.g. correct address, or broadcast message)
     uint32_t EMsgInvalidPreambles;      // Amount of times an invalid preamble was received (e.g. not enough "1" bits)
-    uint32_t EMsgInvalidBytes;           // Amount of times the reception of a message was interrupted while receiving a byte, causing that byte to be faulty
     uint32_t EMsgInvalidFrames;         // Amount of times a faulty frame was received (for ex too long)
     uint32_t EMsgInvalidCRC;            // Amount of times a faulty byte was received (e.g. more than 8 bits, invalid start bit, etc.)
     uint32_t EMsgInvalidMsgType;        // Amount of times a faulty message was received
@@ -188,8 +187,8 @@ public:
 
     // Debug functions
     void printDccDebugInfo();
-    const uint32_t dccDebugPrintPeriod_ = DCC_DEBUG_PERIOD_MS;   //ms
-    DccDebugInfo_t dccDebugInfo_ = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    const uint32_t dccDebugPrintPeriod_ = DCC_DEBUG_PERIOD_MS;   // period in ms
+    DccDebugInfo_t dccDebugInfo_ = {};
 
     //Config and run-time state
     DccConfig_t dccConfig_ = {DCC_CONTROL_MODE_DCC_128SS, DCC_DIRECTION_FORWARD, DCC_DEFAULT_ADDR};

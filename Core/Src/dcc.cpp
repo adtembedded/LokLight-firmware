@@ -442,6 +442,7 @@ DccReaderState_t DccInterface::feedBit(DccHalfbit_t bit)
 
     static uint8_t data[MAX_BYTESIZE_DATA];
     static uint8_t rxByteCnt = 0;
+    static uint8_t preambleCount = 0;
     static uint8_t bitPos = 0;
     static uint8_t crc;
 
@@ -449,16 +450,18 @@ DccReaderState_t DccInterface::feedBit(DccHalfbit_t bit)
     if(dccReaderState_ == dcc_reader_reset || dccReaderState_ == dcc_reader_new_msg)
     {
         memset(data, 0, sizeof(data));
-        crc = 0;
         rxByteCnt = 0;
+        preambleCount = 0;
         bitPos = 0;
+        crc = 0;
         dccReaderState_ = dcc_read_preamble;
+
+        // The bit was not consumed, move on to reading the preamble
     }
 
     // We must always receive at least a preamble of 10 "1" bits before any valid data
     if(dccReaderState_ == dcc_read_preamble)
     {
-        static uint8_t preambleCount = 0;
         if(bit == dcc_valid_1)
         {
             preambleCount++;
@@ -508,6 +511,8 @@ DccReaderState_t DccInterface::feedBit(DccHalfbit_t bit)
             // Byte complete, check if we are within limits
             bitPos = 0;
             rxByteCnt++;
+            dccDebugInfo_.RxMsgTotBytes++;
+
             if(rxByteCnt >= MAX_BYTESIZE_DATA)
             {
                 // Too many bytes received, reset reader
@@ -536,6 +541,7 @@ DccReaderState_t DccInterface::feedBit(DccHalfbit_t bit)
         }
         else if(bit == dcc_valid_1) // End of frame indicated by a "1" bit after reading at least one byte
         {
+            // Check if we have received a valid frame, i.e. at least the minimum number of bytes
             if(rxByteCnt >= MIN_BYTESIZE_DATA)
             {
                 // We have received a valid frame, move to CRC check
@@ -566,10 +572,26 @@ DccReaderState_t DccInterface::feedBit(DccHalfbit_t bit)
     // Finally, check the CRC byte
     if(dccReaderState_ == dcc_check_crc)
     {
-        //TODO: Implement CRC check and message extraction
-        // For now, just indicate we have a new message
-        dccReaderState_ = dcc_reader_new_msg;
-        dccDebugInfo_.RxMsgValidFrames++;
+        // Calculate CRC over the received bytes, except the last one which is the CRC byte itself
+        crc = 0;
+        for(uint8_t i = 0; i < rxByteCnt - 1; i++)
+        {
+            crc ^= data[i];
+        }
+
+        // Compare calculated CRC with received CRC (last byte)
+        if(crc == data[rxByteCnt - 1])
+        {
+            // CRC has expecte value. This is a valid DCC frame
+            dccReaderState_ = dcc_reader_new_msg;
+            dccDebugInfo_.RxMsgValidFrames++;
+        }
+        else
+        {
+            // CRC does not match, invalid frame
+            dccDebugInfo_.EMsgInvalidCRC++;
+            resetDccReader(false);
+        }
     }
 
     return dccReaderState_;
@@ -602,7 +624,8 @@ void DccInterface::printDccDebugInfo()
         }
         if(DCC_DEBUG_MESSAGES)
         {
-            loklight_debug_print("TOTFR:%u, TOTMSG:%u, TOTMSGTHIS:%u, EPRE:%u, EBYTE:%u, EFRAME:%u, ECRC:%u, EMSG:%u, ", 
+            loklight_debug_print("TOTBYTE: %u, TOTFR:%u, TOTMSG:%u, TOTMSGTHIS:%u, EPRE:%u, EBYTE:%u, EFRAME:%u, ECRC:%u, EMSG:%u, ", 
+                dccDebugInfo_.RxMsgTotBytes,
                 dccDebugInfo_.RxMsgValidFrames, 
                 dccDebugInfo_.RxMsgValidMsgs, 
                 dccDebugInfo_.RxMsgTotMsgsForThisUnit, 
