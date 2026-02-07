@@ -72,7 +72,8 @@ typedef enum DccShortAddrTable_e : uint8_t {
 
 //This enum is a combination of message type and, if a message was received, what cmd it was
 typedef enum DccMsgType_e : int8_t {
-    dcc_reader_error = -3,  //Error status
+    dcc_reader_error = -4,  //Error status
+    dcc_reader_unsupported = -3,  //Message type is valid but not supported by Loklight
     no_new_dcc_msg = -2,    //no new message
     dcc_msg_idle = -1,      //idle message
     dcc_msg_dcci = 0b000,   //000 Decoder and Consist Control Instruction. Not supported by Loklight

@@ -553,11 +553,11 @@ bool DccInterface::processAddress()
     }
     else
     {
-        // For reserved space, advanced addressing space, idle packets. Not supported
+        // For reserved space, advanced addressing space. Not supported
         lastDccMsg_.addr = 0;
         lastDccMsg_.longAddr = false;
         lastDccMsg_.validMsg = false;
-        dccDebugInfo_.EMsgInvalidMsgType++;
+        dccDebugInfo_.EMsUnsupportedMsgType++;
         return false;
     }
 
@@ -572,6 +572,13 @@ bool DccInterface::processCmdType()
         // Idle packet, no command type
         lastDccMsg_.msg_type = dcc_msg_idle;
     }
+    else if (dccMsgBuf_[0] >= dcc_short_addr_accessory_start && dccMsgBuf_[0] <= dcc_short_addr_accessory_end){
+        // Filter out accessory messages. These appear to have a valid MP decoder address and command type, so need to
+        // be filtered out here before the command type is determined.
+        lastDccMsg_.msg_type = dcc_reader_unsupported;
+        dccDebugInfo_.EMsUnsupportedMsgType++;
+        return false; // Unsupported message type
+    }  
     else
     {
         // Continue for other message types
@@ -579,16 +586,19 @@ bool DccInterface::processCmdType()
         uint8_t cmdBits = (dccMsgBuf_[cmdIdx]>>5) & 0x07; // Command bits are bit 7..5 of the command byte
         switch(cmdBits)
         {
-            case dcc_msg_dcci:
             case dcc_msg_aoi:
             case dcc_msg_sdir:
             case dcc_msg_sdif:
             case dcc_msg_fgi1:
             case dcc_msg_fgi2:
-            case dcc_msg_fexp:
             case dcc_msg_cvai:
                 lastDccMsg_.msg_type = static_cast<DccMsgType_t>(cmdBits);
                 break;
+            case dcc_msg_fexp:
+            case dcc_msg_dcci:
+                lastDccMsg_.msg_type = dcc_reader_unsupported;
+                dccDebugInfo_.EMsUnsupportedMsgType++;
+                return false; // Unsupported message type
             default:
                 lastDccMsg_.msg_type = dcc_reader_error;
                 dccDebugInfo_.EMsgInvalidMsgType++;
@@ -655,12 +665,13 @@ void DccInterface::printDccDebugInfo()
         }
         if(DCC_DEBUG_MESSAGES)
         {
-            loklight_debug_print("TOTMSG: %u, TOTIDLE:%u, TOTALL:%u, TOTDEC:%u, TOTTHIS:%u, EMSG:%u, ",
+            loklight_debug_print("TOTMSG: %u, TOTIDLE:%u, TOTALL:%u, TOTDEC:%u, TOTTHIS:%u, ENOSUP:%u, EINV:%u, ",
                 dccDebugInfo_.RxMsgValidMsgs, 
                 dccDebugInfo_.RxMsgIdle, 
                 dccDebugInfo_.RxMsgBroadcast, 
                 dccDebugInfo_.RxMsgForMpDecoder,
                 dccDebugInfo_.RxMsgTotMsgsForThisUnit,  
+                dccDebugInfo_.EMsUnsupportedMsgType,
                 dccDebugInfo_.EMsgInvalidMsgType); 
         }
         loklight_debug_print("\r\n");

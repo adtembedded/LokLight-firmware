@@ -142,6 +142,7 @@ typedef struct DccDebugInfo_s {
     uint32_t EFrInvalidFrames;         // Amount of times a faulty frame was received (for ex too long)
     uint32_t EFrInvalidCRC;            // Amount of times a faulty byte was received (e.g. more than 8 bits, invalid start bit, etc.)
     uint32_t EMsgInvalidMsgType;        // Amount of times a faulty message was received
+    uint32_t EMsUnsupportedMsgType;     // Amount of times an unsupported message type was received
 } DccDebugInfo_t;
 
 class DccBitTimeQueue
