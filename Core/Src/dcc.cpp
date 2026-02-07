@@ -493,6 +493,47 @@ bool DccInterface::processDccMsg()
         return false;
     }
 
+    // Step 3: Process the command
+    bool cmdWasProcessed = false;
+    switch(lastDccMsg_.msg_type)
+    {
+        dcc_msg_aoi:
+            cmdWasProcessed = processAdvancedMsg();
+            break;
+        dcc_msg_sdir:
+        dcc_msg_sdif:
+            cmdWasProcessed = processBaselineMsg();
+            break;
+        dcc_msg_fgi1:
+        dcc_msg_fgi2:
+            cmdWasProcessed = processFuncGroupMsg();
+             break;
+        dcc_msg_cvai:
+            cmdWasProcessed = processCvWriteMsg();
+            break;
+        dcc_msg_fexp:
+        dcc_msg_dcci:
+        // These messages are not supported
+        // Note that the previous function should already have logged the error and returned false
+        // The code below is just in case, it should never be reached
+            dccDebugInfo_.EMsUnsupportedMsgType++;
+        no_new_dcc_msg:
+        dcc_msg_idle:
+        // Do nothing with these message types
+            lastDccMsg_.validMsg = false; // These message types are not relevant for Loklight, so we mark them as invalid to avoid processing them further down the line
+            cmdWasProcessed = false;
+            break;
+        default:
+            // Should not end up here, throw error
+            lastDccMsg_.msg_type = dcc_reader_error;
+            dccDebugInfo_.EMsgInvalidMsgType++;
+            cmdWasProcessed = false; 
+    }
+    if(!cmdWasProcessed)
+    {
+        return false; // Command processing failed
+    }
+
     lastDccMsg_.validMsg = true;
     dccDebugInfo_.RxMsgValidMsgs++;
 
@@ -611,21 +652,21 @@ bool DccInterface::processCmdType()
 
 bool DccInterface::processBaselineMsg()
 {
-    return false; //TODO
+    return true; //TODO
 }
 
 bool DccInterface::processAdvancedMsg()
 {
-    return false; //TODO
+    return true; //TODO
 }
 
 bool DccInterface::processFuncGroupMsg()
 {
-    return false; //TODO
+    return true; //TODO
 }
 bool DccInterface::processCvWriteMsg()
 {
-    return false; //TODO
+    return true; //TODO
 }
 
 void DccInterface::printDccDebugInfo()
