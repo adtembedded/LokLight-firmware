@@ -44,7 +44,7 @@ typedef enum DccDirection_e : bool {
 
 typedef struct DccConfig_s {
     uint8_t  controlMode;       // Current control mode (DCC/Analog)
-    bool     direction;         // Current direction (false is normal, true is reverse)
+    bool     direction;         // Current direction (true is normal, false is reverse)
     uint16_t addr;              // Current DCC address
 } DccConfig_t;
 

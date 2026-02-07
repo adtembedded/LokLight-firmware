@@ -471,7 +471,25 @@ bool DccInterface::valid0BitTotal(uint32_t t01, uint32_t t02)
 
 bool DccInterface::isMsgForThisUnit()
 {
-    return false; //TODO
+    bool ret = false;
+    if(lastDccMsg_.addr == dccConfig_.addr)
+    {   // Addressed to this unit
+        // Check if the address was for a multipurpose decoder, not an accessory decoder with overlapping address space
+        if(dccMsgBuf_[0] >= dcc_short_addr_accessory_start && dccMsgBuf_[0] <= dcc_short_addr_accessory_end)
+        {   // This was actually a message for an accessory
+            ret = false;
+        }
+        else
+        {   // Message for this unit
+            ret = true;
+        }
+    }
+    if(lastDccMsg_.addr == dcc_short_addr_all)
+    {   // Broadcast message, relevant for all units
+        ret = true;
+    }
+    
+    return ret;
 }
 
 bool DccInterface::processDccMsg()
@@ -497,28 +515,28 @@ bool DccInterface::processDccMsg()
     bool cmdWasProcessed = false;
     switch(lastDccMsg_.msg_type)
     {
-        dcc_msg_aoi:
+        case dcc_msg_aoi:
             cmdWasProcessed = processAdvancedMsg();
             break;
-        dcc_msg_sdir:
-        dcc_msg_sdif:
+        case dcc_msg_sdir:
+        case dcc_msg_sdif:
             cmdWasProcessed = processBaselineMsg();
             break;
-        dcc_msg_fgi1:
-        dcc_msg_fgi2:
+        case dcc_msg_fgi1:
+        case dcc_msg_fgi2:
             cmdWasProcessed = processFuncGroupMsg();
              break;
-        dcc_msg_cvai:
+        case dcc_msg_cvai:
             cmdWasProcessed = processCvWriteMsg();
             break;
-        dcc_msg_fexp:
-        dcc_msg_dcci:
+        case dcc_msg_fexp:
+        case dcc_msg_dcci:
         // These messages are not supported
         // Note that the previous function should already have logged the error and returned false
         // The code below is just in case, it should never be reached
             dccDebugInfo_.EMsUnsupportedMsgType++;
-        no_new_dcc_msg:
-        dcc_msg_idle:
+        case no_new_dcc_msg:
+        case dcc_msg_idle:
         // Do nothing with these message types
             lastDccMsg_.validMsg = false; // These message types are not relevant for Loklight, so we mark them as invalid to avoid processing them further down the line
             cmdWasProcessed = false;
@@ -536,6 +554,16 @@ bool DccInterface::processDccMsg()
 
     lastDccMsg_.validMsg = true;
     dccDebugInfo_.RxMsgValidMsgs++;
+
+    // Step 4: Copy state to runtime variables if the message is for this unit
+    if(!isMsgForThisUnit())
+    {
+        // Message is not for this unit, stop processing
+        return false;
+    }
+    dccDebugInfo_.RxMsgTotMsgsForThisUnit++;
+
+    // TODO
 
     return true;
 }
@@ -652,6 +680,59 @@ bool DccInterface::processCmdType()
 
 bool DccInterface::processBaselineMsg()
 {
+    // This is a message with 1 or 2 address bytes and a single command byte
+    uint8_t cmdIdx = lastDccMsg_.longAddr ? 2 : 1;
+    uint8_t cmdByte = dccMsgBuf_[cmdIdx];
+    // Copy over to message buffer
+    memset(lastDccMsg_.cmd_arg, 0, sizeof(lastDccMsg_.cmd_arg));
+    lastDccMsg_.cmd_arg[0] = cmdByte;
+
+    // Format of the command byte is as follows:
+    // [0, 1, D, C, S3, S2, S1, S0]
+    // For 14-step mode, the C indicates F0 on or off
+    // For 28-step mode, the C is used as additional LSB for speed
+    uint8_t dBit = (cmdByte >> 5) & 0x01;   // Direction bit
+    uint8_t cBit = (cmdByte >> 4) & 0x01;   // C bit
+    uint8_t speedBits = cmdByte & 0x0F;     // S3..S0
+    // The speed bits need additional processing, as values 0 and 1 indicate a stop
+    if((speedBits == 0x00) || (speedBits == 0x01))
+    {
+        lastDccMsg_.speed = 0; // Stop
+    }
+    else
+    {
+        speedBits -= 0x01; // This scales down speed step 1 to have value 1
+        // To calc the speed, assume we are in 28-step mode and store the high-res speed
+        // Should the loklight decoder be in 14-step mode, it can throw away the LSB
+        speedBits = (speedBits << 1) | cBit;
+        lastDccMsg_.speed = (int8_t) speedBits;
+    }
+
+    // Direction processing.
+    if(dBit)
+    {
+        // Normal direction
+        // Do nothing, speed is correct
+        
+    }
+    else
+    {
+        // Reverse 
+        lastDccMsg_.speed = -lastDccMsg_.speed;
+    }
+    
+    // Front/Rear light processing
+    if(cBit)
+    {
+        // F0 is on
+        lastDccMsg_.af_group1 = dBit ? DCC_FUNC_F0F : DCC_FUNC_F0R; // F0 on, direction determines if front or rear light
+    }
+    else
+    {
+        // Front light off
+        lastDccMsg_.af_group1 = 0x00; // F0 off
+    }
+    
     return true; //TODO
 }
 
