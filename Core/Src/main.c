@@ -33,7 +33,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define PRINT_MEM_USAGE 1
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/

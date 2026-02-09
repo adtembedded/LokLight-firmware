@@ -701,10 +701,13 @@ bool DccInterface::processBaselineMsg()
     }
     else
     {
-        speedBits -= 0x01; // This scales down speed step 1 to have value 1
         // To calc the speed, assume we are in 28-step mode and store the high-res speed
         // Should the loklight decoder be in 14-step mode, it can throw away the LSB
         speedBits = (speedBits << 1) | cBit;
+        // minus 3, because in 28-step mode with the c-bit as LSB,
+        // The format is S3 .. S0 C,
+        // Step 1 is 0 0 1 0 0 in this format, i.e. 4.
+        speedBits -= 0x03; 
         lastDccMsg_.speed = (int8_t) speedBits;
     }
 
