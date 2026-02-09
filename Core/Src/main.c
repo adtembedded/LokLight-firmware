@@ -59,7 +59,7 @@ static void MX_TIM2_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-uint32_t debug_get_freemem_size()
+uint32_t debug_get_unused_mem_size()
 {
   // Find the free memory size in:
   // Step 1: First call. Get the current stack pointer and heap pointer
@@ -71,7 +71,7 @@ uint32_t debug_get_freemem_size()
   // Step 6: Return the free memory size
 
   static bool initialized = false;
-  uint32_t freeSize = 0;
+  uint32_t unusedSize = 0;
   static uint32_t* upper_bound;
   static uint32_t* lower_bound;
   static uint32_t* first_upper_bound;
@@ -122,18 +122,18 @@ uint32_t debug_get_freemem_size()
       uint32_t now = HAL_GetTick();
       if(now - lastPrint >= 1000)
       {
-        freeSize = (uint32_t)((uint8_t*)(upper_bound) - (uint8_t*)lower_bound);
+        unusedSize = (uint32_t)((uint8_t*)(upper_bound) - (uint8_t*)lower_bound);
         uint32_t deltaU = (uint32_t)((uint8_t*)(first_upper_bound ) - (uint8_t*)upper_bound);
         uint32_t deltaL = (uint32_t)((uint8_t*)lower_bound - (uint8_t*)first_lower_bound);
-        SEGGER_RTT_printf(0, "RAM Usage Free: %lu bytes, Stack Incr: %lu, Heap Incr: %lu\n", (unsigned long)(freeSize), (unsigned long)(deltaU), (unsigned long)(deltaL));
+        SEGGER_RTT_printf(0, "RAM Usage Unused: %lu bytes, Stack Incr: %lu, Heap Incr: %lu\n", (unsigned long)(unusedSize), (unsigned long)(deltaU), (unsigned long)(deltaL));
         lastPrint = now;
       }
     }
   }
 
-  freeSize = (uint32_t)((uint8_t*)(upper_bound) - (uint8_t*)lower_bound);
+  unusedSize = (uint32_t)((uint8_t*)(upper_bound) - (uint8_t*)lower_bound);
 
-  return freeSize;
+  return unusedSize;
 }
 /* USER CODE END 0 */
 
@@ -145,7 +145,7 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-  debug_get_freemem_size(); // Call once to initialize the free memory tracking
+  debug_get_unused_mem_size(); // Call once to initialize the free memory tracking
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -195,7 +195,7 @@ int main(void)
   {
     // loklight_step(loklight_handle);
     loklight_step();
-    debug_get_freemem_size();
+    debug_get_unused_mem_size();
     // HAL_Delay(1);
     /* USER CODE END WHILE */
 
