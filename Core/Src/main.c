@@ -33,7 +33,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+#define PRINT_MEM_USAGE 1
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -59,6 +59,82 @@ static void MX_TIM2_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
+uint32_t debug_get_freemem_size()
+{
+  // Find the free memory size in:
+  // Step 1: First call. Get the current stack pointer and heap pointer
+  // Step 2: Calculate the free memory size as the difference between stack and heap pointer
+  // Step 3: Fill the free memory with a pattern, then return
+
+  // Step 4: On subsequent calls, find the upper and lower bounds where the fill pattern is still present
+  // Step 5: Calculate the free memory size as the difference between upper and lower bounds
+  // Step 6: Return the free memory size
+
+  static bool initialized = false;
+  uint32_t freeSize = 0;
+  static uint32_t* upper_bound;
+  static uint32_t* lower_bound;
+  static uint32_t* first_upper_bound;
+  static uint32_t* first_lower_bound;
+  
+  if(!initialized)
+  {
+    register unsigned int stackVal asm("sp");
+    uint32_t* stackPtr = (uint32_t*)stackVal; // Get current stack pointer
+    uint32_t* fillPtr = (uint32_t*)malloc(1); // Get current heap pointer by allocating 1 byte
+    upper_bound = stackPtr; //Set initial values for subsequent calls
+    lower_bound = fillPtr;
+    first_upper_bound = upper_bound;
+    first_lower_bound = lower_bound;
+    
+    while(fillPtr < stackPtr)
+    {
+      *fillPtr++ = 0x4a6f6f70; // Fill free memory with 'Joop' pattern for easier debugging of memory usage
+    }
+    free(fillPtr); // Free the allocated byte
+    initialized = true;
+  }
+  else
+  {
+    //Push the lower bound higher until we find the pattern.
+    //This means dynamic memory has been used
+    while(*((uint32_t*)lower_bound) != 0x4a6f6f70)
+    {
+      lower_bound++;
+      if(lower_bound >= upper_bound)
+      {
+        //This means the stack and heap have collided, no free memory left
+        while(1); // Error handling
+      }
+    }
+    //Push the upper bound lower until we find the pattern.
+    //This means stack memory has been used
+    while(*((uint32_t*)upper_bound) != 0x4a6f6f70)
+    {
+      upper_bound--;
+    }
+
+    //This part is only reached after initialization.
+    //Assume that by this point the RTT debug module has been initialized
+    if(PRINT_MEM_USAGE)
+    {
+      static uint32_t lastPrint = 0;
+      uint32_t now = HAL_GetTick();
+      if(now - lastPrint >= 1000)
+      {
+        freeSize = (uint32_t)((uint8_t*)(upper_bound) - (uint8_t*)lower_bound);
+        uint32_t deltaU = (uint32_t)((uint8_t*)(first_upper_bound ) - (uint8_t*)upper_bound);
+        uint32_t deltaL = (uint32_t)((uint8_t*)lower_bound - (uint8_t*)first_lower_bound);
+        SEGGER_RTT_printf(0, "RAM Usage Free: %lu bytes, Stack Incr: %lu, Heap Incr: %lu\n", (unsigned long)(freeSize), (unsigned long)(deltaU), (unsigned long)(deltaL));
+        lastPrint = now;
+      }
+    }
+  }
+
+  freeSize = (uint32_t)((uint8_t*)(upper_bound) - (uint8_t*)lower_bound);
+
+  return freeSize;
+}
 /* USER CODE END 0 */
 
 /**
@@ -69,7 +145,7 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-
+  debug_get_freemem_size(); // Call once to initialize the free memory tracking
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -119,6 +195,7 @@ int main(void)
   {
     // loklight_step(loklight_handle);
     loklight_step();
+    debug_get_freemem_size();
     // HAL_Delay(1);
     /* USER CODE END WHILE */
 
