@@ -559,11 +559,17 @@ bool DccInterface::processDccMsg()
     if(!isMsgForThisUnit())
     {
         // Message is not for this unit, stop processing
+        // Return true because the reception has succesfully finished
+        return true;
+    }
+    
+    dccDebugInfo_.RxMsgTotMsgsForThisUnit++;
+    // Apply message to state
+    if(!applyMsgToState())
+    {
+        // Applying the message to the state failed, stop processing
         return false;
     }
-    dccDebugInfo_.RxMsgTotMsgsForThisUnit++;
-
-    // TODO
 
     return true;
 }
@@ -680,6 +686,12 @@ bool DccInterface::processCmdType()
 
 bool DccInterface::processBaselineMsg()
 {
+    // Sanity check, is this a baseline message?
+    if(lastDccMsg_.msg_type != dcc_msg_sdir && lastDccMsg_.msg_type != dcc_msg_sdif)
+    {
+        return false;
+    }
+    
     // This is a message with 1 or 2 address bytes and a single command byte
     uint8_t cmdIdx = lastDccMsg_.longAddr ? 2 : 1;
     uint8_t cmdByte = dccMsgBuf_[cmdIdx];
@@ -739,6 +751,49 @@ bool DccInterface::processBaselineMsg()
     return true; //TODO
 }
 
+bool DccInterface::reinterpretBaseLineMsg(DccReinterpretBaseline_t speedSetting)
+{
+    // Sanity check: do we cast anything at all? And is the last message a baseline message?
+    if(speedSetting == dcc_reinterpret_baseline_none || (lastDccMsg_.msg_type != dcc_msg_sdir && lastDccMsg_.msg_type != dcc_msg_sdif))
+    {
+        return false;
+    }
+
+    // Now convert to what the caller requires.
+    if(speedSetting == dcc_reinterpret_baseline_14ss)
+    {
+        // Convert to 14-step speed. In this mode, the C bit is not used for speed, but only for F0 on/off. Therefore we need to shift the speed bits back and add 3 to get the correct speed.
+        lastDccMsg_.speed = lastDccMsg_.speed >> 1;
+        // Save the C-bit. This is for function group processing. It should already be done by the
+        // baseline message processing, but we do it again here to be sure.
+        bool cBit = (lastDccMsg_.cmd_arg[0] >> 4) & 0x01;   // C bit is bit 4 of the command byte
+        if(cBit)
+        {
+            // F0 is on
+            lastDccMsg_.af_group1 = (lastDccMsg_.speed >= 0) ? DCC_FUNC_F0F : DCC_FUNC_F0R; // F0 on, direction determines if front or rear light
+        }
+        else
+        {
+            // Lights off
+            lastDccMsg_.af_group1 = 0x00; // F0 off
+        }
+    }
+    else if(speedSetting == dcc_reinterpret_baseline_28ss)
+    {
+        // In 28-step mode, the speed is already correct, so nothing to do
+        // The function group processing is not handled for this setting, so reset it in the message
+        lastDccMsg_.af_group1 = 0x00; // F0 is not necessarily off, but it is sent in another message and we reset it here.
+    }
+    else
+    {
+        // Should not end up here, return false
+        return false;
+    }
+
+    return true;
+}
+
+
 bool DccInterface::processAdvancedMsg()
 {
     return true; //TODO
@@ -751,6 +806,46 @@ bool DccInterface::processFuncGroupMsg()
 bool DccInterface::processCvWriteMsg()
 {
     return true; //TODO
+}
+
+bool DccInterface::applyMsgToState()
+{
+    bool ret = false;
+    //Step 1: check if this is a valid message for this unit
+    if(!lastDccMsg_.validMsg || !isMsgForThisUnit())
+    {
+        return ret;
+    }
+    //Step 2: check what message it is and apply it to the state
+    switch(lastDccMsg_.msg_type)
+    {
+        case dcc_msg_sdir:
+        case dcc_msg_sdif:
+            //Step 2a: apply speed and direction to state
+            dccVarState_.speed = dccConfig_.direction==DCC_DIRECTION_FORWARD ? lastDccMsg_.speed : -lastDccMsg_.speed;
+            //Step 2b: apply F0 if in 14-speed mode and F0 is on in the message
+            if(dccConfig_.controlMode == DCC_CONTROL_MODE_DCC_14SS)
+            {
+                // Reinterpret the message
+                reinterpretBaseLineMsg(dcc_reinterpret_baseline_14ss);
+                // Apply F0 state to variable state
+                uint16_t f0Msk = ~(DCC_FUNC_F0F | DCC_FUNC_F0R);   // Mask to reset F0 bits
+                dccVarState_.funcEnanbled &= ~f0Msk;                // Reset F0F and F0R
+                dccVarState_.funcEnanbled &= lastDccMsg_.af_group1 & f0Msk;     // Set F0F or F0R if they are on in the message
+            }
+            ret = true; 
+            break;
+        case dcc_msg_aoi:
+            break;
+        case dcc_msg_fgi1:
+        case dcc_msg_fgi2:
+        case dcc_msg_cvai:
+        default:
+            // Should not end up here, return false
+            ret = false;
+    }
+    
+    return ret;
 }
 
 void DccInterface::printDccDebugInfo()

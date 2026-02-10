@@ -38,14 +38,14 @@ typedef enum DccControlMode_e : uint8_t{
 constexpr uint16_t DCC_DEFAULT_ADDR = 3; //Default DCC address if none is set on init
 
 typedef enum DccDirection_e : bool {
-    DCC_DIRECTION_FORWARD = 0,
-    DCC_DIRECTION_REVERSE = 1
+    DCC_DIRECTION_REVERSE = 0,
+    DCC_DIRECTION_FORWARD = 1
 } DccDirection_t;
 
 typedef struct DccConfig_s {
-    uint8_t  controlMode;       // Current control mode (DCC/Analog)
-    bool     direction;         // Current direction (true is normal, false is reverse)
-    uint16_t addr;              // Current DCC address
+    DccControlMode_t  controlMode;  // Current control mode (DCC/Analog)
+    DccDirection_t direction;       // Current direction (true is normal, false is reverse)
+    uint16_t addr;                  // Current DCC address
 } DccConfig_t;
 
 // Run-time variables
@@ -120,6 +120,12 @@ typedef struct DccMsg_s {
     uint8_t af_group2;
     uint8_t validMsg;
 } DccMsg_t;
+
+typedef enum DccReinterpretBaseline_e : uint8_t {
+    dcc_reinterpret_baseline_none = 0,
+    dcc_reinterpret_baseline_14ss = 1, // Reinterpret speed in baseline messages as 14 speed steps, where bit4 is F0
+    dcc_reinterpret_baseline_28ss = 2  // Reinterpret speed in baseline messages as 28 speed steps, where bit4 is an additional LSB for speed
+} DccReinterpretBaseline_t;
 
 // Debugging info
 typedef struct DccDebugInfo_s {
@@ -212,9 +218,11 @@ private:
     bool processAddress();
     bool processCmdType();
     bool processBaselineMsg();
+    bool reinterpretBaseLineMsg(DccReinterpretBaseline_t speedSetting = dcc_reinterpret_baseline_none);
     bool processAdvancedMsg();
     bool processFuncGroupMsg();
     bool processCvWriteMsg();
+    bool applyMsgToState();
 
 
     // Debug functions
