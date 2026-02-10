@@ -823,7 +823,31 @@ bool DccInterface::applyMsgToState()
             }
 
             //Step 2b: apply speed and direction to state. The speed has been rescaled in step 2a if applicable.
-            dccVarState_.speed = lastDccMsg_.speed;
+            // If in 14SS mode, the speed is ready.
+
+            // We do not actually supported 28SS mode, as it makes no sense given the role of CV29,
+            // That is to use a basic message for lights too (14SS) or not (28SS or 128SS, seperate function cmds). There is no way
+            // to configure 28SS specifically in a generic DCC decoder, therefore we just interpret this situation as 128SS.
+            // Therefore, scale the speed up to 128SS range when not in 14SS mode
+            if(dccConfig_.controlMode != DCC_CONTROL_MODE_DCC_14SS)
+            {
+                // This means we are in 128SS mode. It has 126 steps, so the conversion factor from 28 is
+                // new = old * 4.5
+                // The speed is scaled from 1-28 to 4-112 first
+                // Then a (linearly scaled) offset of 0 to 14 is added to scale it to 4 - 126.
+                uint8_t scaledSpeed = lastDccMsg_.speed;
+                // Do not change speed 0 (stop)
+                if(scaledSpeed > 0)
+                {
+                    scaledSpeed = scaledSpeed * 4 + (scaledSpeed >> 1);
+                }
+                dccVarState_.speed = scaledSpeed;
+            }
+            else
+            {
+                // In 14SS mode, the speed is ready to be applied directly
+                dccVarState_.speed = lastDccMsg_.speed;
+            }
             if(dccConfig_.direction == DCC_DIRECTION_REVERSE)
             {
                 // We need to reverse the direction bit in case of reverse direction config
