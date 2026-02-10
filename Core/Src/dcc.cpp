@@ -684,7 +684,9 @@ bool DccInterface::processCmdType()
     return true;
 }
 
-// Note when no speedSetting is provided, the function interprets the speed and F0 as if in 28SS mode
+// Note 1: When no speedSetting is provided (dcc_reinterpret_baseline_none), the function interprets the speed and F0 as if in 28SS mode
+// Note 2: The function will interpret the message no matter what mode has been configured.
+//          This is to be backwards compatible when 128SS mode is configured but an older DCC controller is in use or 28SS has been selected by mistake on the controller
 bool DccInterface::processBaselineMsg(DccReinterpretBaseline_t speedSetting)
 {
     // Sanity check, is this a baseline message?
@@ -758,12 +760,60 @@ bool DccInterface::processBaselineMsg(DccReinterpretBaseline_t speedSetting)
         lastDccMsg_.af_group1 = 0x00; // F0 off
     }
     
-    return true; //TODO
+    return true;
 }
 
 bool DccInterface::processAdvancedMsg()
 {
-    return true; //TODO
+    // Sanity check, is this an advanced operation message?
+    if(lastDccMsg_.msg_type != dcc_msg_aoi)
+    {
+        return false;
+    }
+    
+    // This is a message with 1 or 2 address bytes and two command bytes
+    uint8_t cmdIdx = lastDccMsg_.longAddr ? 2 : 1;
+    uint8_t cmdByte = dccMsgBuf_[cmdIdx];
+    // Copy over to message buffer
+    memset(lastDccMsg_.cmd_arg, 0, sizeof(lastDccMsg_.cmd_arg));
+    memcpy(lastDccMsg_.cmd_arg, &dccMsgBuf_[cmdIdx], sizeof(uint8_t)*2);
+    
+    // Sanity check, are we processing a speed instruction or an unsupported instruction?
+    uint8_t cmdTypeBits = cmdByte & 0x1f; // Instruction bits are bits 4..0 of the command byte
+    // For 128SS instructions, the instruction bits are 0b1 1111
+    // For ZIMO east-west direction instructions, the bits are 0b 1 1110 (unsupported)
+    // For analog instructions, the bits are 0b 1 1101 (unsupported)
+    // Other instructions are reserved by the DCC standard and not supported
+    if(cmdTypeBits != 0b11111)
+    {
+        // Unsupported instruction, return false
+        lastDccMsg_.msg_type = dcc_reader_unsupported;
+        dccDebugInfo_.EMsUnsupportedMsgType++;
+        return false;
+    }
+
+    // If we are here, this is a valid 128SS instruction.
+    uint8_t speedByte = dccMsgBuf_[cmdIdx + 1];
+    // Extract direction bit
+    bool dBit = (speedByte >> 7) & 0x01;   // Direction bit is bit 7 of the speed byte
+    // We need to reverse the direction bit in case of reverse direction config
+    lastDccMsg_.direction = dBit ? DCC_DIRECTION_FORWARD : DCC_DIRECTION_REVERSE;
+    
+    // Scale speed
+    // In 128SS mode, steps 0 and 1 are stop and e-stop, respectively
+    // The steps go from 1 to 126.
+    uint8_t speed = (speedByte & 0x7F); // Speed bits are bits 6..0 of the speed byte, first step is 
+    if((speed == 0) || (speed == 1))
+    {
+        lastDccMsg_.speed = 0; // Stop
+    }
+    else
+    {
+        speed -= 1; // Minus 1 because step 1 starts at value 2
+        lastDccMsg_.speed = speed;
+    }
+
+    return true;
 }
 
 bool DccInterface::processFuncGroupMsg()
@@ -788,80 +838,10 @@ bool DccInterface::applyMsgToState()
     {
         case dcc_msg_sdir:
         case dcc_msg_sdif:
-            //Step 2a: Determine if message needs to be interpreted in 14 or 28ss mode
-            if(dccConfig_.controlMode == DCC_CONTROL_MODE_DCC_14SS)
-            {
-                // Reinterpret the message as in 14ss config
-                if(!processBaselineMsg(dcc_reinterpret_baseline_14ss))
-                {
-                    return false; // Reinterpretation failed, stop processing
-                }
-                // Apply F0 state to variable state
-                uint16_t f0Msk = (DCC_FUNC_F0F | DCC_FUNC_F0R);   // Mask to reset F0 bits
-                uint8_t f0Bits = 0;
-                if(dccConfig_.direction==DCC_DIRECTION_REVERSE)
-                {
-                    //We need to reverse the F0 bits in case of reverse direction config
-                    f0Bits |= (lastDccMsg_.af_group1 & DCC_FUNC_F0F) ? DCC_FUNC_F0R : 0;
-                    f0Bits |= (lastDccMsg_.af_group1 & DCC_FUNC_F0R) ? DCC_FUNC_F0F : 0;
-                }
-                else
-                {
-                    //Normal direction, copy bits over
-                    f0Bits = lastDccMsg_.af_group1 & f0Msk;
-                }
-                dccVarState_.funcEnanbled &= ~f0Msk;     // Reset F0F and F0R in active state
-                dccVarState_.funcEnanbled |= f0Bits;     // Set F0F and F0R
-            }
-            else
-            {
-                // Interpret any other setting as 28SS mode
-                if(!processBaselineMsg(dcc_reinterpret_baseline_28ss))
-                {
-                    return false; // Processing failed, stop processing
-                }
-            }
-
-            //Step 2b: apply speed and direction to state. The speed has been rescaled in step 2a if applicable.
-            // If in 14SS mode, the speed is ready.
-
-            // We do not actually supported 28SS mode, as it makes no sense given the role of CV29,
-            // That is to use a basic message for lights too (14SS) or not (28SS or 128SS, seperate function cmds). There is no way
-            // to configure 28SS specifically in a generic DCC decoder, therefore we just interpret this situation as 128SS.
-            // Therefore, scale the speed up to 128SS range when not in 14SS mode
-            if(dccConfig_.controlMode != DCC_CONTROL_MODE_DCC_14SS)
-            {
-                // This means we are in 128SS mode. It has 126 steps, so the conversion factor from 28 is
-                // new = old * 4.5
-                // The speed is scaled from 1-28 to 4-112 first
-                // Then a (linearly scaled) offset of 0 to 14 is added to scale it to 4 - 126.
-                uint8_t scaledSpeed = lastDccMsg_.speed;
-                // Do not change speed 0 (stop)
-                if(scaledSpeed > 0)
-                {
-                    scaledSpeed = scaledSpeed * 4 + (scaledSpeed >> 1);
-                }
-                dccVarState_.speed = scaledSpeed;
-            }
-            else
-            {
-                // In 14SS mode, the speed is ready to be applied directly
-                dccVarState_.speed = lastDccMsg_.speed;
-            }
-            if(dccConfig_.direction == DCC_DIRECTION_REVERSE)
-            {
-                // We need to reverse the direction bit in case of reverse direction config
-                dccVarState_.direction = (lastDccMsg_.direction == DCC_DIRECTION_FORWARD) ? DCC_DIRECTION_REVERSE : DCC_DIRECTION_FORWARD;
-            }
-            else
-            {
-                // Normal direction, copy bit over
-                dccVarState_.direction = lastDccMsg_.direction;
-            }
-
-            ret = true; 
+            ret = applyBasicMsgToState();
             break;
         case dcc_msg_aoi:
+            ret = applyAdvancedMsgToState();
             break;
         case dcc_msg_fgi1:
         case dcc_msg_fgi2:
@@ -872,6 +852,171 @@ bool DccInterface::applyMsgToState()
     }
     
     return ret;
+}
+
+bool DccInterface::applyBasicMsgToState()
+{
+    // Step 1: check if this is a valid message for this function
+    if(!lastDccMsg_.validMsg || !isMsgForThisUnit() || !(lastDccMsg_.msg_type == dcc_msg_sdir || lastDccMsg_.msg_type == dcc_msg_sdif))
+    {
+        return false;
+    }
+    // Step 2: Interpret the speed settings and update the F0 function
+    // Check if we change direction so we can update F0 state accordingly.
+    DccDirection_t newDir;
+    if(dccConfig_.direction == DCC_DIRECTION_REVERSE)
+    {
+        // We need to reverse the direction bit in case of reverse direction config
+        newDir = (lastDccMsg_.direction == DCC_DIRECTION_FORWARD) ? DCC_DIRECTION_REVERSE : DCC_DIRECTION_FORWARD;
+    }
+    else
+    {
+        // Normal direction, copy bit over
+        newDir = lastDccMsg_.direction;
+    }
+
+    // Either apply it as a 14SS message or
+    // as a 128SS instruction that has been sent through an older 28SS message format
+    if(dccConfig_.controlMode == DCC_CONTROL_MODE_DCC_14SS)
+    {
+        // Reinterpret the message as in 14ss config
+        if(!processBaselineMsg(dcc_reinterpret_baseline_14ss))
+        {
+            return false; // Reinterpretation failed, stop processing
+        }
+        // Apply F0 state to variable state
+        // For 14SS, the F0 state is encoded directly in the message.
+        // In this simplified scheme, either F0F is on or F0R but not both.
+        uint16_t f0Msk = (DCC_FUNC_F0F | DCC_FUNC_F0R);   // Mask to reset F0 bits
+        uint8_t f0Bits = 0;
+        if(dccConfig_.direction==DCC_DIRECTION_REVERSE)
+        {
+            //We need to reverse the F0 bits in case of reverse direction config
+            f0Bits |= (lastDccMsg_.af_group1 & DCC_FUNC_F0F) ? DCC_FUNC_F0R : 0;
+            f0Bits |= (lastDccMsg_.af_group1 & DCC_FUNC_F0R) ? DCC_FUNC_F0F : 0;
+        }
+        else
+        {
+            //Normal direction, copy bits over
+            f0Bits = lastDccMsg_.af_group1 & f0Msk;
+        }
+        dccVarState_.funcEnanbled &= ~f0Msk;     // Reset F0F and F0R in active state
+        dccVarState_.funcEnanbled |= f0Bits;     // Set F0F and F0R
+    }   // End of Step 2: setting F0 bits for 14SS
+    else
+    {
+        // Interpret for 28SS/128SS mode
+        if(!processBaselineMsg(dcc_reinterpret_baseline_28ss))
+        {
+            return false; // Processing failed, stop processing
+        }
+
+        // Compare newDir to the previous direction and change F0 if needed.
+        // Note that the F0F and F0R bits themselves are set in another type of message for 28SS mode
+        if(newDir != dccVarState_.direction)
+        {
+            reverseF0();
+        }   
+    }   // End of step 2: setting F0 bits for 28SS/128SS
+
+    //Step 3: apply speed. The speed has been rescaled in step 2a if applicable.
+    // If in 14SS mode, the speed is ready.
+
+    // We do not actually supported 28SS mode, as it makes no sense given the role of CV29,
+    // That is to use a basic message for lights too (14SS) or not (28SS or 128SS, seperate function cmds). There is no way
+    // to configure 28SS specifically in a generic DCC decoder, therefore we just interpret this situation as 128SS.
+    // Therefore, scale the speed up to 128SS range when not in 14SS mode
+    if(dccConfig_.controlMode != DCC_CONTROL_MODE_DCC_14SS)
+    {
+        // This means we are in 128SS mode. It has 126 steps, so the conversion factor from 28 is
+        // new = old * 4.5
+        // The speed is scaled from 1-28 to 4-112 first
+        // Then a (linearly scaled) offset of 0 to 14 is added to scale it to 4 - 126.
+        uint8_t scaledSpeed = lastDccMsg_.speed;
+        // Do not change speed 0 (stop)
+        if(scaledSpeed > 0)
+        {
+            scaledSpeed = scaledSpeed * 4 + (scaledSpeed >> 1);
+        }
+        dccVarState_.speed = scaledSpeed;
+    }   // End of step 3: speed scaling for 28SS/128SS
+    else
+    {
+        // In 14SS mode, the speed is ready to be applied directly
+        dccVarState_.speed = lastDccMsg_.speed;
+    }   //End of step 3: speed setting for 14SS
+
+    // Step 4: Update direction
+    if(dccConfig_.direction == DCC_DIRECTION_REVERSE)
+    {
+        // We need to reverse the direction bit in case of reverse direction config
+        dccVarState_.direction = (lastDccMsg_.direction == DCC_DIRECTION_FORWARD) ? DCC_DIRECTION_REVERSE : DCC_DIRECTION_FORWARD;
+    }
+    else
+    {
+        // Normal direction, copy bit over
+        dccVarState_.direction = lastDccMsg_.direction;
+    }
+
+    return true;
+}
+
+bool DccInterface::applyAdvancedMsgToState()
+{
+    // Step 1: check if this is a valid message for this function
+    if(!lastDccMsg_.validMsg || !isMsgForThisUnit() || !(lastDccMsg_.msg_type == dcc_msg_aoi) || (dccConfig_.controlMode != DCC_CONTROL_MODE_DCC_128SS))
+    {
+        return false;
+    }
+
+    // Step 2: copy the speed
+    dccVarState_.speed = lastDccMsg_.speed;
+
+    // Step 3: update the F0 function state
+    // Check if we change direction and update F0 state accordingly.
+    DccDirection_t newDir;
+    if(dccConfig_.direction == DCC_DIRECTION_REVERSE)
+    {
+        // We need to reverse the direction bit in case of reverse direction config
+        newDir = (lastDccMsg_.direction == DCC_DIRECTION_FORWARD) ? DCC_DIRECTION_REVERSE : DCC_DIRECTION_FORWARD;
+    }
+    else
+    {
+        // Normal direction, copy bit over
+        newDir = lastDccMsg_.direction;
+    }
+
+    // Compare newDir to the previous direction and change F0 if needed.
+    if(newDir != dccVarState_.direction)
+    {
+        reverseF0();
+    }
+    
+    // Step 4: Update direction
+    dccVarState_.direction = newDir;
+
+    return true;
+}
+
+void DccInterface::reverseF0()
+{
+    // Toggle F0, useful for direction changes in 28SS/128SS mode. In 14SS mode.
+    // Note that the code below also allows both to be on or off.
+    bool f0FwasOn = (dccVarState_.funcEnanbled & DCC_FUNC_F0F) != 0;
+    bool f0RwasOn = (dccVarState_.funcEnanbled & DCC_FUNC_F0R) != 0;
+
+    // Reset F0 bits
+    dccVarState_.funcEnanbled &= ~(DCC_FUNC_F0F | DCC_FUNC_F0R);
+    if(f0FwasOn)
+    {
+        // F0 was on in forward direction, turn it on in reverse direction
+        dccVarState_.funcEnanbled |= DCC_FUNC_F0R;
+    }
+    if(f0RwasOn)
+    {
+        // F0 was on in reverse direction, turn it on in forward direction
+        dccVarState_.funcEnanbled |= DCC_FUNC_F0F;
+    }
 }
 
 void DccInterface::printDccDebugInfo()
