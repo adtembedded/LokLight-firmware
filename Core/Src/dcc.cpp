@@ -818,7 +818,49 @@ bool DccInterface::processAdvancedMsg()
 
 bool DccInterface::processFuncGroupMsg()
 {
-    return true; //TODO
+    // Step 1: check if this is a valid function group message
+    if((lastDccMsg_.msg_type != dcc_msg_fgi1) && (lastDccMsg_.msg_type != dcc_msg_fgi2))
+    {
+        return false;
+    }
+
+    // Step 2: process command information
+    // This is a message type with 1 or 2 address bytes, and a single command byte
+    uint8_t cmdIdx = lastDccMsg_.longAddr ? 2 : 1;
+    uint8_t cmdByte = dccMsgBuf_[cmdIdx];
+    memset(lastDccMsg_.cmd_arg, 0, sizeof(lastDccMsg_.cmd_arg));
+    lastDccMsg_.cmd_arg[0] = cmdByte; // Copy over to message buffer
+
+    // Step 3: update registers accordingly
+    if((lastDccMsg_.msg_type == dcc_msg_fgi1))
+    {   // Message contains F0..F4
+        // The format is as follows:
+        // [1, 0, 0, F0, F4, F3, F2, F1]
+        lastDccMsg_.af_group1 = 0;
+        uint8_t f0Bit = (cmdByte >> 4) & 0x01;   // F0 forward bit is bit 4 of the command byte
+        uint8_t f1_f4 = cmdByte & 0x0F; // F1..F4 bits are bits 3..0 of the command byte
+        lastDccMsg_.af_group1 = (f1_f4 << 1) | f0Bit; // F1..F4 are bits 4..1 of the function group 1, F0 is bit 0 of function group 1
+    }
+    if(lastDccMsg_.msg_type == dcc_msg_fgi2)
+    {   // Message either contains F5..F8 or F9..F12, depending on the value of bit 4 of the command byte
+        // The format is as follows:
+        // [1, 0, 1, S, F12/F8, F11/F7, F10/F6, F9/F5]
+        lastDccMsg_.af_group2 = 0;
+        uint8_t sBit = (cmdByte >> 4) & 0x01;   // S bit is bit 4 of the command byte
+        uint8_t fBits = cmdByte & 0x0F; // F5..F8 or F9..F12 bits are bits 0..3 of the command byte
+        if(sBit)
+        {
+            // F5..F8
+            lastDccMsg_.af_group2 = fBits; // F8..F5 are bits 3..0 of function group 2
+        }
+        else
+        {
+            // F9..F12
+            lastDccMsg_.af_group2 = (fBits << 4); // F12..F9 are bits 7..4 of function group 2
+        }
+    }
+    
+    return true;
 }
 bool DccInterface::processCvWriteMsg()
 {
@@ -845,6 +887,8 @@ bool DccInterface::applyMsgToState()
             break;
         case dcc_msg_fgi1:
         case dcc_msg_fgi2:
+            ret = applyFuncGroupMsgToState();
+            break;
         case dcc_msg_cvai:
         default:
             // Should not end up here, return false
@@ -995,6 +1039,73 @@ bool DccInterface::applyAdvancedMsgToState()
     // Step 4: Update direction
     dccVarState_.direction = newDir;
 
+    return true;
+}
+
+bool DccInterface::applyFuncGroupMsgToState()
+{
+    // Step 1: check if this is a valid message for this function
+    if(!lastDccMsg_.validMsg || !isMsgForThisUnit() || !((lastDccMsg_.msg_type == dcc_msg_fgi1) || (lastDccMsg_.msg_type == dcc_msg_fgi2)))
+    {
+        return false;
+    }
+
+    // Step 2: Check which functions are updated
+    if(lastDccMsg_.msg_type == dcc_msg_fgi1)
+    {   // This message contains F0..F4
+        // F0 is bit 0 of af_group1, F1..F4 are bits 1..4 of af_group1
+        uint8_t f1_f4Mask = 0x1e; // Mask for functions 1..4
+        uint8_t f1_f4Bits = lastDccMsg_.af_group1 & f1_f4Mask; // Extract the new function bits from the message
+        // Function var bit 16..0: [.. F4, F3, F2, F1, F0R, F0F]
+        dccVarState_.funcEnanbled &= ~(f1_f4Mask << 1); // Reset the function bits in the active state
+        dccVarState_.funcEnanbled |=  (f1_f4Bits << 1); // Set the new function bits in the active state
+        // Check what speed more we are in
+        // When in 14SS mode, F0 is set by the speed message rather than this function message
+        // At least the roco lokmaus controller will not set F0 through the function group messages
+        if(dccConfig_.controlMode != DCC_CONTROL_MODE_DCC_14SS)
+        {
+            dccVarState_.funcEnanbled &= ~(DCC_FUNC_F0F | DCC_FUNC_F0R); // Reset F0F and F0R bits
+            bool f0Bit = lastDccMsg_.af_group1 & 0x01; // Extract F0 bit from the message
+            if(f0Bit)
+            {
+                // F0 is on, set the corresponding bit in the active state depending on the direction
+                if(dccVarState_.direction == DCC_DIRECTION_FORWARD)
+                {   // We are driving forward, set F0F bit
+                    dccVarState_.funcEnanbled |= DCC_FUNC_F0F; // Set F0F bit
+                }
+                else
+                {   // We are driving reverse, set F0R bit
+                    dccVarState_.funcEnanbled |= DCC_FUNC_F0R; // Set F0R bit
+                }
+            }
+        }
+    }
+    if(lastDccMsg_.msg_type == dcc_msg_fgi2)
+    {   // This message contains either F5..F8 or F9..F12, depending on the value of bit 4 of the command byte
+        // If bit 4 of the command byte is 1, the message contains F5..F8 in bits 0..3 of af_group2
+        // If bit 4 of the command byte is 0, the message contains F9..F12 in bits 4..7 of af_group2
+        uint16_t fMask;
+        uint16_t fBits;
+        if((lastDccMsg_.cmd_arg[0] >> 4) & 0x01)
+        {
+            // Message contains F5..F8
+            fMask = 0x0f; // Mask for functions 5..8
+            fBits = lastDccMsg_.af_group2 & fMask; // Extract the new function bits from the message
+        }
+        else
+        {
+            // Message contains F9..F12
+            fMask = 0xf0; // Mask for functions 9..12
+            fBits = lastDccMsg_.af_group2 & fMask; // Extract the new function bits from the message
+        }
+        // Perform bitshift of masks. Function F5 starts at bit 6 of the active state var
+        fMask <<= 6; // Shift mask to the correct position in the active state variable
+        fBits <<= 6; // Shift the new function bits to the correct position
+
+        dccVarState_.funcEnanbled &= ~fMask; // Reset the function bits in the active state
+        dccVarState_.funcEnanbled |= fBits; // Set the new function bits in the active state
+    }
+    
     return true;
 }
 
