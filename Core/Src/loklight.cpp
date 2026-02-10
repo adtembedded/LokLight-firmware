@@ -76,21 +76,35 @@ bool Loklight::step()
         return false; // DCC step failed
     }
 
-    //Dummy code for dcc read, discard result
-    // static uint32_t bitsRead = 0;
-    // while(dccInterface_.elementsInQueue() > 0)
-    // {
-    //     dccInterface_.readBitTime();
-    //     bitsRead++;
-    //     if(bitsRead > 25000)
-    //     {
-    //         ledControl_.enableLight(LED1, !ledControl_.isLightEnabled(LED1));
-    //         ledControl_.enableLight(LED2, !ledControl_.isLightEnabled(LED2));
-    //         bitsRead = 0;
-    //     }
-    // }
+    // Set LED status according to settings and DCC state
+    bool enableLed1 = false, enableLed2 = false;
+    DccControlMode_t controlMode = dccInterface_.getControlMode();
+    if(controlMode == DCC_CONTROL_MODE_DCC_14SS || controlMode == DCC_CONTROL_MODE_DCC_128SS)
+    {
+        // TODO check config registers to determine which functions control the LEDs
+        // For now, set on for F0F as front light
+        uint16_t activeFuncs = dccInterface_.getActiveFuncs();
+        if(activeFuncs & DCC_FUNC_F0F)
+        {
+            enableLed1 = true;
+            enableLed2 = true;
+        }
+    }
+    else if(controlMode == DCC_CONTROL_MODE_ANALOG)
+    {
+        //TODO
+    }
+    else
+    {
+        //This should never happen, but if it does, disable all LEDs
+        enableLed1 = false;
+        enableLed2 = false;
+    }
 
     // Update LED states
+    ledControl_.enableLight(LED1, enableLed1);
+    ledControl_.enableLight(LED2, enableLed2);
+
     if(!ledControl_.step())
     {
         return false; // Return false if step failed, we should reset the device if this happens

@@ -194,6 +194,8 @@ public:
     bool step();
     const DccMsg_t& getLastMsg() const {return lastDccMsg_;}
     const DccReaderState_t& getReaderState() const {return dccReaderState_;}
+    const DccControlMode_t& getControlMode() const {return dccConfig_.controlMode;}
+    const uint16_t getActiveFuncs() const {return dccVarState_.funcEnanbled;}
 
     // This function must be exposed to the wrapper, as it is called from the DCC bit-time ISR to add new bit-times to the queue
     bool addBitTime(uint32_t t);
