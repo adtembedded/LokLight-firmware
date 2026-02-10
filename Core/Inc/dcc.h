@@ -26,7 +26,8 @@ constexpr bool DCC_PRINT_DEBUG_INFO = true; // Set to true to enable periodic pr
 constexpr uint32_t DCC_DEBUG_PERIOD_MS = 500; //Period for printing debug info about DCC reader state
 constexpr bool DCC_DEBUG_HALFBITS = false;  // Set to true to enable printing of debug info about halfbit processing
 constexpr bool DCC_DEBUG_FRAMES = false;    // Set to true to enable printing of debug info about byte processing of DCC frames
-constexpr bool DCC_DEBUG_MESSAGES = true;  // Set to true to enable printing of debug info about message processing
+constexpr bool DCC_DEBUG_MESSAGES = false;  // Set to true to enable printing of debug info about message processing
+constexpr bool DCC_DEBUG_STATE = true;      // Set to true to enable printing of debug info about the current DCC state (speed, functions, etc.) after processing each message  
 
 // Run-time config
 typedef enum DccControlMode_e : uint8_t{
@@ -35,7 +36,7 @@ typedef enum DccControlMode_e : uint8_t{
     DCC_CONTROL_MODE_DCC_128SS = 2  //Also for 28 speed steps. F0 is bit4 in function group 1 instruction message
 } DccControlMode_t;
 
-constexpr uint16_t DCC_DEFAULT_ADDR = 3; //Default DCC address if none is set on init
+constexpr uint16_t DCC_DEFAULT_ADDR = 560; //Default DCC address if none is set on init
 
 typedef enum DccDirection_e : bool {
     DCC_DIRECTION_REVERSE = 0,
@@ -43,9 +44,9 @@ typedef enum DccDirection_e : bool {
 } DccDirection_t;
 
 typedef struct DccConfig_s {
-    DccControlMode_t  controlMode;  // Current control mode (DCC/Analog)
-    DccDirection_t direction;       // Current direction (true is normal, false is reverse)
-    uint16_t addr;                  // Current DCC address
+    DccControlMode_t  controlMode;  // Default control mode (DCC/Analog)
+    DccDirection_t direction;       // Direction reversal (true is normal, false is reverse)
+    uint16_t addr;                  // Configured DCC address
 } DccConfig_t;
 
 // Run-time variables
@@ -67,7 +68,8 @@ typedef enum DccFuncMask_e : uint16_t {
 } DccFuncMask_t;
 
 typedef struct DccState_s {
-    int8_t   speed;             // Current speed step (-127 .. +127, -28 .. +28 or -14 .. +14 depending on speed step mode)
+    uint8_t  speed;             // Current speed step (-127 .. +127, -28 .. +28 or -14 .. +14 depending on speed step mode)
+    DccDirection_t direction;   // Current direction (true is forward, false is reverse)
     uint16_t funcEnanbled;      // Current function bits (F0F, F0R, F1 ..F12). These are masked bits, so bit 0 is F0F, bit 1 is F0R, bit 2 is F1, etc.
 } DccVarState_t;
 
@@ -115,7 +117,8 @@ typedef struct DccMsg_s {
     bool longAddr = false;
     DccMsgType_t msg_type;
     uint8_t cmd_arg[MAX_BYTESIZE_CMD_ARG];
-    int8_t speed;
+    uint8_t speed;
+    DccDirection_t direction;
     uint8_t af_group1;
     uint8_t af_group2;
     uint8_t validMsg;
@@ -217,8 +220,7 @@ private:
     bool processDccMsg();
     bool processAddress();
     bool processCmdType();
-    bool processBaselineMsg();
-    bool reinterpretBaseLineMsg(DccReinterpretBaseline_t speedSetting = dcc_reinterpret_baseline_none);
+    bool processBaselineMsg(DccReinterpretBaseline_t speedSetting = dcc_reinterpret_baseline_none);
     bool processAdvancedMsg();
     bool processFuncGroupMsg();
     bool processCvWriteMsg();
@@ -231,12 +233,12 @@ private:
     DccDebugInfo_t dccDebugInfo_ = {};
 
     //Config and run-time state
-    DccConfig_t dccConfig_ = {DCC_CONTROL_MODE_DCC_128SS, DCC_DIRECTION_FORWARD, DCC_DEFAULT_ADDR};
-    DccVarState_t dccVarState_ = {0, 0};  //Set speed to 0, all functions off
+    DccConfig_t dccConfig_ = {DCC_CONTROL_MODE_DCC_14SS, DCC_DIRECTION_REVERSE, DCC_DEFAULT_ADDR};
+    DccVarState_t dccVarState_ = {0, DCC_DIRECTION_FORWARD, 0};  //Set speed to 0, all functions off
     DccHalfbit_t halfbitState_ = dcc_halfbit_uninitialized;
     DccReaderState_t dccReaderState_ = dcc_reader_reset;
     uint8_t dccMsgBuf_[MAX_BYTESIZE_DATA] = {0}; //Buffer to store incoming bytes while processing a message. Size is max addr bytes + max data bytes
-    DccMsg_t lastDccMsg_ = {0, false, no_new_dcc_msg, {0}, 0, 0, 0, 0}; //Last valid message received
+    DccMsg_t lastDccMsg_ = {0, false, no_new_dcc_msg, {0}, 0, DCC_DIRECTION_FORWARD, 0, 0, 0}; //Last valid message received
     DccBitTimeQueue bitTimeQueue_;
     bool cvWriteInProgress_ = false; //Indicates a CV write operation is ongoing. Flag is set after reception of the first messsage, and cleared after the second required cmd message was received OR when the write is invalidated.
 

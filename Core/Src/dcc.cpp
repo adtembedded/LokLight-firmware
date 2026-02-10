@@ -33,7 +33,7 @@ bool DccInterface::init(DccHwInitCfg_t* initHwCfg /*= nullptr*/, DccConfig_t* in
     //Reset runtime state of reader
     bitTimeQueue_.resetQueue();
     resetDccReader(true);
-    dccVarState_ = {0, 0};  //Set speed to 0, all functions off
+    dccVarState_ = {0, DCC_DIRECTION_FORWARD, 0};  //Set speed to 0, all functions off
     //Do not reset the config. It has default values and the caller can overwrite them if needed. The settings are preserved across inits.
     
     // Initialize PWM timer for DCC reading, this is mandatory
@@ -117,7 +117,7 @@ void DccInterface::resetDccReader(bool resetLastMsg)
     dccReaderState_ = dcc_reader_reset;
     memset(dccMsgBuf_, 0, sizeof(dccMsgBuf_)); // Clear the message buffer
     if(resetLastMsg) {
-        lastDccMsg_ = {0, false, no_new_dcc_msg, {0}, 0, 0, 0, 0};
+        lastDccMsg_ = {0, false, no_new_dcc_msg, {0}, 0, DCC_DIRECTION_FORWARD, 0, 0, 0};
     }
     cvWriteInProgress_ = false;
     dccDebugInfo_.EFrReaderResets++;
@@ -495,7 +495,7 @@ bool DccInterface::isMsgForThisUnit()
 bool DccInterface::processDccMsg()
 {
     // Step 0: reset the buffer
-    lastDccMsg_ = {0, false, no_new_dcc_msg, {0}, 0, 0, 0, 0};
+    lastDccMsg_ = {0, false, no_new_dcc_msg, {0}, 0, DCC_DIRECTION_FORWARD, 0, 0, 0};
     
     // Step 1: determine the address
     // After this step, the address can be found in lastDccMsg_.addr
@@ -684,7 +684,8 @@ bool DccInterface::processCmdType()
     return true;
 }
 
-bool DccInterface::processBaselineMsg()
+// Note when no speedSetting is provided, the function interprets the speed and F0 as if in 28SS mode
+bool DccInterface::processBaselineMsg(DccReinterpretBaseline_t speedSetting)
 {
     // Sanity check, is this a baseline message?
     if(lastDccMsg_.msg_type != dcc_msg_sdir && lastDccMsg_.msg_type != dcc_msg_sdif)
@@ -713,31 +714,40 @@ bool DccInterface::processBaselineMsg()
     }
     else
     {
-        // To calc the speed, assume we are in 28-step mode and store the high-res speed
-        // Should the loklight decoder be in 14-step mode, it can throw away the LSB
-        speedBits = (speedBits << 1) | cBit;
-        // minus 3, because in 28-step mode with the c-bit as LSB,
-        // The format is S3 .. S0 C,
-        // Step 1 is 0 0 1 0 0 in this format, i.e. 4.
-        speedBits -= 0x03; 
-        lastDccMsg_.speed = (int8_t) speedBits;
+        // Check how we are supposed to interpret the speed bits, depending on the function argument
+        if(speedSetting == dcc_reinterpret_baseline_14ss)
+        {
+            // In 14-step mode, the C bit indicates F0 on/off, and is not part of the speed. The speed is determined by S3..S0 as follows:
+            // 0 and 1: stop
+            // 2: step 1
+            // 3: step 2
+            // ...
+            // 15: step 14
+            speedBits -= 0x01; // Minus 1 because step 1 starts at value 2
+            lastDccMsg_.speed = (uint8_t) speedBits;
+        }
+        else if((speedSetting == dcc_reinterpret_baseline_28ss) || (speedSetting == dcc_reinterpret_baseline_none))
+        {
+            // In 28-step mode or when no interpretation is provided, the C bit is used as an additional LSB for speed
+            speedBits = (speedBits << 1) | cBit;
+            // minus 3, because in 28-step mode with the c-bit as LSB,
+            // The format is [S3 .. S0, C], Step 1 is 0b00100 in this format, i.e. 4.
+            speedBits -= 0x03; 
+            lastDccMsg_.speed = (uint8_t) speedBits;
+        }
+        else
+        {
+            // We cannot end up here, invalid argument
+            return false;
+        }
     }
 
     // Direction processing.
-    if(dBit)
-    {
-        // Normal direction
-        // Do nothing, speed is correct
-        
-    }
-    else
-    {
-        // Reverse 
-        lastDccMsg_.speed = -lastDccMsg_.speed;
-    }
+    lastDccMsg_.direction = dBit ? DCC_DIRECTION_FORWARD : DCC_DIRECTION_REVERSE;
     
-    // Front/Rear light processing
-    if(cBit)
+    // Front/Rear light processing. Only do this when not in 28-step mode.
+    // Note when no speedSetting is provided, the function interprets the speed and F0 as if in 28SS mode
+    if(speedSetting == dcc_reinterpret_baseline_14ss && cBit)
     {
         // F0 is on
         lastDccMsg_.af_group1 = dBit ? DCC_FUNC_F0F : DCC_FUNC_F0R; // F0 on, direction determines if front or rear light
@@ -750,49 +760,6 @@ bool DccInterface::processBaselineMsg()
     
     return true; //TODO
 }
-
-bool DccInterface::reinterpretBaseLineMsg(DccReinterpretBaseline_t speedSetting)
-{
-    // Sanity check: do we cast anything at all? And is the last message a baseline message?
-    if(speedSetting == dcc_reinterpret_baseline_none || (lastDccMsg_.msg_type != dcc_msg_sdir && lastDccMsg_.msg_type != dcc_msg_sdif))
-    {
-        return false;
-    }
-
-    // Now convert to what the caller requires.
-    if(speedSetting == dcc_reinterpret_baseline_14ss)
-    {
-        // Convert to 14-step speed. In this mode, the C bit is not used for speed, but only for F0 on/off. Therefore we need to shift the speed bits back and add 3 to get the correct speed.
-        lastDccMsg_.speed = lastDccMsg_.speed >> 1;
-        // Save the C-bit. This is for function group processing. It should already be done by the
-        // baseline message processing, but we do it again here to be sure.
-        bool cBit = (lastDccMsg_.cmd_arg[0] >> 4) & 0x01;   // C bit is bit 4 of the command byte
-        if(cBit)
-        {
-            // F0 is on
-            lastDccMsg_.af_group1 = (lastDccMsg_.speed >= 0) ? DCC_FUNC_F0F : DCC_FUNC_F0R; // F0 on, direction determines if front or rear light
-        }
-        else
-        {
-            // Lights off
-            lastDccMsg_.af_group1 = 0x00; // F0 off
-        }
-    }
-    else if(speedSetting == dcc_reinterpret_baseline_28ss)
-    {
-        // In 28-step mode, the speed is already correct, so nothing to do
-        // The function group processing is not handled for this setting, so reset it in the message
-        lastDccMsg_.af_group1 = 0x00; // F0 is not necessarily off, but it is sent in another message and we reset it here.
-    }
-    else
-    {
-        // Should not end up here, return false
-        return false;
-    }
-
-    return true;
-}
-
 
 bool DccInterface::processAdvancedMsg()
 {
@@ -821,18 +788,45 @@ bool DccInterface::applyMsgToState()
     {
         case dcc_msg_sdir:
         case dcc_msg_sdif:
-            //Step 2a: apply speed and direction to state
-            dccVarState_.speed = dccConfig_.direction==DCC_DIRECTION_FORWARD ? lastDccMsg_.speed : -lastDccMsg_.speed;
-            //Step 2b: apply F0 if in 14-speed mode and F0 is on in the message
+            //Step 2a: Determine if message needs to be interpreted in 14 or 28ss mode
             if(dccConfig_.controlMode == DCC_CONTROL_MODE_DCC_14SS)
             {
-                // Reinterpret the message
-                reinterpretBaseLineMsg(dcc_reinterpret_baseline_14ss);
+                // Reinterpret the message as in 14ss config
+                if(!processBaselineMsg(dcc_reinterpret_baseline_14ss))
+                {
+                    return false; // Reinterpretation failed, stop processing
+                }
                 // Apply F0 state to variable state
-                uint16_t f0Msk = ~(DCC_FUNC_F0F | DCC_FUNC_F0R);   // Mask to reset F0 bits
-                dccVarState_.funcEnanbled &= ~f0Msk;                // Reset F0F and F0R
-                dccVarState_.funcEnanbled &= lastDccMsg_.af_group1 & f0Msk;     // Set F0F or F0R if they are on in the message
+                uint16_t f0Msk = (DCC_FUNC_F0F | DCC_FUNC_F0R);   // Mask to reset F0 bits
+                uint8_t f0Bits = 0;
+                if(dccConfig_.direction==DCC_DIRECTION_REVERSE)
+                {
+                    //We need to reverse the F0 bits in case of reverse direction config
+                    f0Bits |= (lastDccMsg_.af_group1 & DCC_FUNC_F0F) ? DCC_FUNC_F0R : 0;
+                    f0Bits |= (lastDccMsg_.af_group1 & DCC_FUNC_F0R) ? DCC_FUNC_F0F : 0;
+                }
+                else
+                {
+                    //Normal direction, copy bits over
+                    f0Bits = lastDccMsg_.af_group1 & f0Msk;
+                }
+                dccVarState_.funcEnanbled &= ~f0Msk;     // Reset F0F and F0R in active state
+                dccVarState_.funcEnanbled |= f0Bits;     // Set F0F and F0R
             }
+
+            //Step 2b: apply speed and direction to state. The speed has been rescaled in step 2a if applicable.
+            dccVarState_.speed = lastDccMsg_.speed;
+            if(dccConfig_.direction == DCC_DIRECTION_REVERSE)
+            {
+                // We need to reverse the direction bit in case of reverse direction config
+                dccVarState_.direction = (lastDccMsg_.direction == DCC_DIRECTION_FORWARD) ? DCC_DIRECTION_REVERSE : DCC_DIRECTION_FORWARD;
+            }
+            else
+            {
+                // Normal direction, copy bit over
+                dccVarState_.direction = lastDccMsg_.direction;
+            }
+
             ret = true; 
             break;
         case dcc_msg_aoi:
@@ -893,6 +887,15 @@ void DccInterface::printDccDebugInfo()
                 dccDebugInfo_.RxMsgTotMsgsForThisUnit,  
                 dccDebugInfo_.EMsUnsupportedMsgType,
                 dccDebugInfo_.EMsgInvalidMsgType); 
+        }
+        if(DCC_DEBUG_STATE)
+        {
+            loklight_debug_print("SPEED:%u, DIR:%s, F0F:%u, F0R:%u, FUNC:%u, ", 
+                dccVarState_.speed, 
+                (dccVarState_.direction == DCC_DIRECTION_FORWARD) ? "FWD" : "REV",
+                (dccVarState_.funcEnanbled & DCC_FUNC_F0F) ? 1 : 0, 
+                (dccVarState_.funcEnanbled & DCC_FUNC_F0R) ? 1 : 0, 
+                dccVarState_.funcEnanbled);
         }
         loklight_debug_print("\r\n");
     }
