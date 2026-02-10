@@ -225,10 +225,10 @@ private:
     bool processFuncGroupMsg();
     bool processCvWriteMsg();
     bool applyMsgToState();
-    bool applyBasicMsgToState();
+    bool applyBaselineMsgToState();
     bool applyAdvancedMsgToState();
     bool applyFuncGroupMsgToState();
-    void reverseF0();
+    void updateF0();
 
 
     // Debug functions

@@ -880,7 +880,7 @@ bool DccInterface::applyMsgToState()
     {
         case dcc_msg_sdir:
         case dcc_msg_sdif:
-            ret = applyBasicMsgToState();
+            ret = applyBaselineMsgToState();
             break;
         case dcc_msg_aoi:
             ret = applyAdvancedMsgToState();
@@ -898,7 +898,7 @@ bool DccInterface::applyMsgToState()
     return ret;
 }
 
-bool DccInterface::applyBasicMsgToState()
+bool DccInterface::applyBaselineMsgToState()
 {
     // Step 1: check if this is a valid message for this function
     if(!lastDccMsg_.validMsg || !isMsgForThisUnit() || !(lastDccMsg_.msg_type == dcc_msg_sdir || lastDccMsg_.msg_type == dcc_msg_sdif))
@@ -906,18 +906,6 @@ bool DccInterface::applyBasicMsgToState()
         return false;
     }
     // Step 2: Interpret the speed settings and update the F0 function
-    // Check if we change direction so we can update F0 state accordingly.
-    DccDirection_t newDir;
-    if(dccConfig_.direction == DCC_DIRECTION_REVERSE)
-    {
-        // We need to reverse the direction bit in case of reverse direction config
-        newDir = (lastDccMsg_.direction == DCC_DIRECTION_FORWARD) ? DCC_DIRECTION_REVERSE : DCC_DIRECTION_FORWARD;
-    }
-    else
-    {
-        // Normal direction, copy bit over
-        newDir = lastDccMsg_.direction;
-    }
 
     // Either apply it as a 14SS message or
     // as a 128SS instruction that has been sent through an older 28SS message format
@@ -955,12 +943,9 @@ bool DccInterface::applyBasicMsgToState()
             return false; // Processing failed, stop processing
         }
 
-        // Compare newDir to the previous direction and change F0 if needed.
-        // Note that the F0F and F0R bits themselves are set in another type of message for 28SS mode
-        if(newDir != dccVarState_.direction)
-        {
-            reverseF0();
-        }   
+        // Always update F0, switches lights on direction change
+        updateF0();
+           
     }   // End of step 2: setting F0 bits for 28SS/128SS
 
     //Step 3: apply speed. The speed has been rescaled in step 2a if applicable.
@@ -1015,29 +1000,21 @@ bool DccInterface::applyAdvancedMsgToState()
 
     // Step 2: copy the speed
     dccVarState_.speed = lastDccMsg_.speed;
-
-    // Step 3: update the F0 function state
-    // Check if we change direction and update F0 state accordingly.
-    DccDirection_t newDir;
+    
+    // Step 3: Update direction
     if(dccConfig_.direction == DCC_DIRECTION_REVERSE)
     {
         // We need to reverse the direction bit in case of reverse direction config
-        newDir = (lastDccMsg_.direction == DCC_DIRECTION_FORWARD) ? DCC_DIRECTION_REVERSE : DCC_DIRECTION_FORWARD;
+        dccVarState_.direction = (lastDccMsg_.direction == DCC_DIRECTION_FORWARD) ? DCC_DIRECTION_REVERSE : DCC_DIRECTION_FORWARD;
     }
     else
     {
         // Normal direction, copy bit over
-        newDir = lastDccMsg_.direction;
+        dccVarState_.direction = lastDccMsg_.direction;
     }
 
-    // Compare newDir to the previous direction and change F0 if needed.
-    if(newDir != dccVarState_.direction)
-    {
-        reverseF0();
-    }
-    
-    // Step 4: Update direction
-    dccVarState_.direction = newDir;
+    // Step 4: update the F0 function state
+    updateF0();
 
     return true;
 }
@@ -1109,25 +1086,20 @@ bool DccInterface::applyFuncGroupMsgToState()
     return true;
 }
 
-void DccInterface::reverseF0()
+void DccInterface::updateF0()
 {
-    // Toggle F0, useful for direction changes in 28SS/128SS mode. In 14SS mode.
-    // Note that the code below also allows both to be on or off.
-    bool f0FwasOn = (dccVarState_.funcEnanbled & DCC_FUNC_F0F) != 0;
-    bool f0RwasOn = (dccVarState_.funcEnanbled & DCC_FUNC_F0R) != 0;
+    // Toggle F0, useful for direction changes through speed instructions that immediately switch the light 
+    // before the F0 state is updated through a function group message
+    bool f0WasOn = (dccVarState_.funcEnanbled & (DCC_FUNC_F0F | DCC_FUNC_F0R)) != 0; // Check if either F0F or F0R is on
+    
 
     // Reset F0 bits
     dccVarState_.funcEnanbled &= ~(DCC_FUNC_F0F | DCC_FUNC_F0R);
-    if(f0FwasOn)
+    if(f0WasOn)
     {
-        // F0 was on in forward direction, turn it on in reverse direction
-        dccVarState_.funcEnanbled |= DCC_FUNC_F0R;
+        dccVarState_.funcEnanbled |= (dccVarState_.direction == DCC_DIRECTION_FORWARD) ? DCC_FUNC_F0F : DCC_FUNC_F0R; // Set F0 bit according to new direction
     }
-    if(f0RwasOn)
-    {
-        // F0 was on in reverse direction, turn it on in forward direction
-        dccVarState_.funcEnanbled |= DCC_FUNC_F0F;
-    }
+    // If F0 was not on, the bits are already 0 in the function enabled variable, so we do not need to do anything
 }
 
 void DccInterface::printDccDebugInfo()
@@ -1178,11 +1150,23 @@ void DccInterface::printDccDebugInfo()
         }
         if(DCC_DEBUG_STATE)
         {
-            loklight_debug_print("SPEED:%u, DIR:%s, F0F:%u, F0R:%u, FUNC:%u, ", 
+            loklight_debug_print("SPEED:%u, DIR:%s, FUNC: %s%s%s%s%s%s%s%s%s%s%s%s%s%s,", 
                 dccVarState_.speed, 
                 (dccVarState_.direction == DCC_DIRECTION_FORWARD) ? "FWD" : "REV",
-                (dccVarState_.funcEnanbled & DCC_FUNC_F0F) ? 1 : 0, 
-                (dccVarState_.funcEnanbled & DCC_FUNC_F0R) ? 1 : 0, 
+                dccVarState_.funcEnanbled & DCC_FUNC_F0F ? "F0F " : "",
+                dccVarState_.funcEnanbled & DCC_FUNC_F0R ? "F0R " : "",
+                dccVarState_.funcEnanbled & DCC_FUNC_F1 ? "F1 " : "",
+                dccVarState_.funcEnanbled & DCC_FUNC_F2 ? "F2 " : "",
+                dccVarState_.funcEnanbled & DCC_FUNC_F3 ? "F3 " : "",
+                dccVarState_.funcEnanbled & DCC_FUNC_F4 ? "F4 " : "",
+                dccVarState_.funcEnanbled & DCC_FUNC_F5 ? "F5 " : "",
+                dccVarState_.funcEnanbled & DCC_FUNC_F6 ? "F6 " : "",
+                dccVarState_.funcEnanbled & DCC_FUNC_F7 ? "F7 " : "",
+                dccVarState_.funcEnanbled & DCC_FUNC_F8 ? "F8 " : "",
+                dccVarState_.funcEnanbled & DCC_FUNC_F9 ? "F9 " : "",
+                dccVarState_.funcEnanbled & DCC_FUNC_F10 ? "F10 " : "",
+                dccVarState_.funcEnanbled & DCC_FUNC_F11 ? "F11 " : "",
+                dccVarState_.funcEnanbled & DCC_FUNC_F12 ? "F12 " : "",
                 dccVarState_.funcEnanbled);
         }
         loklight_debug_print("\r\n");
