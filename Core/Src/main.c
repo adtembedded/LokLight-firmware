@@ -101,25 +101,27 @@ uint32_t debug_get_unused_mem_size()
     //This means dynamic memory has been used
     while(*((uint32_t*)lower_bound) != fillWord)
     {
-      lower_bound++;
       if(lower_bound >= upper_bound)
       {
         //This means the stack and heap have collided, no free memory left
         SEGGER_RTT_printf(0, "Memory usage error: stack and heap have collided!\n");
         while(1); // Error handling
+        break;
       }
+      lower_bound++;
     }
     //Push the upper bound lower until we find the pattern.
     //This means stack memory has been used
     while(*((uint32_t*)upper_bound) != fillWord)
     {
-      upper_bound--;
       if(lower_bound >= upper_bound)
       {
         //This means the stack and heap have collided, no free memory left
         SEGGER_RTT_printf(0, "Memory usage error: stack and heap have collided!\n");
         while(1); // Error handling
+        break;
       }
+      upper_bound--;
     }
 
     //This part is only reached after initialization.
@@ -192,7 +194,7 @@ int main(void)
     while(1); // Error handling
   }
   SEGGER_RTT_Init();
-  SEGGER_RTT_ConfigUpBuffer(0, NULL, NULL, 0, SEGGER_RTT_MODE_BLOCK_IF_FIFO_FULL);
+  SEGGER_RTT_ConfigUpBuffer(0, NULL, NULL, 0, SEGGER_RTT_MODE_NO_BLOCK_TRIM);
 
   
   HAL_GPIO_WritePin(GPIOB, EN_LED1_Pin, GPIO_PIN_SET);
@@ -201,7 +203,6 @@ int main(void)
   
   while (1)
   {
-    // loklight_step(loklight_handle);
     loklight_step();
     debug_get_unused_mem_size();
     // HAL_Delay(1);
