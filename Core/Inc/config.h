@@ -15,34 +15,11 @@
 #include <cstdint> // For standard integer types
 #include <map>
 
-// /*
+/*
 
-//     Constants and Variables for LokLight configuration and state management
+    Constants and Variables for LokLight configuration and state management
 
-// */
-
-
-// // Default configuration values
-// const llConfig_t llConfigDefaults = {
-//     .addrBasic     = 3,        // Default DCC address 3
-//     .addrExt1      = 192,      // Default extended address high byte (192*256=49152)
-//     .addrExt2      = 0,        // Default extended address low byte
-//     .addrMode      = 0,        // Default to short address mode
-//     .revDir        = 0,        // Default no reverse direction
-//     .analogMode1   = 0,        // Default analog mode, F1 .. F8 are off
-//     .analogMode2   = 0b00000001,// Default analog mode for F0F, F0R, F9..F12. F0F is on as this is a front light by default, rest is off.
-//     .led1FuncMap   = 0b00000001,// Default LED1 function mapping to F0F(bit0), F0R, F1, F2, F3(bit4). F0F is on as this is a front light by default, rest is off.
-//     .led2FuncMap   = 0b00000001,// Default LED2 function mapping
-//     .led1Max       = 128,      // Default LED1 max brightness (half power)
-//     .led2Max       = 128,      // Default LED2 max brightness
-//     .led1Min       = 0,        // Default LED1 min brightness (fully off)
-//     .led2Min       = 0,        // Default LED2 min brightness
-//     .led1Fade      = 25,      // Default LED1 fade time (~0.1 seconds)
-//     .led2Fade      = 25,      // Default LED2 fade time (~0.1 seconds)
-//     .led1Dir       = 0b00,     // Default LED1 direction sensitivity: off. By default, the front light sensitivity is implemented by mapping to F0F.
-//     .led2Dir       = 0b00      // Default LED2 direction sensitivity: off
-// }; 
-
+*/
 
 /*
 

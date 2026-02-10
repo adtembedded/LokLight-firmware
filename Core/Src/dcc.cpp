@@ -1038,7 +1038,7 @@ bool DccInterface::applyFuncGroupMsgToState()
         dccVarState_.funcEnanbled |=  (f1_f4Bits << 1); // Set the new function bits in the active state
         // Check what speed more we are in
         // When in 14SS mode, F0 is set by the speed message rather than this function message
-        // At least the roco lokmaus controller will not set F0 through the function group messages
+        // At least the roco multimaus controller will not set F0 through the function group messages in this case
         if(dccConfig_.controlMode != DCC_CONTROL_MODE_DCC_14SS)
         {
             dccVarState_.funcEnanbled &= ~(DCC_FUNC_F0F | DCC_FUNC_F0R); // Reset F0F and F0R bits

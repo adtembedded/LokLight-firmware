@@ -189,6 +189,13 @@ public:
         static DccInterface instance; // created once
         return instance;
     }
+
+    // Prevent copying and moving. 
+    // This object interfaces with C-code, it should exist only once and be managed strictly per instance.
+    DccInterface(const DccInterface&) = delete;
+    DccInterface(DccInterface&&) = delete;
+    DccInterface& operator=(const DccInterface&) = delete;
+    DccInterface& operator=(DccInterface&&) = delete;
     
     bool init(DccHwInitCfg_t* initHwCfg = nullptr, DccConfig_t* initCfg = nullptr);
     bool step();
@@ -231,7 +238,6 @@ private:
     bool applyAdvancedMsgToState();
     bool applyFuncGroupMsgToState();
     void updateF0();
-
 
     // Debug functions
     void printDccDebugInfo();
