@@ -233,7 +233,7 @@ private:
     DccDebugInfo_t dccDebugInfo_ = {};
 
     //Config and run-time state
-    DccConfig_t dccConfig_ = {DCC_CONTROL_MODE_DCC_14SS, DCC_DIRECTION_REVERSE, DCC_DEFAULT_ADDR};
+    DccConfig_t dccConfig_ = {DCC_CONTROL_MODE_DCC_128SS, DCC_DIRECTION_FORWARD, DCC_DEFAULT_ADDR};
     DccVarState_t dccVarState_ = {0, DCC_DIRECTION_FORWARD, 0};  //Set speed to 0, all functions off
     DccHalfbit_t halfbitState_ = dcc_halfbit_uninitialized;
     DccReaderState_t dccReaderState_ = dcc_reader_reset;

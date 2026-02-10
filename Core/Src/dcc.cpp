@@ -813,6 +813,14 @@ bool DccInterface::applyMsgToState()
                 dccVarState_.funcEnanbled &= ~f0Msk;     // Reset F0F and F0R in active state
                 dccVarState_.funcEnanbled |= f0Bits;     // Set F0F and F0R
             }
+            else
+            {
+                // Interpret any other setting as 28SS mode
+                if(!processBaselineMsg(dcc_reinterpret_baseline_28ss))
+                {
+                    return false; // Processing failed, stop processing
+                }
+            }
 
             //Step 2b: apply speed and direction to state. The speed has been rescaled in step 2a if applicable.
             dccVarState_.speed = lastDccMsg_.speed;
