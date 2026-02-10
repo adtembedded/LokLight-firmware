@@ -76,6 +76,7 @@ uint32_t debug_get_unused_mem_size()
   static uint32_t* lower_bound;
   static uint32_t* first_upper_bound;
   static uint32_t* first_lower_bound;
+  const uint32_t fillWord = 0x706f6f4a;
   
   if(!initialized)
   {
@@ -89,7 +90,7 @@ uint32_t debug_get_unused_mem_size()
     
     while(fillPtr < stackPtr)
     {
-      *fillPtr++ = 0x4a6f6f70; // Fill free memory with 'Joop' pattern for easier debugging of memory usage
+      *fillPtr++ = fillWord; // Fill free memory with pattern for easier debugging of memory usage
     }
     free(fillPtr); // Free the allocated byte
     initialized = true;
@@ -98,20 +99,27 @@ uint32_t debug_get_unused_mem_size()
   {
     //Push the lower bound higher until we find the pattern.
     //This means dynamic memory has been used
-    while(*((uint32_t*)lower_bound) != 0x4a6f6f70)
+    while(*((uint32_t*)lower_bound) != fillWord)
     {
       lower_bound++;
       if(lower_bound >= upper_bound)
       {
         //This means the stack and heap have collided, no free memory left
+        SEGGER_RTT_printf(0, "Memory usage error: stack and heap have collided!\n");
         while(1); // Error handling
       }
     }
     //Push the upper bound lower until we find the pattern.
     //This means stack memory has been used
-    while(*((uint32_t*)upper_bound) != 0x4a6f6f70)
+    while(*((uint32_t*)upper_bound) != fillWord)
     {
       upper_bound--;
+      if(lower_bound >= upper_bound)
+      {
+        //This means the stack and heap have collided, no free memory left
+        SEGGER_RTT_printf(0, "Memory usage error: stack and heap have collided!\n");
+        while(1); // Error handling
+      }
     }
 
     //This part is only reached after initialization.
