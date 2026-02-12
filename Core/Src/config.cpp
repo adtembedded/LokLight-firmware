@@ -127,3 +127,23 @@ DccControlMode_t LoklightConfig::getDccControlMode() const
 
     return controlMode;
 }
+
+DccDirection_t LoklightConfig::getDirection() const
+{
+    DccDirection_t direction = DCC_DIRECTION_FORWARD; // Default to normal direction if lookup fails
+    // The direction reversal setting is in CV29 bit 0 (0 for normal direction, 1 for reversed direction)
+    cvLookUpResult_t cv29Result = lookUpCV(29);
+    if(cv29Result.cvFound)
+    {
+        if(cv29Result.cvValue & 0x01) // Check bit 0 of CV29
+        {
+            return DCC_DIRECTION_REVERSE; // If bit 0 is set, we are in reversed direction
+        }
+        else
+        {
+            return DCC_DIRECTION_FORWARD; // If bit 0 is not set, we are in normal direction
+        }
+    }   
+
+    return direction;
+}

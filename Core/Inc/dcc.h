@@ -32,11 +32,6 @@ constexpr bool DCC_DEBUG_STATE = true;      // Set to true to enable printing of
 // Run-time config
 constexpr uint16_t DCC_DEFAULT_ADDR = 3; //Default DCC address if none is set on init
 
-typedef enum DccDirection_e : bool {
-    DCC_DIRECTION_REVERSE = 0,
-    DCC_DIRECTION_FORWARD = 1
-} DccDirection_t;
-
 typedef struct DccConfig_s {
     DccControlMode_t  controlMode;  // Default control mode (DCC/Analog)
     DccDirection_t direction;       // Direction reversal (true is normal, false is reverse)

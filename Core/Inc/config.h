@@ -93,6 +93,8 @@ public:
     uint16_t getDecoderAddress() const;
     // Get the DCC control mode. Defaults to 128SS when lookup fails
     DccControlMode_t getDccControlMode() const;
+    // Get the direction reversal setting. Defaults to normal direction when lookup fails
+    DccDirection_t getDirection() const;
 
 private:
     // This is a singleton class, make sure this object cannot be created except for getInstance

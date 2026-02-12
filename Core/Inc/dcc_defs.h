@@ -22,6 +22,12 @@ typedef enum DccControlMode_e : uint8_t{
     DCC_CONTROL_MODE_DCC_128SS = 2  //Also for 28 speed steps. F0 is bit4 in function group 1 instruction message
 } DccControlMode_t;
 
+// Direction bit in CV29
+typedef enum DccDirection_e : bool {
+    DCC_DIRECTION_REVERSE = 1,
+    DCC_DIRECTION_FORWARD = 0
+} DccDirection_t;
+
 // Conversion table for 28 step speed table
 // The speed information has format [C] [S3] [S2] [S1] [S0]
 // In 28-step mode, C is part of the speed step as LSB
