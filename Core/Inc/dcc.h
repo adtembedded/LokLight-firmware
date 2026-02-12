@@ -36,7 +36,7 @@ typedef enum DccControlMode_e : uint8_t{
     DCC_CONTROL_MODE_DCC_128SS = 2  //Also for 28 speed steps. F0 is bit4 in function group 1 instruction message
 } DccControlMode_t;
 
-constexpr uint16_t DCC_DEFAULT_ADDR = 560; //Default DCC address if none is set on init
+constexpr uint16_t DCC_DEFAULT_ADDR = 3; //Default DCC address if none is set on init
 
 typedef enum DccDirection_e : bool {
     DCC_DIRECTION_REVERSE = 0,

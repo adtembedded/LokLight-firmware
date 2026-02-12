@@ -36,6 +36,7 @@ LoklightInitResult_t Loklight::init(LedHwInitCfg_t* ledHwInitCfg, DccHwInitCfg_t
     if(!configInitResult)    {
         return LOKLIGHT_INIT_ERROR;
     }
+
     // Set the function output mapping
     updateLedFunctionMapping();
 
@@ -51,8 +52,15 @@ LoklightInitResult_t Loklight::init(LedHwInitCfg_t* ledHwInitCfg, DccHwInitCfg_t
         ledControl_.setConfig(&ledCfgResult.ledCfg, static_cast<LedNumber_t>(i));
     }
     
+    // Collect the DCC config
+    DccConfig_t dccConfig = {};
+    dccConfig.addr = loklightConfig_.getDecoderAddress(); //Note that is this function fails, the 0 or broadcast address is set, which is safe.
+    //TODO set real values
+    dccConfig.controlMode = DCC_CONTROL_MODE_DCC_128SS;
+    dccConfig.direction = DCC_DIRECTION_FORWARD;
+
     // Initialize DCC decoder
-    bool dccInitResult = dccInterface_.init(dccHwInitCfg);
+    bool dccInitResult = dccInterface_.init(dccHwInitCfg, &dccConfig);
     if(!dccInitResult)
     {
         return LOKLIGHT_INIT_ERROR;

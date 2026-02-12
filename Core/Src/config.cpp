@@ -62,6 +62,48 @@ uint16_t LoklightConfig::getFunctionOutputMask(DccFunctionOutputMap_t function) 
             outputMask = (outputMask << 6) & 0x3fc0; // F9..F12 to outputs 7..14
             break;
     }
-    
+
     return outputMask;
+}
+
+uint16_t LoklightConfig::getDecoderAddress() const
+{
+    uint16_t decoderAddress = 0;
+    
+    // The decoder ID is either stored in CV1 (short) or CV17,C18, according to CV29 bit 5.
+    cvLookUpResult_t cv1Result = lookUpCV(1);
+    cvLookUpResult_t cv17Result = lookUpCV(17);
+    cvLookUpResult_t cv18Result = lookUpCV(18);
+    cvLookUpResult_t cv29Result = lookUpCV(29);
+
+    if(cv1Result.cvFound && cv17Result.cvFound && cv18Result.cvFound && cv29Result.cvFound)
+    {
+        if(cv29Result.cvValue & 0x20) // Check bit 5 of CV29
+        {
+            // DCC Address Extended DCC AddressAddr = (addrExt1-192) * 256 + addrExt2)
+            // Check if the value in CV17 is valid (should be between 192 and 231 according to the standard)
+            if(cv17Result.cvValue >= 192 && cv17Result.cvValue <= 231)
+            {
+                decoderAddress = (static_cast<uint16_t>(cv17Result.cvValue) - 192) * 256 + static_cast<uint16_t>(cv18Result.cvValue);
+            } // No else, if CV17 is not valid, we just return 0 as the address, which indicates an error in the lookup
+            
+            //Now check if the address at most 9.999, which is normally the maximum allowed DCC address.
+            if(decoderAddress < 128 || decoderAddress > 9999)
+            {
+                // If the address is invalid, reset it
+                decoderAddress = 0;
+            }
+        }
+        else
+        {   // DCC Address Short (CV1 value between 1 and 127 according to the standard)
+            decoderAddress = static_cast<uint16_t>(cv1Result.cvValue);
+            if(decoderAddress < 1 || decoderAddress > 127)
+            {
+                // If the address is invalid, reset it
+                decoderAddress = 0;
+            }
+        }
+    }
+    
+    return decoderAddress; 
 }
