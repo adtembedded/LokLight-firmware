@@ -13,7 +13,6 @@
 #define CONFIG_H
 
 #include <cstdint> // For standard integer types
-#include <map>
 
 /*
 
@@ -37,6 +36,10 @@ typedef enum {
     Classes 
     
 */
+typedef struct cvEntry_s {
+    uint16_t cvNumber;
+    uint8_t cvValue;
+} cvEntry_t;
 
 class LoklightConfig
 {
@@ -64,7 +67,7 @@ private:
     ~LoklightConfig(){;}
 
     bool isInitialized_ = false;
-    static std::map<uint16_t, uint8_t> cvMap_;
+    static cvEntry_t cvMap_[];
 };
 
 /* 
@@ -74,7 +77,7 @@ private:
 */
 // This CV Map is part of the config class. This initialization is used to set defaults.
 // Change values / insert / delete as needed
-inline std::map<uint16_t, uint8_t> LoklightConfig::cvMap_ { 
+cvEntry_t LoklightConfig::cvMap_[] = {
     {1, 3},     // CV1: DCC Address Basic (1-127 for short)
     {17, 192},  // CV17: DCC Address Extended 1 DCC Address (128-10239 for long, this is the 256 multiplier. Addr = (addrExt1-192) * 256 + addrExt2)
     {18, 0},    // CV18: DCC Address Extended 2 DCC Address (128-10239 for long, this is the added offset)
