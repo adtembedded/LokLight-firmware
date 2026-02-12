@@ -40,10 +40,15 @@ LoklightInitResult_t Loklight::init(LedHwInitCfg_t* ledHwInitCfg, DccHwInitCfg_t
     updateLedFunctionMapping();
 
     //For now, load led defaults
-    for(auto i = 0; i < LED_COUNT; ++i)
+    for(uint8_t i = LED1; i <= LED2; ++i)
     {
-        ledControlCfg_t ledCfg = {128, 0, 25};
-        ledControl_.setConfig(&ledCfg, static_cast<LedNumber_t>(i));
+        ledCfgLookupResult_t ledCfgResult = getLedConfig(i);
+        if(!ledCfgResult.valid)
+        {
+            // If config lookup failed, disable LED
+            ledCfgResult.ledCfg = {0, 0, 0}; 
+        }
+        ledControl_.setConfig(&ledCfgResult.ledCfg, static_cast<LedNumber_t>(i));
     }
     
     // Initialize DCC decoder
@@ -152,4 +157,54 @@ void Loklight::updateLedFunctionMapping()
             led2FunctionMap_ |= (1 << (function - DCC_FOMAP_F0F));
         }
     }
+}
+
+ledCfgLookupResult_t Loklight::getLedConfig(uint8_t ledNumber)
+{
+    // This function returns the LED control configuration for a given LED number based on the CV values in the config.
+    // For example, CV112 contains the max brightness for LED1, CV122 contains the min brightness for LED1, etc.
+    // If no CVs are found for the LED, default values are returned (max brightness 128, min brightness 0, ramp 25)
+    ledControlCfg_t cfg = {0, 0, 0}; // Default values in case of error
+    bool errorInLookup = false;
+
+    uint16_t maxBrightnessCV = (ledNumber == LED1) ? 112 : 113;
+    uint16_t minBrightnessCV = (ledNumber == LED1) ? 122 : 123;
+    uint16_t rampCV = (ledNumber == LED1) ? 114 : 115;
+
+    cvLookUpResult_t maxBrightnessResult = loklightConfig_.lookUpCV(maxBrightnessCV);
+    if(maxBrightnessResult.cvFound)
+    {
+        cfg.maxBrightness = maxBrightnessResult.cvValue;
+    }
+    else
+    {
+        errorInLookup = true;
+    }
+
+    cvLookUpResult_t minBrightnessResult = loklightConfig_.lookUpCV(minBrightnessCV);
+    if(minBrightnessResult.cvFound)
+    {
+        cfg.minBrightness = minBrightnessResult.cvValue;
+    }
+    else
+    {
+        errorInLookup = true;
+    }
+
+    cvLookUpResult_t rampResult = loklightConfig_.lookUpCV(rampCV);
+    if(rampResult.cvFound)
+    {
+        cfg.brightnessRamp = rampResult.cvValue;
+    }
+    else    {
+        errorInLookup = true;
+    }
+
+    if(errorInLookup)
+    {
+        // If any of the CV lookups failed, return default values with valid=false
+        return {false, {0, 0, 0}};
+    }
+    
+    return {true, cfg};
 }

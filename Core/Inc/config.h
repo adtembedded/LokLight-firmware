@@ -129,8 +129,8 @@ inline cvEntry_t LoklightConfig::cvMap_[] = {
     {113, 128}, // CV113: LED2 Max brightness
     {122, 0},   // CV122: LED1 Min brightness. Set to fully off by default
     {123, 0},   // CV123: LED2 Min brightness
-    {114, 25},  // CV114: LED1 Fade time. Fade-in/out time. 0=instant, 255=1 second, scaling is linear
-    {115, 25},  // CV115: LED2 Fade time
+    {114, 10},  // CV114: LED1 Fade time. Fade-in/out time. 0=instant, 255=1 second, scaling is linear
+    {115, 10},  // CV115: LED2 Fade time
     {116, 15}   // CV116: LED Direction sensitivity. 
                 // LED1 direction sensitivity bit 0 F..1 R; By default set to 3 (sensitive to both directions)
                 // LED2 direction sensitivity bit 2 F..3 R; By default set to 3<<2 (sensitive to both directions)
