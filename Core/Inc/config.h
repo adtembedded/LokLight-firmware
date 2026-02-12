@@ -13,6 +13,7 @@
 #define CONFIG_H
 
 #include <cstdint> // For standard integer types
+#include "dcc_defs.h" // For DCC related types
 
 /*
 
@@ -90,6 +91,8 @@ public:
     uint16_t getFunctionOutputMask(DccFunctionOutputMap_t function) const;
     // Get the decoder address. If the lookup fails, returns 0
     uint16_t getDecoderAddress() const;
+    // Get the DCC control mode. Defaults to 128SS when lookup fails
+    DccControlMode_t getDccControlMode() const;
 
 private:
     // This is a singleton class, make sure this object cannot be created except for getInstance
@@ -111,7 +114,7 @@ inline cvEntry_t LoklightConfig::cvMap_[] = {
     {1, 3},     // CV1: DCC Address Basic (1-127 for short)
     {17, 194},  // CV17: DCC Address Extended 1 DCC Address (128-10239 for long, this is the 256 multiplier. Addr = (addrExt1-192) * 256 + addrExt2)
     {18, 48},    // CV18: DCC Address Extended 2 DCC Address (128-10239 for long, this is the added offset)
-    {29, 36},    // CV29: Configuration register
+    {29, 38},    // CV29: Configuration register
                         // Bit0 Travel dir: 0 Normal direction of travel, 1 Reversed direction of travel
                         // Bit1 Speed config: 0 for 14 speed steps DCC and FL = bit4 of dcc speed data, 2 for 28 or 128 speed steps DCC and FL is bit 4 in function group 1 instruction message.
                         // Bit2 Analog operation: 0 Disable analog operation, 4 Enable analog operation

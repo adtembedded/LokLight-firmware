@@ -107,3 +107,23 @@ uint16_t LoklightConfig::getDecoderAddress() const
     
     return decoderAddress; 
 }
+
+DccControlMode_t LoklightConfig::getDccControlMode() const
+{
+    DccControlMode_t controlMode = DCC_CONTROL_MODE_DCC_128SS; // Default to 128SS if lookup fails
+    // The DCC control mode is set in CV29 bit 1 (0 for 14 speed steps DCC and 1 for everything else)
+    cvLookUpResult_t cv29Result = lookUpCV(29);
+    if(cv29Result.cvFound)
+    {
+        if(cv29Result.cvValue & 0x02) // Check bit 1 of CV29
+        {
+            return DCC_CONTROL_MODE_DCC_128SS; // If bit 1 is set, we are in 28 or 128 speed step mode. We treat both the same and use the same control mode
+        }
+        else
+        {
+            return DCC_CONTROL_MODE_DCC_14SS; // If bit 1 is not set, we are in 14 speed step mode
+        }
+    }   
+
+    return controlMode;
+}

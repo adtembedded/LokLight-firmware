@@ -15,6 +15,13 @@
 
 #include "loklight_wrapper.h"   // Types used on platform
 
+// Type for the various control modes of DCC
+typedef enum DccControlMode_e : uint8_t{
+    DCC_CONTROL_MODE_ANALOG = 0,
+    DCC_CONTROL_MODE_DCC_14SS = 1,  //In this mode, speed steps are 1-14, and bit4 of speed data is used for F0 (light) function
+    DCC_CONTROL_MODE_DCC_128SS = 2  //Also for 28 speed steps. F0 is bit4 in function group 1 instruction message
+} DccControlMode_t;
+
 // Conversion table for 28 step speed table
 // The speed information has format [C] [S3] [S2] [S1] [S0]
 // In 28-step mode, C is part of the speed step as LSB

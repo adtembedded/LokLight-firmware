@@ -30,12 +30,6 @@ constexpr bool DCC_DEBUG_MESSAGES = false;  // Set to true to enable printing of
 constexpr bool DCC_DEBUG_STATE = true;      // Set to true to enable printing of debug info about the current DCC state (speed, functions, etc.) after processing each message  
 
 // Run-time config
-typedef enum DccControlMode_e : uint8_t{
-    DCC_CONTROL_MODE_ANALOG = 0,
-    DCC_CONTROL_MODE_DCC_14SS = 1,  //In this mode, speed steps are 1-14, and bit4 of speed data is used for F0 (light) function
-    DCC_CONTROL_MODE_DCC_128SS = 2  //Also for 28 speed steps. F0 is bit4 in function group 1 instruction message
-} DccControlMode_t;
-
 constexpr uint16_t DCC_DEFAULT_ADDR = 3; //Default DCC address if none is set on init
 
 typedef enum DccDirection_e : bool {

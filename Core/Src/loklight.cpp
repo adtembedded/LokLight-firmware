@@ -56,7 +56,7 @@ LoklightInitResult_t Loklight::init(LedHwInitCfg_t* ledHwInitCfg, DccHwInitCfg_t
     DccConfig_t dccConfig = {};
     dccConfig.addr = loklightConfig_.getDecoderAddress(); //Note that is this function fails, the 0 or broadcast address is set, which is safe.
     //TODO set real values
-    dccConfig.controlMode = DCC_CONTROL_MODE_DCC_128SS;
+    dccConfig.controlMode = loklightConfig_.getDccControlMode(); // Defaults to 128SS if lookup fails
     dccConfig.direction = DCC_DIRECTION_FORWARD;
 
     // Initialize DCC decoder
