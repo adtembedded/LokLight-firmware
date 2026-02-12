@@ -25,11 +25,28 @@
     Enums
 
 */
-typedef enum {
+typedef enum LoklightConfigInitResult_e : int8_t {
     LL_CFG_INIT_ERROR = -1,
     LL_CFG_INIT_STORED_CFG_LOADED = 0,
     LL_CFG_INIT_NO_STORED_CFG_DEFAULTS_LOADED = 1
 } LoklightConfigInitResult_t;
+
+typedef enum DccFunctionOutputMap_e: uint8_t {
+    DCC_FOMAP_F0F = 33,     //Maps function to platform specific output through its corresponding CV.
+    DCC_FOMAP_F0R = 34,
+    DCC_FOMAP_F1 = 35,
+    DCC_FOMAP_F2 = 36,
+    DCC_FOMAP_F3 = 37,
+    DCC_FOMAP_F4 = 38,
+    DCC_FOMAP_F5 = 39,
+    DCC_FOMAP_F6 = 40,
+    DCC_FOMAP_F7 = 41,
+    DCC_FOMAP_F8 = 42,
+    DCC_FOMAP_F9 = 43,
+    DCC_FOMAP_F10 = 44,
+    DCC_FOMAP_F11 = 45,
+    DCC_FOMAP_F12 = 46
+} DccFunctionOutputMap_t;
 
 /* 
 
@@ -40,6 +57,11 @@ typedef struct cvEntry_s {
     uint16_t cvNumber;
     uint8_t cvValue;
 } cvEntry_t;
+
+typedef struct cvLookUpResult_s {
+    bool cvFound;
+    uint8_t cvValue;
+} cvLookUpResult_t;
 
 class LoklightConfig
 {
@@ -60,6 +82,12 @@ public:
     // Read from flash into RAM
     // If no valid config is found in flash, load defaults
     LoklightConfigInitResult_t init(void);
+    // Lookup a CV value in the map
+    cvLookUpResult_t lookUpCV(uint16_t cvNumber) const;
+
+    // Specific DCC getters. Translates between DCC entity and CV value according to the standard.
+    // If no CVs are found within the config, this function will return a 0 mask.
+    uint16_t getFunctionOutputMask(DccFunctionOutputMap_t function) const;
 
 private:
     // This is a singleton class, make sure this object cannot be created except for getInstance
@@ -77,7 +105,7 @@ private:
 */
 // This CV Map is part of the config class. This initialization is used to set defaults.
 // Change values / insert / delete as needed
-cvEntry_t LoklightConfig::cvMap_[] = {
+inline cvEntry_t LoklightConfig::cvMap_[] = {
     {1, 3},     // CV1: DCC Address Basic (1-127 for short)
     {17, 192},  // CV17: DCC Address Extended 1 DCC Address (128-10239 for long, this is the 256 multiplier. Addr = (addrExt1-192) * 256 + addrExt2)
     {18, 0},    // CV18: DCC Address Extended 2 DCC Address (128-10239 for long, this is the added offset)

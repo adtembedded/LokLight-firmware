@@ -38,14 +38,14 @@ public:
         return &getInstance();  // this works because a reference Loklight& is a name which points to the object itself
     }
 
-    bool isInitialized(){return isInitialized_;}
-
     // Prevent copying and moving. This object interfaces with C-code, it should exist only once and be managed strictly per instance.
     Loklight(const Loklight&) = delete;
     Loklight(Loklight&&) = delete;
     Loklight& operator=(const Loklight&) = delete;
     Loklight& operator=(Loklight&&) = delete;
-
+    
+    // Public interface
+    bool isInitialized(){return isInitialized_;}
     LoklightInitResult_t init(LedHwInitCfg_t* ledHwInitCfg = nullptr, DccHwInitCfg_t* dccHwInitCfg = nullptr);
     bool step();
 
@@ -59,6 +59,11 @@ private:
     DccInterface& dccInterface_;        // DCC interface instance
 
     bool isInitialized_ = false;
+
+    // Led function mapping
+    uint8_t led1FunctionMap_ = 0; // This variable is used to store the function mapping for LED1. It is function output 1 on the platform and can be mapped to F0F, F0R, F1..F3 through CVs 33-37
+    uint8_t led2FunctionMap_ = 0; // This variable is used to store the function mapping for LED2. It is function output 2 on the platform and can be mapped to F0F, F0R, F1..F3 through CVs 33-37
+    void updateLedFunctionMapping(); // This function updates the led function mapping variables based on the configuration.
 };
 
 #endif // LOKLIGHT_H
