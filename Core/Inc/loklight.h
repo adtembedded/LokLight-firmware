@@ -30,6 +30,15 @@ typedef struct ledCfgLookupResult_s {
     ledControlCfg_t ledCfg;
 } ledCfgLookupResult_t;
 
+// LED directional sensitivity
+// Note this definition corresponds to the bit encoding for loklight in CV116
+typedef enum LedDirectionSensitivity_e { 
+    LED_DIR_NONE = 0, 
+    LED_DIR_FWD = 1,
+    LED_DIR_REV = 2, 
+    LED_DIR_BOTH = 3
+} LedDirectionSensitivity_t;
+
 class Loklight
 {
 public:
@@ -69,7 +78,10 @@ private:
     // Led function mapping
     uint8_t led1FunctionMap_ = 0; // This variable is used to store the function mapping for LED1. It is function output 1 on the platform and can be mapped to F0F, F0R, F1..F3 through CVs 33-37
     uint8_t led2FunctionMap_ = 0; // This variable is used to store the function mapping for LED2. It is function output 2 on the platform and can be mapped to F0F, F0R, F1..F3 through CVs 33-37
+    LedDirectionSensitivity_t led1DirMap_ = LED_DIR_NONE; // This variable is used to store the direction sensitivity for the outputs. It is determined by CV116 (F..R) and determines if the function output can be enabled or not for a certain direction. By default, off.
+    LedDirectionSensitivity_t led2DirMap_ = LED_DIR_NONE; 
     void updateLedFunctionMapping(); // This function updates the led function mapping variables based on the configuration.
+    void updateLedDirectionMapping();// This function updates the led direction mapping variables based on the configuration.
     ledCfgLookupResult_t getLedConfig(uint8_t ledNumber); // This function returns the LED control configuration for a given LED number based on the CV values in the config.
 };
 

@@ -37,8 +37,9 @@ LoklightInitResult_t Loklight::init(LedHwInitCfg_t* ledHwInitCfg, DccHwInitCfg_t
         return LOKLIGHT_INIT_ERROR;
     }
 
-    // Set the function output mapping
+    // Set the function output mapping & direction mapping based on the config.
     updateLedFunctionMapping();
+    updateLedDirectionMapping();
 
     // Set the LED config
     for(uint8_t i = LED1; i <= LED2; ++i)
@@ -104,6 +105,9 @@ bool Loklight::step()
         uint16_t activeFuncs = dccInterface_.getActiveFuncs();
         enableLed1 = (activeFuncs & led1FunctionMap_) != 0;
         enableLed2 = (activeFuncs & led2FunctionMap_) != 0;
+
+        // Update LED enabled according to direction
+        //TODO
     }
     else if(controlMode == DCC_CONTROL_MODE_ANALOG)
     {
@@ -160,6 +164,25 @@ void Loklight::updateLedFunctionMapping()
             // Bit0 maps to F0F, bit1 maps to F0R, bit2 maps to F1, bit3 maps to F2, bit4 maps to F3
             led2FunctionMap_ |= (1 << (function - DCC_FOMAP_F0F));
         }
+    }
+}
+
+void Loklight::updateLedDirectionMapping()
+{
+    //This function collects the content of CV116 and maps it to the LEDs
+    cvLookUpResult_t cv116Result = loklightConfig_.lookUpCV(116); 
+    if(cv116Result.cvFound)
+    {
+        //bits 0 and 1 are for LED1
+        led1DirMap_ = static_cast<LedDirectionSensitivity_t>(cv116Result.cvValue & 0x03); // Mask bits 0 and 1 
+        //bits 2 and 3 are for LED2 
+        led2DirMap_ = static_cast<LedDirectionSensitivity_t>((cv116Result.cvValue >> 2) & 0x03); // Shift right by 2 and mask bits 0 and 1 } else { // If CV116 is not found, default to off for both LEDs, which is already set in the member variable initialization. }
+    }
+    else
+    {
+        // If not found, default to off for both LEDs
+        led1DirMap_ = LED_DIR_NONE; 
+        led2DirMap_ = LED_DIR_NONE;
     }
 }
 
