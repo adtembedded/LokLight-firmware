@@ -8,3 +8,14 @@
 * LokLight - Copyright (C) 2026 ADT Embedded (http://www.adte.nl)
 *
 */
+#include "config.h"
+
+LoklightConfigInitResult_t LoklightConfig::init(void)
+{
+    isInitialized_ = false;
+
+    //TODO
+    
+    isInitialized_ = true;
+    return LL_CFG_INIT_NO_STORED_CFG_DEFAULTS_LOADED;
+}
