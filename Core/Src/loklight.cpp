@@ -39,7 +39,7 @@ LoklightInitResult_t Loklight::init(LedHwInitCfg_t* ledHwInitCfg, DccHwInitCfg_t
     // Set the function output mapping
     updateLedFunctionMapping();
 
-    //For now, load led defaults
+    // Set the LED config
     for(uint8_t i = LED1; i <= LED2; ++i)
     {
         ledCfgLookupResult_t ledCfgResult = getLedConfig(i);
@@ -92,14 +92,10 @@ bool Loklight::step()
     DccControlMode_t controlMode = dccInterface_.getControlMode();
     if(controlMode == DCC_CONTROL_MODE_DCC_14SS || controlMode == DCC_CONTROL_MODE_DCC_128SS)
     {
-        // TODO check config registers to determine which functions control the LEDs
-        // For now, set on for F0F as front light
+        // Update LED enabled according to its function map and the active functions
         uint16_t activeFuncs = dccInterface_.getActiveFuncs();
-        if(activeFuncs & DCC_FUNC_F0F)
-        {
-            enableLed1 = true;
-            enableLed2 = true;
-        }
+        enableLed1 = (activeFuncs & led1FunctionMap_) != 0;
+        enableLed2 = (activeFuncs & led2FunctionMap_) != 0;
     }
     else if(controlMode == DCC_CONTROL_MODE_ANALOG)
     {
