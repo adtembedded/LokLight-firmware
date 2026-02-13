@@ -196,11 +196,6 @@ int main(void)
   SEGGER_RTT_Init();
   SEGGER_RTT_ConfigUpBuffer(0, NULL, NULL, 0, SEGGER_RTT_MODE_NO_BLOCK_TRIM);
 
-  
-  HAL_GPIO_WritePin(GPIOB, EN_LED1_Pin, GPIO_PIN_SET);
-  HAL_GPIO_WritePin(GPIOB, EN_LED2_Pin, GPIO_PIN_SET);
-  //static uint8_t led_state = 0;
-  
   while (1)
   {
     loklight_step();
