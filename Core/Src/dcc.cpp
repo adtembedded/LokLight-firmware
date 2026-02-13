@@ -64,7 +64,11 @@ bool DccInterface::step()
     {
         return false;
     }
-
+    /*
+    
+        DCC Processing
+    
+    */
     // Process incoming DCC bits from the queue
     if(bitTimeQueue_.queueHasError())
     {
@@ -88,11 +92,31 @@ bool DccInterface::step()
             // Process msg if valid
             if(feedBit(bitStatus) == dcc_reader_new_msg)
             {                
+                // Processing the message when in DCC mode will update the direction, speed and functions too.
                 processDccMsg();
             }
         }
     }
 
+    /*
+    
+        Analog operation
+    
+    */
+   if(activeControlMode_ == DCC_CONTROL_MODE_ANALOG)
+   {
+        // Detect the direction
+        //TODO
+    
+        // Set the functions according to the config.
+        //TODO
+   }
+
+    /* 
+    
+        Mode switching and activity detection
+    
+    */
     // Check for activity and revert to analog mode if none is detected.
     uint32_t lastBitTime = bitTimeQueue_.getLastWriteTime();    // This needs to happen first, as we can get interrupted by the ISR between this instruction and the one below, leading to false elapsed time calcs.
     uint32_t currentTime = platform_get_tick_ms();
@@ -108,6 +132,8 @@ bool DccInterface::step()
         resetDccReader(true); 
     }
     // This part re-enables DCC mode if sufficient bit activity is detected
+    // Note, analog polarity could change without the dcc reader loosing power. Therefore we check for 
+    // Activity after filtering for valid DCC bits, not on polarity changes directly.
     if(activeControlMode_ == DCC_CONTROL_MODE_ANALOG)
     {
         if(lastDccMsg_.validMsg == true)
@@ -115,10 +141,6 @@ bool DccInterface::step()
             activeControlMode_ = dccConfig_.controlMode; 
         }
     }
-    // Note, analog polarity could change without the dcc reader loosing power. Therefore we check for 
-    // Activity after filtering for valid DCC bits, not on polarity changes directly.
-
-    // Update message processing
 
     return true;
 }
@@ -576,10 +598,10 @@ bool DccInterface::processDccMsg()
     lastDccMsg_.validMsg = true;
     dccDebugInfo_.RxMsgValidMsgs++;
 
-    // Step 4: Copy state to runtime variables if the message is for this unit
-    if(!isMsgForThisUnit())
+    // Step 4: Copy state to runtime variables if the message is for this unit and we are in DCC mode
+    if(!isMsgForThisUnit() || activeControlMode_ == DCC_CONTROL_MODE_ANALOG)
     {
-        // Message is not for this unit, stop processing
+        // Message is not for this unit or we do not process DCC messages, stop processing
         // Return true because the reception has succesfully finished
         return true;
     }

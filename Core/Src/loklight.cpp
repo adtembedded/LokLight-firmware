@@ -122,7 +122,6 @@ bool Loklight::step()
             enableLed2 = enableLed2 && (led2DirMap_ & LED_DIR_REV);
         }
     }
-    
     else if(controlMode == DCC_CONTROL_MODE_ANALOG)
     {
         //TODO
