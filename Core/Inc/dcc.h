@@ -192,6 +192,7 @@ public:
     const DccReaderState_t& getReaderState() const {return dccReaderState_;}
     const DccControlMode_t& getControlMode() const {return dccConfig_.controlMode;}
     const uint16_t getActiveFuncs() const {return dccVarState_.funcEnanbled;}
+    const DccDirection_t getDirection() const {return dccVarState_.direction;}
 
     // This function must be exposed to the wrapper, as it is called from the DCC bit-time ISR to add new bit-times to the queue
     bool addBitTime(uint32_t t);

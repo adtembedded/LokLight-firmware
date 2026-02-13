@@ -129,8 +129,8 @@ inline cvEntry_t LoklightConfig::cvMap_[] = {
     {14, 3},    // CV14: Analog mode F0F, F0R, F9..F12 (bit0 = F0F, bit1 = F0R, bit2 = F9, bit3 = F10, bit4 = F11, bit5 = F12)
     {33, 3},    // CV33: Function map. Maps F0 forward to outputs. FO1 and FO2 are the LEDs and normally they are linked only to forward motion
     {34, 0},    // CV34: Function map. F0 backward. Refer to https://www.nmra.org/sites/default/files/s-9.2.2_2012_10.pdf
-    {35, 1},    // CV35: Function map. F1
-    {36, 2},    // CV36: Function map. F2
+    {35, 0},    // CV35: Function map. F1
+    {36, 0},    // CV36: Function map. F2
     {37, 0},    // CV37: Function map. F3
     {112, 128}, // CV112: LED1 Max brightness. Set to half power by default
     {113, 128}, // CV113: LED2 Max brightness
@@ -138,7 +138,7 @@ inline cvEntry_t LoklightConfig::cvMap_[] = {
     {123, 0},   // CV123: LED2 Min brightness
     {114, 10},  // CV114: LED1 Fade time. Fade-in/out time. 0=instant, 255=1 second, scaling is linear
     {115, 10},  // CV115: LED2 Fade time
-    {116, 9}   // CV116: LED Direction sensitivity. 
+    {116, 15}   // CV116: LED Direction sensitivity. 
                 // LED1 direction sensitivity bit 0 F..1 R; By default set to 3 (sensitive to both directions)
                 // LED2 direction sensitivity bit 2 F..3 R; By default set to 3<<2 (sensitive to both directions)
 };

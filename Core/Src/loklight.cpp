@@ -107,8 +107,22 @@ bool Loklight::step()
         enableLed2 = (activeFuncs & led2FunctionMap_) != 0;
 
         // Update LED enabled according to direction
-        //TODO
+        DccDirection_t direction = dccInterface_.getDirection();
+        if(direction == DCC_DIRECTION_FORWARD)
+        {
+            // Note: the LED_DIR_XX enum values follow a bitmap [bit1: rev, bit0: fwd]
+            // That is to say, if LED_DIR_ALL is set, the bit for LED_DIR_FWD is enabled
+            // and the expression below will evaluate to true.
+            enableLed1 = enableLed1 && (led1DirMap_ & LED_DIR_FWD);
+            enableLed2 = enableLed2 && (led2DirMap_ & LED_DIR_FWD);
+        }
+        else if(direction == DCC_DIRECTION_REVERSE)
+        {
+            enableLed1 = enableLed1 && (led1DirMap_ & LED_DIR_REV);
+            enableLed2 = enableLed2 && (led2DirMap_ & LED_DIR_REV);
+        }
     }
+    
     else if(controlMode == DCC_CONTROL_MODE_ANALOG)
     {
         //TODO
