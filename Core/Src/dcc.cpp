@@ -34,6 +34,7 @@ bool DccInterface::init(DccHwInitCfg_t* initHwCfg /*= nullptr*/, DccConfig_t* in
     bitTimeQueue_.resetQueue();
     resetDccReader(true);
     dccVarState_ = {0, DCC_DIRECTION_FORWARD, 0};  //Set speed to 0, all functions off
+    activeControlMode_ = dccConfig_.controlMode; // Set the active control mode to the configured control mode
     //Do not reset the config. It has default values and the caller can overwrite them if needed. The settings are preserved across inits.
     
     // Initialize PWM timer for DCC reading, this is mandatory
@@ -83,17 +84,37 @@ bool DccInterface::step()
         DccHalfbit_t bitStatus = feedHalfbit(bitTime);
         if(bitStatus == dcc_valid_0 || bitStatus == dcc_valid_1)
         {
+            // Update bit processor
             // Process msg if valid
             if(feedBit(bitStatus) == dcc_reader_new_msg)
-            {
+            {                
                 processDccMsg();
             }
         }
     }
-    
-    // Update bit processor
 
     // Check for activity and revert to analog mode if none is detected.
+    uint32_t lastBitTime = bitTimeQueue_.getLastWriteTime();    // This needs to happen first, as we can get interrupted by the ISR between this instruction and the one below, leading to false elapsed time calcs.
+    uint32_t currentTime = platform_get_tick_ms();
+    uint32_t timeSinceLastBit = currentTime - lastBitTime;
+    // This part checks for timeouts and reverts to analog mode if no activity is detected
+    if(timeSinceLastBit > DCC_ACTIVITY_TIMEOUT_MS)
+    {
+        activeControlMode_ = DCC_CONTROL_MODE_ANALOG;
+        // Reset the reader. This voids any past communications.
+        // This part of the code is only executed when no DCC activity takes place.
+        // That means as soon as DCC bits are received, the reader can actually start to process messages again.
+        // As soon as a valid message is received we switch back to DCC mode in the code that detects DCC activity.
+        resetDccReader(true); 
+    }
+    // This part re-enables DCC mode if sufficient bit activity is detected
+    if(activeControlMode_ == DCC_CONTROL_MODE_ANALOG)
+    {
+        if(lastDccMsg_.validMsg == true)
+        {   // Switch back to the configured DCC control mode when we detect valid DCC messages again, otherwise stay in analog mode
+            activeControlMode_ = dccConfig_.controlMode; 
+        }
+    }
     // Note, analog polarity could change without the dcc reader loosing power. Therefore we check for 
     // Activity after filtering for valid DCC bits, not on polarity changes directly.
 
@@ -909,7 +930,7 @@ bool DccInterface::applyBaselineMsgToState()
 
     // Either apply it as a 14SS message or
     // as a 128SS instruction that has been sent through an older 28SS message format
-    if(dccConfig_.controlMode == DCC_CONTROL_MODE_DCC_14SS)
+    if(activeControlMode_ == DCC_CONTROL_MODE_DCC_14SS)
     {
         // Reinterpret the message as in 14ss config
         if(!processBaselineMsg(dcc_reinterpret_baseline_14ss))
@@ -955,7 +976,7 @@ bool DccInterface::applyBaselineMsgToState()
     // That is to use a basic message for lights too (14SS) or not (28SS or 128SS, seperate function cmds). There is no way
     // to configure 28SS specifically in a generic DCC decoder, therefore we just interpret this situation as 128SS.
     // Therefore, scale the speed up to 128SS range when not in 14SS mode
-    if(dccConfig_.controlMode != DCC_CONTROL_MODE_DCC_14SS)
+    if(activeControlMode_ != DCC_CONTROL_MODE_DCC_14SS)
     {
         // This means we are in 128SS mode. It has 126 steps, so the conversion factor from 28 is
         // new = old * 4.5
@@ -993,7 +1014,7 @@ bool DccInterface::applyBaselineMsgToState()
 bool DccInterface::applyAdvancedMsgToState()
 {
     // Step 1: check if this is a valid message for this function
-    if(!lastDccMsg_.validMsg || !isMsgForThisUnit() || !(lastDccMsg_.msg_type == dcc_msg_aoi) || (dccConfig_.controlMode != DCC_CONTROL_MODE_DCC_128SS))
+    if(!lastDccMsg_.validMsg || !isMsgForThisUnit() || !(lastDccMsg_.msg_type == dcc_msg_aoi) || (activeControlMode_ != DCC_CONTROL_MODE_DCC_128SS))
     {
         return false;
     }
@@ -1039,7 +1060,7 @@ bool DccInterface::applyFuncGroupMsgToState()
         // Check what speed more we are in
         // When in 14SS mode, F0 is set by the speed message rather than this function message
         // At least the roco multimaus controller will not set F0 through the function group messages in this case
-        if(dccConfig_.controlMode != DCC_CONTROL_MODE_DCC_14SS)
+        if(activeControlMode_ != DCC_CONTROL_MODE_DCC_14SS)
         {
             dccVarState_.funcEnanbled &= ~(DCC_FUNC_F0F | DCC_FUNC_F0R); // Reset F0F and F0R bits
             bool f0Bit = lastDccMsg_.af_group1 & 0x01; // Extract F0 bit from the message
@@ -1213,6 +1234,9 @@ bool DccBitTimeQueue::addBitTime(uint32_t t)
 
     //We do not reset this flag here, as this function can only make it full
     //The read function should reset the full-flag.
+
+    // Update most recent bit-write time
+    lastWriteTime_ = platform_get_tick_ms();
 
     return true;
 }

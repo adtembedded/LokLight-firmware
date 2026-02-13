@@ -31,6 +31,7 @@ constexpr bool DCC_DEBUG_STATE = true;      // Set to true to enable printing of
 
 // Run-time config
 constexpr uint16_t DCC_DEFAULT_ADDR = 3; //Default DCC address if none is set on init
+constexpr uint32_t DCC_ACTIVITY_TIMEOUT_MS = 100; //Time without any valid DCC bits after which the reader should consider the track to be in analog mode and stop processing DCC messages.
 
 typedef struct DccConfig_s {
     DccControlMode_t  controlMode;  // Default control mode (DCC/Analog)
@@ -146,7 +147,7 @@ typedef struct DccDebugInfo_s {
 class DccBitTimeQueue
 {
 public:
-    DccBitTimeQueue(){;}
+    DccBitTimeQueue(){lastWriteTime_ = platform_get_tick_ms();}
     ~DccBitTimeQueue(){;}
 
     // Bit-time queue funcs
@@ -159,6 +160,8 @@ public:
     bool addBitTime(uint32_t bit_time); //returns true when bit-time was succesfully added, false when full or error was set
     uint32_t elementsInQueue();     // Returns the number of elements currently in the queue
     uint32_t readBitTime();         //returns the next bit for processing if one is available. Returns 0 when the queue was empty
+    const uint32_t getLastWriteTime() const { return lastWriteTime_; } // Returns the timestamp of the last successful write to the queue, used for activity detection and timeout handling in the DCC reader
+
 private:
     //Bit-time Queue
     std::array<uint16_t, DCC_BITTIME_QUEUE_SIZE> dccBitTimeQueue_{}; // Queue to store incoming DCC bits from ISR for processing in main loop
@@ -167,6 +170,7 @@ private:
     bool qIsFull_ = false;       //Indicates there are no more spaces in the array to write bit-times to
     bool qErrorFlag_ = false;    //Indicates a write has been attempted while there was no more space in the bit-time array
     bool qIsEmpty_ = true;       //Indicates whether or not new bit-time data is available
+    uint32_t lastWriteTime_ = 0; // Timestamp of the last write, used to detect analog mode (long periods without any bits) and to calculate the time between bits for validation
 };
 
 
@@ -243,7 +247,7 @@ private:
     DccMsg_t lastDccMsg_ = {0, false, no_new_dcc_msg, {0}, 0, DCC_DIRECTION_FORWARD, 0, 0, 0}; //Last valid message received
     DccBitTimeQueue bitTimeQueue_;
     bool cvWriteInProgress_ = false; //Indicates a CV write operation is ongoing. Flag is set after reception of the first messsage, and cleared after the second required cmd message was received OR when the write is invalidated.
-
+    DccControlMode_t activeControlMode_ = DCC_CONTROL_MODE_DCC_128SS; // Default if no other control mode is set
 };
 
 #endif // DCC_H
