@@ -158,7 +158,7 @@ uint16_t LoklightConfig::getAnalogFuncMask() const
     {
         funcMask = static_cast<uint16_t>(cv13Result.cvValue) << 2; // Shift F1..F8 to bits 2..9
         funcMask |= (static_cast<uint16_t>(cv14Result.cvValue) & 0x03); // Add F0F and F0R from bits 0 and 1 of CV14
-        funcMask |= (static_cast<uint16_t>(cv14Result.cvValue) & 0x3c) << 10; // Add F9..F12 from bits 2..5 of CV14, shift to bits 10..13
+        funcMask |= (static_cast<uint16_t>(cv14Result.cvValue) & 0x3c) << 8; // Add F9..F12 from bits 2..5 of CV14, shift to bits 10..13
     }
 
     return funcMask;
