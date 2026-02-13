@@ -56,9 +56,9 @@ LoklightInitResult_t Loklight::init(LedHwInitCfg_t* ledHwInitCfg, DccHwInitCfg_t
     // Collect the DCC config
     DccConfig_t dccConfig = {};
     dccConfig.addr = loklightConfig_.getDecoderAddress(); //Note that is this function fails, the 0 or broadcast address is set, which is safe.
-    //TODO set real values
     dccConfig.controlMode = loklightConfig_.getDccControlMode(); // Defaults to 128SS if lookup fails
     dccConfig.direction = loklightConfig_.getDirection(); // Defaults to normal direction if lookup fails
+    dccConfig.analogFuncMask = loklightConfig_.getAnalogFuncMask(); // Defaults to 0 if lookup fails
 
     // Initialize DCC decoder
     bool dccInitResult = dccInterface_.init(dccHwInitCfg, &dccConfig);
@@ -98,39 +98,26 @@ bool Loklight::step()
 
     // Set LED status according to settings and DCC state
     bool enableLed1 = false, enableLed2 = false;
-    DccControlMode_t controlMode = dccInterface_.getControlMode();
-    if(controlMode == DCC_CONTROL_MODE_DCC_14SS || controlMode == DCC_CONTROL_MODE_DCC_128SS)
-    {
-        // Update LED enabled according to its function map and the active functions
-        uint16_t activeFuncs = dccInterface_.getActiveFuncs();
-        enableLed1 = (activeFuncs & led1FunctionMap_) != 0;
-        enableLed2 = (activeFuncs & led2FunctionMap_) != 0;
+    
+    // Update LED enabled according to its function map and the active functions
+    uint16_t activeFuncs = dccInterface_.getActiveFuncs();
+    enableLed1 = (activeFuncs & led1FunctionMap_) != 0;
+    enableLed2 = (activeFuncs & led2FunctionMap_) != 0;
 
-        // Update LED enabled according to direction
-        DccDirection_t direction = dccInterface_.getDirection();
-        if(direction == DCC_DIRECTION_FORWARD)
-        {
-            // Note: the LED_DIR_XX enum values follow a bitmap [bit1: rev, bit0: fwd]
-            // That is to say, if LED_DIR_ALL is set, the bit for LED_DIR_FWD is enabled
-            // and the expression below will evaluate to true.
-            enableLed1 = enableLed1 && (led1DirMap_ & LED_DIR_FWD);
-            enableLed2 = enableLed2 && (led2DirMap_ & LED_DIR_FWD);
-        }
-        else if(direction == DCC_DIRECTION_REVERSE)
-        {
-            enableLed1 = enableLed1 && (led1DirMap_ & LED_DIR_REV);
-            enableLed2 = enableLed2 && (led2DirMap_ & LED_DIR_REV);
-        }
-    }
-    else if(controlMode == DCC_CONTROL_MODE_ANALOG)
+    // Update LED enabled according to direction
+    DccDirection_t direction = dccInterface_.getDirection();
+    if(direction == DCC_DIRECTION_FORWARD)
     {
-        //TODO
+        // Note: the LED_DIR_XX enum values follow a bitmap [bit1: rev, bit0: fwd]
+        // That is to say, if LED_DIR_ALL is set, the bit for LED_DIR_FWD is enabled
+        // and the expression below will evaluate to true.
+        enableLed1 = enableLed1 && (led1DirMap_ & LED_DIR_FWD);
+        enableLed2 = enableLed2 && (led2DirMap_ & LED_DIR_FWD);
     }
-    else
+    else if(direction == DCC_DIRECTION_REVERSE)
     {
-        //This should never happen, but if it does, disable all LEDs
-        enableLed1 = false;
-        enableLed2 = false;
+        enableLed1 = enableLed1 && (led1DirMap_ & LED_DIR_REV);
+        enableLed2 = enableLed2 && (led2DirMap_ & LED_DIR_REV);
     }
 
     // Update LED states

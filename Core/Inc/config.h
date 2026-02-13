@@ -95,6 +95,8 @@ public:
     DccControlMode_t getDccControlMode() const;
     // Get the direction reversal setting. Defaults to normal direction when lookup fails
     DccDirection_t getDirection() const;
+    // Get the analog function mask. Every bit corresponds to a function, bit0 is F0F, bit1 is F0R, bit2 is F1, etc. If the lookup fails, returns 0 (no functions on in analog mode)
+    uint16_t getAnalogFuncMask() const;
 
 private:
     // This is a singleton class, make sure this object cannot be created except for getInstance
@@ -125,7 +127,7 @@ inline cvEntry_t LoklightConfig::cvMap_[] = {
                         // Bit5 Addressing mode: 0 Short addresses (CV 1) in DCC mode, 32 Long addresses (CV 17 + 18) in DCC mode
                         // Bit6 UNUSED Reserved
                         // Bit7 UNUSED Accessory Decoder: 0 for multipurpose decoder, 128 for accessory decoder
-    {13, 1},    // CV13: Analog mode F1..F8. 1 is on, 0 is off during analog mode. (bit0 = F1, bit1 = F2, ..., bit7 = F8)
+    {13, 0},    // CV13: Analog mode F1..F8. 1 is on, 0 is off during analog mode. (bit0 = F1, bit1 = F2, ..., bit7 = F8)
     {14, 3},    // CV14: Analog mode F0F, F0R, F9..F12 (bit0 = F0F, bit1 = F0R, bit2 = F9, bit3 = F10, bit4 = F11, bit5 = F12)
     {33, 3},    // CV33: Function map. Maps F0 forward to outputs. FO1 and FO2 are the LEDs and normally they are linked only to forward motion
     {34, 0},    // CV34: Function map. F0 backward. Refer to https://www.nmra.org/sites/default/files/s-9.2.2_2012_10.pdf

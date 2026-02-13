@@ -37,6 +37,7 @@ typedef struct DccConfig_s {
     DccControlMode_t  controlMode;  // Default control mode (DCC/Analog)
     DccDirection_t direction;       // Direction reversal (true is normal, false is reverse)
     uint16_t addr;                  // Configured DCC address
+    uint16_t analogFuncMask;        // Mask of functions that should be activated in analog mode according to the config. 
 } DccConfig_t;
 
 // Run-time variables
@@ -234,13 +235,17 @@ private:
     bool applyFuncGroupMsgToState();
     void updateF0();
 
+    // Analog processing funcs
+    DccDirection_t detectAnalogDirection();
+    void updateAnalogFuncState();
+
     // Debug functions
     void printDccDebugInfo();
     const uint32_t dccDebugPrintPeriod_ = DCC_DEBUG_PERIOD_MS;   // period in ms
     DccDebugInfo_t dccDebugInfo_ = {};
 
     //Config and run-time state
-    DccConfig_t dccConfig_ = {DCC_CONTROL_MODE_DCC_128SS, DCC_DIRECTION_FORWARD, DCC_DEFAULT_ADDR};
+    DccConfig_t dccConfig_ = {DCC_CONTROL_MODE_DCC_128SS, DCC_DIRECTION_FORWARD, DCC_DEFAULT_ADDR, 0};
     DccVarState_t dccVarState_ = {0, DCC_DIRECTION_FORWARD, 0};  //Set speed to 0, all functions off
     DccHalfbit_t halfbitState_ = dcc_halfbit_uninitialized;
     DccReaderState_t dccReaderState_ = dcc_reader_reset;

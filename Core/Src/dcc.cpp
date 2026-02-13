@@ -106,10 +106,14 @@ bool DccInterface::step()
    if(activeControlMode_ == DCC_CONTROL_MODE_ANALOG)
    {
         // Detect the direction
-        //TODO
+        dccVarState_.direction = detectAnalogDirection();
     
+        // Set speed. Always use value of 1, as we have no means to deduce the actual speed
+        // The fact that this code runs tells us that there is a track voltage, so we are not stopped.
+        dccVarState_.speed = 1;
+
         // Set the functions according to the config.
-        //TODO
+        updateAnalogFuncState();
    }
 
     /* 
@@ -1143,6 +1147,37 @@ void DccInterface::updateF0()
         dccVarState_.funcEnanbled |= (dccVarState_.direction == DCC_DIRECTION_FORWARD) ? DCC_FUNC_F0F : DCC_FUNC_F0R; // Set F0 bit according to new direction
     }
     // If F0 was not on, the bits are already 0 in the function enabled variable, so we do not need to do anything
+}
+
+DccDirection_t DccInterface::detectAnalogDirection()
+{
+    DccDirection_t direction = dcc_hw_read_analog_direction() ? DCC_DIRECTION_FORWARD : DCC_DIRECTION_REVERSE;
+    // Check if the config tells us to reverse the direction
+    if(dccConfig_.direction == DCC_DIRECTION_REVERSE)
+    {
+        direction = (direction == DCC_DIRECTION_FORWARD) ? DCC_DIRECTION_REVERSE : DCC_DIRECTION_FORWARD;
+    }
+
+    return direction;
+}
+
+void DccInterface::updateAnalogFuncState()
+{
+    if(activeControlMode_ != DCC_CONTROL_MODE_ANALOG)
+    {
+        return; // Not in analog mode, do not update
+    }
+
+    // Set functions
+    dccVarState_.funcEnanbled = dccConfig_.analogFuncMask & ~ (DCC_FUNC_F0F | DCC_FUNC_F0R); // Set functions according to config, except F0F/R
+    if(dccVarState_.direction == DCC_DIRECTION_FORWARD)
+    {
+        dccVarState_.funcEnanbled |= (dccConfig_.analogFuncMask & DCC_FUNC_F0F); // Set F0F if it is set in the config and we are driving forward
+    }
+    else
+    {
+        dccVarState_.funcEnanbled |= (dccConfig_.analogFuncMask & DCC_FUNC_F0R); // Set F0R if it is set in the config and we are driving reverse
+    }
 }
 
 void DccInterface::printDccDebugInfo()

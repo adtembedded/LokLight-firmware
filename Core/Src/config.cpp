@@ -147,3 +147,19 @@ DccDirection_t LoklightConfig::getDirection() const
 
     return direction;
 }
+
+uint16_t LoklightConfig::getAnalogFuncMask() const
+{
+    uint16_t funcMask = 0; // Default to no functions on in analog mode if lookup fails
+    // Settings are stored in CVs 13 and 14.
+    cvLookUpResult_t cv13Result = lookUpCV(13); // Contains F1 (bit0) to F8 (bit7)
+    cvLookUpResult_t cv14Result = lookUpCV(14); // Contains F0F (bit0) and F0R (bit1), F9 (bit2) to F12 (bit5)
+    if(cv13Result.cvFound && cv14Result.cvFound)
+    {
+        funcMask = static_cast<uint16_t>(cv13Result.cvValue) << 2; // Shift F1..F8 to bits 2..9
+        funcMask |= (static_cast<uint16_t>(cv14Result.cvValue) & 0x03); // Add F0F and F0R from bits 0 and 1 of CV14
+        funcMask |= (static_cast<uint16_t>(cv14Result.cvValue) & 0x3c) << 10; // Add F9..F12 from bits 2..5 of CV14, shift to bits 10..13
+    }
+
+    return funcMask;
+}

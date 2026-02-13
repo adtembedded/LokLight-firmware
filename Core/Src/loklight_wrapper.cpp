@@ -106,9 +106,16 @@ extern "C" void led_control_set_pwm(LedNumber_t led_number, uint8_t brightness)
     }
 }
 
-bool dcc_bit_queue_add(uint32_t bit_time)
+extern "C" bool dcc_bit_queue_add(uint32_t bit_time)
 {
     DccInterface& dcc_itf = DccInterface::getInstance();
     bool result = dcc_itf.addBitTime(bit_time);
     return result;
+}
+
+extern "C" bool dcc_hw_read_analog_direction()
+{
+    // On the Loklight PCB, this pin is the DCC Sense pin.
+    // It is connected to the glowbulb body (not tip) connection, which should be the right track.
+    return HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_1);
 }

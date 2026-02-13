@@ -139,6 +139,10 @@ inline bool dcc_hw_init(DccHwInitCfg_t* dcc_cfg)
 // Returns false when the queue was full and has been cleared
 bool dcc_bit_queue_add(uint32_t bit_time);
 
+// Returns high when right track has positive polarity, which means the locomotive should move forward.
+// Returns low when right track has low or negative polarity, and we assume therefore the left track has high polarity and locomotive should move in reverse.
+bool dcc_hw_read_analog_direction();
+
 #ifdef __cplusplus
 }
 #endif
