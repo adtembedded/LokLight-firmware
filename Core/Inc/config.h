@@ -20,6 +20,8 @@
     Constants and Variables for LokLight configuration and state management
 
 */
+constexpr uint8_t CV_MEM_PREFIX[] = {'L', 'O', 'K', 'L'}; // Prefix to identify valid CV data in flash
+constexpr uint8_t CV_MEM_POSTFIX[] = {'I', 'G', 'H', 'T'}; // Postfix to identify valid CV data in flash
 
 /*
 
@@ -55,7 +57,7 @@ typedef enum DccFunctionOutputMap_e: uint8_t {
     
 */
 typedef struct cvEntry_s {
-    uint16_t cvNumber;
+    uint8_t cvNumber;
     uint8_t cvValue;
 } cvEntry_t;
 

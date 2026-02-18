@@ -53,10 +53,12 @@
 ENTRY(Reset_Handler)
 
 /* Specify the memory areas */
+_CV_MEM_SIZE = 128; /* Bytes */
 MEMORY
 {
 RAM (xrw)      : ORIGIN = 0x20000000, LENGTH = 2K
-FLASH (rx)      : ORIGIN = 0x8000000, LENGTH = 16K
+FLASH (rx)      : ORIGIN = 0x8000000, LENGTH = 16K-(_CV_MEM_SIZE)
+CVFLASH (r)     : ORIGIN = 0x8003F80, LENGTH = _CV_MEM_SIZE
 }
 
 /* Highest address of the user mode stack */
