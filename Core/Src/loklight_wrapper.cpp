@@ -68,8 +68,6 @@ extern "C" bool config_write_cv_flash_map(uint8_t* cvMapPtr, size_t size)
     // Write the CV map to flash memory word by word (32-bit)
     // First recast the general byte pointer to the local word size
     uint32_t* flashPtr = reinterpret_cast<uint32_t*>(CV_MEM_START_ADDR);
-    uint32_t* dataPtr = reinterpret_cast<uint32_t*>(cvMapPtr);
-    
     // Write prefix to flash
     if(HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, reinterpret_cast<uint32_t>(flashPtr), *reinterpret_cast<const uint32_t*>(CV_MEM_PREFIX)) == HAL_OK)
     {
@@ -80,54 +78,75 @@ extern "C" bool config_write_cv_flash_map(uint8_t* cvMapPtr, size_t size)
         result = false;   // Write failed
     }
 
-     // Only attempt to write data if prefix write was successful
+    // Only attempt to write data if prefix write was successful
     if(result)   
     {
-        // Calculate the end pointer based on the size of data to write.
-        // Note that this rounds down for non-word sizes.
-        uint32_t* endPtr = flashPtr + (size / sizeof(uint32_t)); 
-        while(flashPtr < endPtr)
+        while(size > 3)   // While there are at least 4 bytes (32 bits) left to write
         {
-            // Recast the local flash pointer to a byte pointer to access the data to write
-            if(HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, reinterpret_cast<uint32_t>(flashPtr), *dataPtr) == HAL_OK)
+            // Assemble a word from the data pointer
+            // We need to do this, as the pointer does not have to be word-aligned
+            // If we give a non-word-aligned pointer to HAL_FLASH_Program it will cause a hard fault
+            uint32_t word = 0;
+            word = (cvMapPtr[0] << 0) | (cvMapPtr[1] << 8) | (cvMapPtr[2] << 16) | (cvMapPtr[3] << 24);
+            if(HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, reinterpret_cast<uint32_t>(flashPtr), word) == HAL_OK)
             {
-                flashPtr++;   // Move to the next word
-                dataPtr++;    // Move to the next word
+                flashPtr++;   // Move to the next word after successful write
+                cvMapPtr+= 4; // Move to the next word in the data pointer
+                size -= 4;    // Decrease remaining size by 4 bytes
             }
             else
             {
-                result = false;
-                break;  // Write failed, exit loop
+                result = false;   // Write failed, exit loop
+                break;
             }
         }
     }
 
-    // Check if there was an uneven number of bytes to write
-    size_t remainingBytes = size % sizeof(uint32_t);
-    if(result && remainingBytes != 0)   // Only attempt if all previous operations successful
-    {
-        // Compile the remaining words into a single word, padding with 0xFF (erased flash value) for the unwritten bytes
-        uint32_t lastWord = 0xFFFFFFFF; // Default value with all bytes as 0xFF
-        uint8_t* lastBytesPtr = reinterpret_cast<uint8_t*>(dataPtr);
-        for(size_t i = 0; i < remainingBytes; i++)
-        {
-            lastWord &= ~(0xFF << (i * 8)); // Clear the byte to be written
-            lastWord |= (static_cast<uint32_t>(lastBytesPtr[i]) << (i * 8)); // Set the byte to be written
-        }
-        if(HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, reinterpret_cast<uint32_t>(flashPtr), lastWord) != HAL_OK)
-        {
-            result = false;   // Write failed
-        }
-
-        flashPtr++;  // Move to the next word after writing the last partial word
-    }
-
-    // Write postfix to flash
+    // Write last part and postfix to flash
     if(result)    // Only attempt to write postfix if all previous writes were successful
     {
-        if(HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, reinterpret_cast<uint32_t>(flashPtr), *reinterpret_cast<const uint32_t*>(CV_MEM_POSTFIX)) != HAL_OK)
+        if (size > 0)  // There are remaining bytes
         {
-            result = false;   // Write failed
+            uint32_t lastWords[2] = {0,0};
+            size_t i = 0;
+            while(i < size) // This is the part that remains after an N x word sized block has been written
+            {
+                lastWords[0] |= (cvMapPtr[i] << (i*8)); // Assemble remaining bytes into a word. Convert to little endian format
+                i++;
+            }
+            while(i < 4)    // For the remaining space in the word var, add the start of the postfix
+            {
+                lastWords[0] |= CV_MEM_POSTFIX[i-size] << (i*8); // After data bytes, fill the rest of the word with the beginning of the postfix. Convert to little endian format
+                i++;
+            }
+            while(i-size < sizeof(CV_MEM_POSTFIX)) // Write the rest of the postfix into the next word var
+            {
+                lastWords[1] |= CV_MEM_POSTFIX[i-size] << ((i-4)*8); // Write remaining part of postfix into second word. Convert to little endian format
+                i++;
+            }
+            while(i < 8)    // Pad the rest of the second word with 0xff
+            {
+                // Pad with 0xff, which is the default erased state of flash memory
+                lastWords[1] |= 0xFF << ((i-4)*8);
+                i++;
+            }
+            if(HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, reinterpret_cast<uint32_t>(flashPtr), lastWords[0]) != HAL_OK)
+            {
+                result = false;   // Write failed
+            }
+            flashPtr++;
+            if(HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, reinterpret_cast<uint32_t>(flashPtr), lastWords[1]) != HAL_OK)
+            {
+                result = false;   // Write failed
+            }
+            flashPtr++;
+        }
+        else    // Happens when CV map was word-aligned
+        {
+            if(HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, reinterpret_cast<uint32_t>(flashPtr), *reinterpret_cast<const uint32_t*>(CV_MEM_POSTFIX)) != HAL_OK)
+            {
+                result = false;   // Write failed
+            }
         }
     }
 

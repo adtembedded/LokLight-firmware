@@ -1,18 +1,21 @@
 
 
+
+Breakpoint=C:/local/software_dev/loklight/Core/Src/loklight_wrapper.cpp:88, State=BP_STATE_ON
+OpenDocument="loklight_wrapper.cpp", FilePath="C:/local/software_dev/loklight/Core/Src/loklight_wrapper.cpp", Line=78
 OpenDocument="led_control.cpp", FilePath="C:/local/software_dev/loklight/Core/Src/led_control.cpp", Line=147
-OpenDocument="dcc.cpp", FilePath="C:/local/software_dev/loklight/Core/Src/dcc.cpp", Line=1236
+OpenDocument="dcc.cpp", FilePath="C:/local/software_dev/loklight/Core/Src/dcc.cpp", Line=1251
 OpenDocument="SEGGER_RTT_printf.c", FilePath="C:/local/software_dev/loklight/Drivers/RTT/SEGGER_RTT_printf.c", Line=450
 OpenDocument="SEGGER_RTT.c", FilePath="C:/local/software_dev/loklight/Drivers/RTT/SEGGER_RTT.c", Line=382
 OpenDocument="main.c", FilePath="C:/local/software_dev/loklight/Core/Src/main.c", Line=148
 OpenToolbar="Debug", Floating=0, x=0, y=0
-OpenWindow="Registers 1", DockArea=RIGHT, x=0, y=1, w=432, h=308, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0, FilteredItems=[], RefreshRate=1
-OpenWindow="Disassembly", DockArea=RIGHT, x=0, y=0, w=432, h=268, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
-OpenWindow="Memory 1", DockArea=BOTTOM, x=2, y=0, w=385, h=365, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0, EditorAddress=0x20000588
-OpenWindow="Watched Data 1", DockArea=LEFT, x=0, y=0, w=506, h=232, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
-OpenWindow="Functions", DockArea=LEFT, x=0, y=1, w=506, h=344, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
+OpenWindow="Registers 1", DockArea=RIGHT, x=0, y=1, w=432, h=307, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0, FilteredItems=[], RefreshRate=1
+OpenWindow="Disassembly", DockArea=RIGHT, x=0, y=0, w=432, h=269, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
+OpenWindow="Memory 1", DockArea=BOTTOM, x=2, y=0, w=385, h=365, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0, EditorAddress=0x8003EE0
+OpenWindow="Watched Data 1", DockArea=LEFT, x=0, y=0, w=506, h=235, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
+OpenWindow="Functions", DockArea=LEFT, x=0, y=1, w=506, h=341, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
 OpenWindow="Data Sampling", DockArea=BOTTOM, x=0, y=0, w=368, h=365, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0, VisibleTab=0, UniformSampleSpacing=0
-OpenWindow="Timeline", DockArea=BOTTOM, x=3, y=0, w=575, h=365, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=1, DataPaneShown=1, PowerPaneShown=0, CodePaneShown=0, PinCursor="Cursor Movable", TimePerDiv="5 ms / Div", TimeStampFormat="Time", DataGraphDrawAsPoints=0, DataGraphLegendShown=1, DataGraphUniformSampleSpacing=0, DataGraphLegendPosition="0;0", DataGraphShowNamesAtCursor=0, PowerGraphDrawAsPoints=0, PowerGraphLegendShown=0, PowerGraphAvgFilterTime=Off, PowerGraphAvgFilterLen=Off, PowerGraphUniformSampleSpacing=0, PowerGraphLegendPosition="321;0", CodeGraphLegendShown=0, CodeGraphLegendPosition="321;0"
+OpenWindow="Timeline", DockArea=BOTTOM, x=3, y=0, w=575, h=365, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=1, DataPaneShown=1, PowerPaneShown=0, CodePaneShown=0, PinCursor="Cursor Movable", TimePerDiv="5 ms / Div", TimeStampFormat="Time", DataGraphDrawAsPoints=0, DataGraphLegendShown=1, DataGraphUniformSampleSpacing=0, DataGraphLegendPosition="0;0", DataGraphShowNamesAtCursor=0, PowerGraphDrawAsPoints=0, PowerGraphLegendShown=0, PowerGraphAvgFilterTime=Off, PowerGraphAvgFilterLen=Off, PowerGraphUniformSampleSpacing=0, PowerGraphLegendPosition="418;0", CodeGraphLegendShown=0, CodeGraphLegendPosition="418;0"
 OpenWindow="Console", DockArea=BOTTOM, x=1, y=0, w=589, h=365, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
 SmartViewPlugin="", Page="", Toolbar="Hidden", Window="SmartView 1"
 TableHeader="Functions", SortCol="Name", SortOrder="ASCENDING", VisibleCols=["Name";"Address";"Size";"#Insts";"Class";"Source"], ColWidths=[27;27;27;27;27;602]
