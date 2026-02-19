@@ -138,6 +138,8 @@ bool Loklight::step()
             // TODO
             // Write to flash
             // Flash LEDs
+            ledControl_.setBrightness(LED1, 255);
+            ledControl_.setBrightness(LED2, 255);
             // Reset device with NVIC_SystemReset() 
         }
 
@@ -149,6 +151,8 @@ bool Loklight::step()
             // TODO
             // Write to flash
             // Flash LEDs
+            ledControl_.setBrightness(LED1, 255);
+            ledControl_.setBrightness(LED2, 255);
             // Reset device with NVIC_SystemReset() 
         }
     }

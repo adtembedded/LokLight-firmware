@@ -41,10 +41,11 @@ public:
     bool init(LedHwInitCfg_t* initHwCfg = nullptr);
     bool step();
     bool setConfig(ledControlCfg_t* cfg, uint8_t ledNumber);
-    void enableLight(LedNumber_t ledNumber, bool enable);
+    void enableLight(LedNumber_t ledNumber, bool enable);   // Use for normal operation. Includes ramp function.
     bool isLightEnabled(LedNumber_t ledNumber) { return ledEnabled_[ledNumber]; }
     bool isInitialized() const { return isInitialized_; }
     uint8_t getBrightness(LedNumber_t ledNumber) const;
+    void setBrightness(LedNumber_t ledNumber, uint8_t brightness); // Use only to set brightness directly. Not for normal operation
     
     private:
     //This class is a singleton
@@ -58,7 +59,6 @@ public:
     uint32_t lastStepTime_ = 0;
     bool isInitialized_ = false;
     
-    void setBrightness(LedNumber_t ledNumber, uint8_t brightness);
 };
 
 #endif
