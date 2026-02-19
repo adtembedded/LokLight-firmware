@@ -132,6 +132,8 @@ public:
     void resetDefaultConfig();
     // Write a CV value
     bool writeCv(uint8_t cvNumber, uint8_t cvValue);
+    // Save CV map to flash
+    bool saveCvMapToFlash();
 
     // Specific DCC getters. Translates between DCC entity and CV value according to the standard.
     // Get the function outputs that a dcc function should enable. If no CVs are found within the config, this function will return a 0 mask.

@@ -135,10 +135,10 @@ bool Loklight::step()
         if(dccInterface_.getFactoryResetRequested())
         {
             loklightConfig_.resetDefaultConfig();
-            // TODO
             // Write to flash
+            bool writeResult = loklightConfig_.saveCvMapToFlash();
             // Flash LEDs
-            ledControl_.longFlash(3); // Flash 3 times to indicate factory reset
+            writeResult ? ledControl_.longFlash(2) : ledControl_.shortFlash(5); // Flash twice to indicate success, fast flash to indicate error
             // Reset device
             platform_reset();
         }
@@ -158,22 +158,14 @@ bool Loklight::step()
             else
             {
                 // CV does not have the right value, perform write
-                writeResult = loklightConfig_.writeCv(cvWriteRequest.cvAddress, cvWriteRequest.cvValue);
-                // Write to flash
-                
+                if(loklightConfig_.writeCv(cvWriteRequest.cvAddress, cvWriteRequest.cvValue))
+                {
+                    // Write to flash
+                    writeResult = loklightConfig_.saveCvMapToFlash();
+                } // Else: write failed. Do nothing, writeResult is already false
             }
-
             // Visual feedback based on write result.
-            if(writeResult)
-            {
-                // Flash twice to indicate success
-                ledControl_.longFlash(2);
-            }
-            else
-            {
-                // Fast flashing to indicate error
-                ledControl_.shortFlash(5);
-            }  
+            writeResult ? ledControl_.longFlash(2) : ledControl_.shortFlash(5); // Flash twice to indicate success, fast flash to indicate error
             // Either way, reset the system
             platform_reset();
         }   // End of CV Write

@@ -12,6 +12,7 @@
 #include "loklight_wrapper.h"
 #include "loklight.h"
 #include "led_control.h"
+#include "config.h"
 // use HAL includes here
 #include "stm32l0xx_hal.h"
 
@@ -31,6 +32,108 @@ extern "C" void platform_reset()
 {
     // Change as needed to implement a system reset
     NVIC_SystemReset();
+}
+
+extern "C" bool config_erase_cv_flash_map()
+{
+    static_assert(CV_MEM_SIZE % FLASH_PAGE_SIZE == 0, "CV_MEM_SIZE must be a multiple of the flash page size");
+    bool result = false;
+    __disable_irq();    // Disable interrupts to prevent flash access conflicts
+    FLASH_EraseInitTypeDef pEraseInit;
+    pEraseInit.PageAddress = CV_MEM_START_ADDR;             // CV memory starts here
+    HAL_FLASH_Unlock(); // Allow control of the flash registers to perform erase operation
+    pEraseInit.NbPages = CV_MEM_SIZE / FLASH_PAGE_SIZE;     // Number of pages to erase based on the defined CV memory size
+    pEraseInit.TypeErase = FLASH_TYPEERASE_PAGES;           // Erase by page
+    uint32_t pageError; // Variable to store page error in case of failure. If erase is successful, contains 0xffff ffff
+    if(HAL_FLASHEx_Erase(&pEraseInit, &pageError) == HAL_OK)
+    {
+        result = true;    // Erase successful
+    }
+    HAL_FLASH_Lock();   // Relock flash mem when done
+    __enable_irq();     // Re-enable interrupts
+    return result;
+}
+
+extern "C" bool config_write_cv_flash_map(uint8_t* cvMapPtr, size_t size)
+{
+    static_assert(CV_MEM_SIZE % sizeof(uint32_t) == 0, "CV_MEM_SIZE must be a multiple of 32-bit word size");
+    if(size+sizeof(CV_MEM_PREFIX)+sizeof(CV_MEM_POSTFIX) > CV_MEM_SIZE)
+    {
+        return false;   // Size of data exceeds reserved flash memory for CVs
+    }
+
+    bool result = true;    // Assume success until a write operation fails
+    __disable_irq();    // Disable interrupts to prevent flash access conflicts
+    HAL_FLASH_Unlock(); // Allow control of the flash registers to perform write operation
+    // Write the CV map to flash memory word by word (32-bit)
+    // First recast the general byte pointer to the local word size
+    uint32_t* flashPtr = reinterpret_cast<uint32_t*>(CV_MEM_START_ADDR);
+    uint32_t* dataPtr = reinterpret_cast<uint32_t*>(cvMapPtr);
+    
+    // Write prefix to flash
+    if(HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, reinterpret_cast<uint32_t>(flashPtr), *reinterpret_cast<const uint32_t*>(CV_MEM_PREFIX)) == HAL_OK)
+    {
+        flashPtr++;   // Move to the next word after writing prefix
+    }
+    else
+    {
+        result = false;   // Write failed
+    }
+
+     // Only attempt to write data if prefix write was successful
+    if(result)   
+    {
+        // Calculate the end pointer based on the size of data to write.
+        // Note that this rounds down for non-word sizes.
+        uint32_t* endPtr = flashPtr + (size / sizeof(uint32_t)); 
+        while(flashPtr < endPtr)
+        {
+            // Recast the local flash pointer to a byte pointer to access the data to write
+            if(HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, reinterpret_cast<uint32_t>(flashPtr), *dataPtr) == HAL_OK)
+            {
+                flashPtr++;   // Move to the next word
+                dataPtr++;    // Move to the next word
+            }
+            else
+            {
+                result = false;
+                break;  // Write failed, exit loop
+            }
+        }
+    }
+
+    // Check if there was an uneven number of bytes to write
+    size_t remainingBytes = size % sizeof(uint32_t);
+    if(result && remainingBytes != 0)   // Only attempt if all previous operations successful
+    {
+        // Compile the remaining words into a single word, padding with 0xFF (erased flash value) for the unwritten bytes
+        uint32_t lastWord = 0xFFFFFFFF; // Default value with all bytes as 0xFF
+        uint8_t* lastBytesPtr = reinterpret_cast<uint8_t*>(dataPtr);
+        for(size_t i = 0; i < remainingBytes; i++)
+        {
+            lastWord &= ~(0xFF << (i * 8)); // Clear the byte to be written
+            lastWord |= (static_cast<uint32_t>(lastBytesPtr[i]) << (i * 8)); // Set the byte to be written
+        }
+        if(HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, reinterpret_cast<uint32_t>(flashPtr), lastWord) != HAL_OK)
+        {
+            result = false;   // Write failed
+        }
+
+        flashPtr++;  // Move to the next word after writing the last partial word
+    }
+
+    // Write postfix to flash
+    if(result)    // Only attempt to write postfix if all previous writes were successful
+    {
+        if(HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, reinterpret_cast<uint32_t>(flashPtr), *reinterpret_cast<const uint32_t*>(CV_MEM_POSTFIX)) != HAL_OK)
+        {
+            result = false;   // Write failed
+        }
+    }
+
+    HAL_FLASH_Lock();   // Relock flash mem when done
+    __enable_irq();     // Re-enable interrupts    
+    return result;
 }
 
 extern "C" void loklight_debug_print(const char* sFormat, ...)

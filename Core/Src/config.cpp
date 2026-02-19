@@ -82,6 +82,35 @@ bool LoklightConfig::writeCv(uint8_t cvNumber, uint8_t cvValue)
     return false; // CV not found in the map
 }
 
+bool LoklightConfig::saveCvMapToFlash()
+{
+    bool writeSuccess = false;
+    
+    // Step 1: Erase the flash memory area
+    if(!config_erase_cv_flash_map())
+    {
+        return false;   // Erase failed, cannot proceed with write
+    }
+    
+    // Step 2: Write the values to flash. Prefix and postfix are handled by the write function
+    if(!config_write_cv_flash_map(reinterpret_cast<uint8_t*>(cvMap_), sizeof(cvMap_)))
+    {
+        return false;   // Write failed
+    }
+
+    // Step 3: Verify the values
+    uint8_t* flashPtr = reinterpret_cast<uint8_t*>(CV_MEM_START_ADDR);
+    bool prefixMatch = memcmp(CV_MEM_PREFIX, flashPtr, sizeof(CV_MEM_PREFIX)) == 0;
+    bool postfixMatch = memcmp(CV_MEM_POSTFIX, flashPtr + sizeof(CV_MEM_PREFIX) + sizeof(cvMap_), sizeof(CV_MEM_POSTFIX)) == 0;
+    if(prefixMatch && postfixMatch)
+    {
+        // Valid config data found in flash, copy it to RAM
+        writeSuccess = (memcmp(reinterpret_cast<uint8_t*>(cvMap_), flashPtr + sizeof(CV_MEM_PREFIX), sizeof(cvMap_)) == 0);
+    }
+
+    return writeSuccess;
+}
+
 uint16_t LoklightConfig::getFunctionOutputMask(DccFunctionOutputMap_t function) const
 {
     //F0F, F0R, F1, F2, F3 can be mapped to platform specific outputs 1..8 through CV33-CV37

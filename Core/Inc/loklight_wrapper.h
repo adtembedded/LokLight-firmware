@@ -146,6 +146,12 @@ bool dcc_hw_read_analog_direction();
 #define CV_MEM_START_ADDR (0x08003F80)  // Start address in flash where CV values can be stored. This memory must be reserved and cannot be used for text of the code
 #define CV_MEM_SIZE (128)               // Size of the reserved memory for CV storage. 
 
+// Erases the part of the flash memory where CVs are stored. Returns true if successful
+bool config_erase_cv_flash_map();
+
+// Writes the CV map to flash memory. Returns true if successful
+bool config_write_cv_flash_map(uint8_t* cvMapPtr, size_t size);
+
 #ifdef __cplusplus
 }
 #endif
