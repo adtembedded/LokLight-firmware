@@ -68,7 +68,9 @@ typedef struct DccServiceModeObj_s {
     uint32_t lastValidMsgTime; //Timestamp of the last valid message received, used for timing out of service mode
     uint8_t lastCvAccessed;
     uint8_t lastCvWriteValue;
-    uint8_t identicalCvWriteCnt;
+    uint8_t identicalRequestCnt;
+    bool factoryResetFlag;
+    bool cvWriteFlag;
 } DccServiceModeObj_t;
 
 //Message processing
@@ -264,7 +266,7 @@ private:
     uint8_t dccMsgBuf_[MAX_BYTESIZE_DATA] = {0}; //Buffer to store incoming bytes while processing a message. Size is max addr bytes + max data bytes
     DccMsg_t lastDccMsg_ = {0, false, no_new_dcc_msg, {0}, 0, DCC_DIRECTION_FORWARD, 0, 0, 0}; //Last valid message received
     DccBitTimeQueue bitTimeQueue_;
-    DccServiceModeObj_t serviceModeObj_ = {0, 0, 0, 0}; 
+    DccServiceModeObj_t serviceModeObj_ = {0, 0, 0, 0, false, false}; //Object to store the state of service mode CV access
     DccControlMode_t activeControlMode_ = DCC_CONTROL_MODE_DCC_128SS; // Default if no other control mode is set
 };
 

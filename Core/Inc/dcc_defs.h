@@ -159,6 +159,7 @@ typedef enum DCCCvAccess_e : uint8_t {
 
 // Timeout value for exiting service mode
 constexpr uint32_t DCC_SERVICE_MODE_TIMEOUT_MS = 20; //20ms according to NMRA standard.
+constexpr uint8_t DCC_SERVICE_MODE_CONFORMATION_CNT = 2; // Amount of times that CV writes and other critical operations must be confirmed by sending multiple identical message. Total identical message count is DCC_SERVICE_MODE_CONFORMATION_CNT + 1
 
 // XPOM is not supported by Loklight nor defined in this header
 

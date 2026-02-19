@@ -217,7 +217,7 @@ void DccInterface::resetDccReader(bool resetLastMsg)
     if(resetLastMsg) {
         lastDccMsg_ = {0, false, no_new_dcc_msg, {0}, 0, DCC_DIRECTION_FORWARD, 0, 0, 0};
     }
-    serviceModeObj_ = {0, 0, 0, 0}; //Reset CV access state
+    serviceModeObj_ = {0, 0, 0, 0, false, false}; //Reset CV access state
     dccDebugInfo_.EFrReaderResets++;
 }
 
@@ -1268,27 +1268,99 @@ bool DccInterface::processServiceMsg()
     // 1. General reset
     // 2. Decoder Factory Reset
     // 3. Service Mode Instruction Packets for Direct Mode
-
-    // Handle resets
-    if(isBroadCastResetMsg(dccMsgBuf_[0], dccMsgBuf_[1]))
+    if(!validServiceMsg(dccMsgBuf_[0]))
     {
-        // General reset, reset the decoder into service mode
-        initServiceMode();
+        return false; // Not a valid service mode message, ignore
     }
+
+    // Check if this message is the same as the last. This needs to be done as some instructions require a confirmation by sending the same message multiple times.
+    // The general reset & decoder reset are both 2-byte instructions + 1 CRC byte
+    // The direct mode packets are 3-byte instructions + 1 CRC byte
+    // Given the above, if we compare the first 3 bytes of any message, we can check if they have identical content
+    static uint8_t lastRequest[3] = {};
+    if(memcmp(lastRequest, dccMsgBuf_, sizeof(uint8_t)*3) == 0)
+    {
+        // The same message is received. Increase confirmation count.
+        serviceModeObj_.identicalRequestCnt++;
+    }
+    else
+    {
+        // We have received a different message. Reset the service object
+        memset(&serviceModeObj_, 0, sizeof(DccServiceModeObj_t));
+    }
+    
+    // Update last valid message time, to prevent service mode timeout
+    serviceModeObj_.lastValidMsgTime = platform_get_tick_ms(); 
+    memcpy(lastRequest, dccMsgBuf_, sizeof(uint8_t)*3); // Update last request buffer with the new message
 
     // A factory reset always has this spec:
     // Byte 1: 0b0111 1111
     // Byte 2: 0b0000 1000
     // Byte 3: 0b0111 0111
     constexpr uint8_t factoryResetMsg[3] = {0b01111111, 0b00001000, 0b01110111};
-    if(memcmp(dccMsgBuf_, factoryResetMsg, sizeof(factoryResetMsg)) == 0)
+    // A CV write instruction has the following format:
+    // Byte 1: 0111CCAA, where CC is the sub instruction of which we only support writing (CC=11)
+    // Byte 2: AAAAAAAA, where A is the 10-bit CV address 
+    // Byte 3: DDDDDDDD, where D is the value specification
+    constexpr uint8_t cvWriteInstr = 0b01111100;
+
+    // Handle resets
+    if(isBroadCastResetMsg(dccMsgBuf_[0], dccMsgBuf_[1]))
     {
-        // Factory reset, TODO
-        // Step 1: reset CVs to their default values
-        dccConfig_;
+        // General reset, reset the decoder into service mode
+        initServiceMode();
+        return true;
+    }
+    else if(memcmp(dccMsgBuf_, factoryResetMsg, sizeof(factoryResetMsg)) == 0)
+    {
+        // Check if this is the first request or not
+        if(serviceModeObj_.identicalRequestCnt >= DCC_SERVICE_MODE_CONFORMATION_CNT)
+        {
+            // The command is valid.
+            // The DCC class only flags the parent to take action
+            // The actual reset is performed somewhere else
+            serviceModeObj_.factoryResetFlag = true;
+        }
+        else
+        {
+            // This is the first time we receive this message.
+            // Nothing need to happen here            
+        }
+        
+        return true;
+    }
+    else if(((dccMsgBuf_[0]) & cvWriteInstr) == cvWriteInstr) // cvWriteInstr is also a valid mask
+    {
+        // Check if this is the first request or not
+        if(serviceModeObj_.identicalRequestCnt >= DCC_SERVICE_MODE_CONFORMATION_CNT)
+        {
+            // This is the second time we receive this message, perform the write
+            // The DCC class only flags the parent to take action
+            // The actual write is performed somewhere else
+            serviceModeObj_.cvWriteFlag = true;
+        }
+        else
+        {
+            // This is the first time we receive this message, store it and wait for confirmation
+            // Extract CV address from the first two bytes. 
+            // The 10 bit CV address is encoded in the first two bytes, where byte 1 contains the 2 MSB of the address in bit1 and bit0.
+            // A value of 0 indicates CV1, 1 for CV2, etc.
+            uint16_t cvAddress = (((dccMsgBuf_[0] & 0x03) << 8) | dccMsgBuf_[1]) + 1; 
+            uint8_t cvValue = dccMsgBuf_[2]; // Extract CV value from the third byte
+            serviceModeObj_.lastCvAccessed = cvAddress;
+            serviceModeObj_.lastCvWriteValue = cvValue;
+        }
+
+        return true;
+    }
+    else
+    {
+        // Unsupported service mode message, ignore
+        dccDebugInfo_.EMsUnsupportedMsgType++;
     }
 
-    // If we end up here, the message was not supported.
+    // Cannot end up here
+    memset(lastRequest, 0, sizeof(lastRequest)); 
     return false;
 }
 
