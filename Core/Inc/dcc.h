@@ -64,6 +64,19 @@ typedef struct DccState_s {
     uint16_t funcEnanbled;      // Current function bits (F0F, F0R, F1 ..F12). These are masked bits, so bit 0 is F0F, bit 1 is F0R, bit 2 is F1, etc.
 } DccVarState_t;
 
+typedef enum DccCvAccess_e : uint8_t {
+    DCC_CV_ACC_NONE = 0,        // No access ongoing
+    DCC_CV_ACC_WRITE_ONCE = 1,  // CV value has been written once but not confirmed yet
+    DCC_CV_ACC_WRITE_COMPLETE = 2, // CV value has been written and confirmed by the control station
+    DCC_CV_ACC_ERROR = 3        // CV access error, e.g. control station did not confirm the written value or a write operation failed
+} DccCvAccess_t;
+
+typedef struct DccCvObject_s {
+    uint8_t cv_number;
+    uint8_t cv_value;
+    DccCvAccess_t cv_access_state;
+} DccCvObject_t;
+
 //Message processing
 // Expected ticks for DCC bit transitions
 // Refer to https://www.nmra.org/sites/default/files/standards/sandrp/DCC/S/s-9.1_electrical_standards_for_digital_command_control.pdf
@@ -252,7 +265,7 @@ private:
     uint8_t dccMsgBuf_[MAX_BYTESIZE_DATA] = {0}; //Buffer to store incoming bytes while processing a message. Size is max addr bytes + max data bytes
     DccMsg_t lastDccMsg_ = {0, false, no_new_dcc_msg, {0}, 0, DCC_DIRECTION_FORWARD, 0, 0, 0}; //Last valid message received
     DccBitTimeQueue bitTimeQueue_;
-    bool cvWriteInProgress_ = false; //Indicates a CV write operation is ongoing. Flag is set after reception of the first messsage, and cleared after the second required cmd message was received OR when the write is invalidated.
+    DccCvObject_t cvAccessObj_ = {0, 0, DCC_CV_ACC_NONE}; //Indicates a CV write operation is ongoing. Flag is set after reception of the first messsage, and cleared after the second required cmd message was received OR when the write is invalidated.
     DccControlMode_t activeControlMode_ = DCC_CONTROL_MODE_DCC_128SS; // Default if no other control mode is set
 };
 

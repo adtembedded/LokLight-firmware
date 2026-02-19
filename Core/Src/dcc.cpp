@@ -32,9 +32,9 @@ bool DccInterface::init(DccHwInitCfg_t* initHwCfg /*= nullptr*/, DccConfig_t* in
 
     //Reset runtime state of reader
     bitTimeQueue_.resetQueue();
-    resetDccReader(true);
-    dccVarState_ = {0, DCC_DIRECTION_FORWARD, 0};  //Set speed to 0, all functions off
-    activeControlMode_ = dccConfig_.controlMode; // Set the active control mode to the configured control mode
+    resetDccReader(true);                           // Resets the bit processing state, message buffer and cv access state.
+    dccVarState_ = {0, DCC_DIRECTION_FORWARD, 0};   //Set speed to 0, all functions off
+    activeControlMode_ = dccConfig_.controlMode;    // Set the active control mode to the configured control mode
     //Do not reset the config. It has default values and the caller can overwrite them if needed. The settings are preserved across inits.
     
     // Initialize PWM timer for DCC reading, this is mandatory
@@ -166,7 +166,7 @@ void DccInterface::resetDccReader(bool resetLastMsg)
     if(resetLastMsg) {
         lastDccMsg_ = {0, false, no_new_dcc_msg, {0}, 0, DCC_DIRECTION_FORWARD, 0, 0, 0};
     }
-    cvWriteInProgress_ = false;
+    cvAccessObj_ = {0, 0, DCC_CV_ACC_NONE}; //Reset CV access state
     dccDebugInfo_.EFrReaderResets++;
 }
 
@@ -911,6 +911,8 @@ bool DccInterface::processFuncGroupMsg()
 }
 bool DccInterface::processCvWriteMsg()
 {
+    led_control_set_pwm(LED1, 255);
+    platform_delay_ms(1000);
     return true; //TODO
 }
 
