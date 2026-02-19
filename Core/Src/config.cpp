@@ -9,12 +9,44 @@
 *
 */
 #include "config.h"
+#include <algorithm> // For std::equal and std::copy
+#include <cstring> // For std::memxxx
 
 LoklightConfigInitResult_t LoklightConfig::init(void)
 {
     isInitialized_ = false;
 
-    //TODO
+    // Check if config data memory is large enough
+    static_assert(sizeof(cvMap_) * sizeof(cvEntry_t) <= CV_MEM_SIZE - sizeof(CV_MEM_PREFIX) - sizeof(CV_MEM_POSTFIX), "CV map size exceeds reserved flash memory for CV storage");
+
+    // Try to find a valid data configuration in flash
+    // Note that future implementations could try to save writes cycles by
+    // iteratively going through the memory, each time increasing the offset by the cvmap amount until the last valid configuration is found.
+    // The current implementation allows ~10.000 CV map updates, which happen once per CV write. This should be more than sufficient.
+    uint8_t* flashPtr = reinterpret_cast<uint8_t*>(CV_MEM_START_ADDR);
+
+    // The commented out code below is the "nice" C++ implementation. 
+    // It takes up too much memory, however, and is only kept here for reference.
+
+    // if(std::equal(CV_MEM_PREFIX, CV_MEM_PREFIX + sizeof(CV_MEM_PREFIX), flashPtr) && 
+    //    std::equal(CV_MEM_POSTFIX, CV_MEM_POSTFIX + sizeof(CV_MEM_POSTFIX), flashPtr + sizeof(CV_MEM_PREFIX) + sizeof(cvMap_)))
+    // {
+    //     // Valid config data found in flash, copy it to RAM
+    //     std::copy(flashPtr + sizeof(CV_MEM_PREFIX), flashPtr + sizeof(CV_MEM_PREFIX) + sizeof(cvMap_), reinterpret_cast<uint8_t*>(cvMap_));
+    //     isInitialized_ = true;
+    //     return LL_CFG_INIT_STORED_CFG_LOADED;
+    // }
+
+    // This implementation is less safe, but needs approx half the memory footprint (for Debug build)
+    bool prefixMatch = memcmp(CV_MEM_PREFIX, flashPtr, sizeof(CV_MEM_PREFIX)) == 0;
+    bool postfixMatch = memcmp(CV_MEM_POSTFIX, flashPtr + sizeof(CV_MEM_PREFIX) + sizeof(cvMap_), sizeof(CV_MEM_POSTFIX)) == 0;
+    if(prefixMatch && postfixMatch)
+    {
+        // Valid config data found in flash, copy it to RAM
+        std::memcpy(reinterpret_cast<uint8_t*>(cvMap_), flashPtr + sizeof(CV_MEM_PREFIX), sizeof(cvMap_));
+        isInitialized_ = true;
+        return LL_CFG_INIT_STORED_CFG_LOADED;
+    }
     
     isInitialized_ = true;
     return LL_CFG_INIT_NO_STORED_CFG_DEFAULTS_LOADED;

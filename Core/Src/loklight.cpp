@@ -140,8 +140,9 @@ void Loklight::updateLedFunctionMapping()
     // This function translates that to a row where one function outputs is linked to a set of functions.
     // I.e. one bitmaks maps function output 1 or 2 to functions F0F, F0R, F1..F3. This is used in the step function to determine which LEDs to turn on based on which functions are active in the DCC messages.
     
-    // First set LED1. It is function output 1 on the platform and can be mapped to F0F, F0R, F1..F3 through CVs 33-37
+    // First set LED1, then LED2. They are function output 1 and 2 on the platform and can be mapped to F0F, F0R, F1..F3 through CVs 33-37
     led1FunctionMap_ = 0;
+    led2FunctionMap_ = 0;
     for(uint8_t function = DCC_FOMAP_F0F; function <= DCC_FOMAP_F3; ++function)
     {
         uint16_t outputMask = loklightConfig_.getFunctionOutputMask(static_cast<DccFunctionOutputMap_t>(function));
@@ -151,13 +152,6 @@ void Loklight::updateLedFunctionMapping()
             // Bit0 maps to F0F, bit1 maps to F0R, bit2 maps to F1, bit3 maps to F2, bit4 maps to F3
             led1FunctionMap_ |= (1 << (function - DCC_FOMAP_F0F));
         }
-    }
-
-    // Then set LED2. It is function output 2 on the platform and can be mapped to F0F, F0R, F1..F3 through CVs 33-37
-    led2FunctionMap_ = 0;
-    for(uint8_t function = DCC_FOMAP_F0F; function <= DCC_FOMAP_F3; ++function)
-    {
-        uint16_t outputMask = loklightConfig_.getFunctionOutputMask(static_cast<DccFunctionOutputMap_t>(function));
         if(outputMask & 0x02) // Check if function maps to output 2
         {
             // Set corresponding bit in led2FunctionMap_
