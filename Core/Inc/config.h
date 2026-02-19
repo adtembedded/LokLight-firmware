@@ -20,6 +20,51 @@
     Constants and Variables for LokLight configuration and state management
 
 */
+/* 
+
+    CV/Config Types
+
+*/
+// This CV Map is part of the config class. This initialization is used to set defaults.
+// Change values / insert / delete as needed
+typedef struct cvEntry_s {
+    uint8_t cvNumber;
+    uint8_t cvValue;
+} cvEntry_t;
+
+inline constexpr cvEntry_t defaultCvMap[] = {
+    {1, 3},     // CV1: DCC Address Basic (1-127 for short)
+    {17, 194},  // CV17: DCC Address Extended 1 DCC Address (128-10239 for long, this is the 256 multiplier. Addr = (addrExt1-192) * 256 + addrExt2)
+    {18, 48},    // CV18: DCC Address Extended 2 DCC Address (128-10239 for long, this is the added offset)
+    {29, 38},    // CV29: Configuration register
+                        // Bit0 Travel dir: 0 Normal direction of travel, 1 Reversed direction of travel
+                        // Bit1 Speed config: 0 for 14 speed steps DCC and FL = bit4 of dcc speed data, 2 for 28 or 128 speed steps DCC and FL is bit 4 in function group 1 instruction message.
+                        // Bit2 Analog operation: 0 Disable analog operation, 4 Enable analog operation
+                        // Bit3 UNUSED RailCom: 0 to Disable RailCom®, 8 to Enable RailCom®
+                        // Bit4 UNUSED Speed curve: 0 for curve through CV 2, 5, 6; 16 for curve through CV 67-94
+                        // Bit5 Addressing mode: 0 Short addresses (CV 1) in DCC mode, 32 Long addresses (CV 17 + 18) in DCC mode
+                        // Bit6 UNUSED Reserved
+                        // Bit7 UNUSED Accessory Decoder: 0 for multipurpose decoder, 128 for accessory decoder
+    {13, 0},    // CV13: Analog mode F1..F8. 1 is on, 0 is off during analog mode. (bit0 = F1, bit1 = F2, ..., bit7 = F8)
+    {14, 3},    // CV14: Analog mode F0F, F0R, F9..F12 (bit0 = F0F, bit1 = F0R, bit2 = F9, bit3 = F10, bit4 = F11, bit5 = F12)
+    {33, 3},    // CV33: Function map. Maps F0 forward to outputs. FO1 and FO2 are the LEDs and normally they are linked only to forward motion
+    {34, 0},    // CV34: Function map. F0 backward. Refer to https://www.nmra.org/sites/default/files/s-9.2.2_2012_10.pdf
+    {35, 0},    // CV35: Function map. F1
+    {36, 0},    // CV36: Function map. F2
+    {37, 0},    // CV37: Function map. F3
+    {112, 128}, // CV112: LED1 Max brightness. Set to half power by default
+    {113, 128}, // CV113: LED2 Max brightness
+    {122, 0},   // CV122: LED1 Min brightness. Set to fully off by default
+    {123, 0},   // CV123: LED2 Min brightness
+    {114, 10},  // CV114: LED1 Fade time. Fade-in/out time. 0=instant, 255=1 second, scaling is linear
+    {115, 10},  // CV115: LED2 Fade time
+    {116, 15}   // CV116: LED Direction sensitivity. 
+                // LED1 direction sensitivity bit 0 F..1 R; By default set to 3 (sensitive to both directions)
+                // LED2 direction sensitivity bit 2 F..3 R; By default set to 3<<2 (sensitive to both directions)
+};
+
+using ConfigMapType = decltype(defaultCvMap);
+
 
 /*
 
@@ -54,11 +99,6 @@ typedef enum DccFunctionOutputMap_e: uint8_t {
     Classes 
     
 */
-typedef struct cvEntry_s {
-    uint16_t cvNumber;
-    uint8_t cvValue;
-} cvEntry_t;
-
 typedef struct cvLookUpResult_s {
     bool cvFound;
     uint8_t cvValue;
@@ -104,46 +144,7 @@ private:
     ~LoklightConfig(){;}
 
     bool isInitialized_ = false;
-    static cvEntry_t cvMap_[];
+    ConfigMapType cvMap_;
 };
-
-/* 
-
-    CV/Config Types
-
-*/
-// This CV Map is part of the config class. This initialization is used to set defaults.
-// Change values / insert / delete as needed
-inline cvEntry_t LoklightConfig::cvMap_[] = {
-    {1, 3},     // CV1: DCC Address Basic (1-127 for short)
-    {17, 194},  // CV17: DCC Address Extended 1 DCC Address (128-10239 for long, this is the 256 multiplier. Addr = (addrExt1-192) * 256 + addrExt2)
-    {18, 48},    // CV18: DCC Address Extended 2 DCC Address (128-10239 for long, this is the added offset)
-    {29, 38},    // CV29: Configuration register
-                        // Bit0 Travel dir: 0 Normal direction of travel, 1 Reversed direction of travel
-                        // Bit1 Speed config: 0 for 14 speed steps DCC and FL = bit4 of dcc speed data, 2 for 28 or 128 speed steps DCC and FL is bit 4 in function group 1 instruction message.
-                        // Bit2 Analog operation: 0 Disable analog operation, 4 Enable analog operation
-                        // Bit3 UNUSED RailCom: 0 to Disable RailCom®, 8 to Enable RailCom®
-                        // Bit4 UNUSED Speed curve: 0 for curve through CV 2, 5, 6; 16 for curve through CV 67-94
-                        // Bit5 Addressing mode: 0 Short addresses (CV 1) in DCC mode, 32 Long addresses (CV 17 + 18) in DCC mode
-                        // Bit6 UNUSED Reserved
-                        // Bit7 UNUSED Accessory Decoder: 0 for multipurpose decoder, 128 for accessory decoder
-    {13, 0},    // CV13: Analog mode F1..F8. 1 is on, 0 is off during analog mode. (bit0 = F1, bit1 = F2, ..., bit7 = F8)
-    {14, 3},    // CV14: Analog mode F0F, F0R, F9..F12 (bit0 = F0F, bit1 = F0R, bit2 = F9, bit3 = F10, bit4 = F11, bit5 = F12)
-    {33, 3},    // CV33: Function map. Maps F0 forward to outputs. FO1 and FO2 are the LEDs and normally they are linked only to forward motion
-    {34, 0},    // CV34: Function map. F0 backward. Refer to https://www.nmra.org/sites/default/files/s-9.2.2_2012_10.pdf
-    {35, 0},    // CV35: Function map. F1
-    {36, 0},    // CV36: Function map. F2
-    {37, 0},    // CV37: Function map. F3
-    {112, 128}, // CV112: LED1 Max brightness. Set to half power by default
-    {113, 128}, // CV113: LED2 Max brightness
-    {122, 0},   // CV122: LED1 Min brightness. Set to fully off by default
-    {123, 0},   // CV123: LED2 Min brightness
-    {114, 10},  // CV114: LED1 Fade time. Fade-in/out time. 0=instant, 255=1 second, scaling is linear
-    {115, 10},  // CV115: LED2 Fade time
-    {116, 15}   // CV116: LED Direction sensitivity. 
-                // LED1 direction sensitivity bit 0 F..1 R; By default set to 3 (sensitive to both directions)
-                // LED2 direction sensitivity bit 2 F..3 R; By default set to 3<<2 (sensitive to both directions)
-};
-
 
 #endif // CONFIG_H

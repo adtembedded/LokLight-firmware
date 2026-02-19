@@ -243,6 +243,7 @@ private:
     bool applyBaselineMsgToState();
     bool applyAdvancedMsgToState();
     bool applyFuncGroupMsgToState();
+    bool processServiceMsg();
     void updateF0();
     void initServiceMode();
 

@@ -103,7 +103,8 @@ bool DccInterface::step()
                 // Check what mode we are in, and how the message should be processed
                 if(activeControlMode_ == DCC_CONTROL_MODE_SERVICE_MODE)
                 {
-                    //TODO
+                    // Service mode processing
+                    processServiceMsg();
                 }
                 else if(activeControlMode_ == DCC_CONTROL_MODE_DCC_14SS || activeControlMode_ == DCC_CONTROL_MODE_DCC_128SS)
                 {
@@ -112,7 +113,7 @@ bool DccInterface::step()
                     processDccMsg();
                 }
                 else if(activeControlMode_ == DCC_CONTROL_MODE_INACTIVE)
-                 {
+                {
                     // Check if message is a valid service message. If not, we can re-enable normal DCC processing.
                     bool canBeServiceMsg = validServiceMsg(dccMsgBuf_[0]);
                     if(!canBeServiceMsg)
@@ -1258,6 +1259,37 @@ bool DccInterface::applyFuncGroupMsgToState()
     }
     
     return true;
+}
+
+bool DccInterface::processServiceMsg()
+{
+    // Every message must be processed in this mode, there is no addressing
+    // We support the following operations (refer to NMRA S9.2.3):
+    // 1. General reset
+    // 2. Decoder Factory Reset
+    // 3. Service Mode Instruction Packets for Direct Mode
+
+    // Handle resets
+    if(isBroadCastResetMsg(dccMsgBuf_[0], dccMsgBuf_[1]))
+    {
+        // General reset, reset the decoder into service mode
+        initServiceMode();
+    }
+
+    // A factory reset always has this spec:
+    // Byte 1: 0b0111 1111
+    // Byte 2: 0b0000 1000
+    // Byte 3: 0b0111 0111
+    constexpr uint8_t factoryResetMsg[3] = {0b01111111, 0b00001000, 0b01110111};
+    if(memcmp(dccMsgBuf_, factoryResetMsg, sizeof(factoryResetMsg)) == 0)
+    {
+        // Factory reset, TODO
+        // Step 1: reset CVs to their default values
+        dccConfig_;
+    }
+
+    // If we end up here, the message was not supported.
+    return false;
 }
 
 void DccInterface::updateF0()
