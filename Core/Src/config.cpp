@@ -9,8 +9,7 @@
 *
 */
 #include "config.h"
-#include <algorithm> // For std::equal and std::copy
-#include <cstring> // For std::memxxx
+#include <cstring> // For std::memxxx>
 
 LoklightConfigInitResult_t LoklightConfig::init(void)
 {
@@ -43,10 +42,13 @@ LoklightConfigInitResult_t LoklightConfig::init(void)
     if(prefixMatch && postfixMatch)
     {
         // Valid config data found in flash, copy it to RAM
-        std::memcpy(reinterpret_cast<uint8_t*>(cvMap_), flashPtr + sizeof(CV_MEM_PREFIX), sizeof(cvMap_));
+        memcpy(reinterpret_cast<uint8_t*>(cvMap_), flashPtr + sizeof(CV_MEM_PREFIX), sizeof(cvMap_));
         isInitialized_ = true;
         return LL_CFG_INIT_STORED_CFG_LOADED;
     }
+
+    // No valid config found in flash, load defaults
+    memcpy(cvMap_, defaultCvMap, sizeof(cvMap_t));
     
     isInitialized_ = true;
     return LL_CFG_INIT_NO_STORED_CFG_DEFAULTS_LOADED;
@@ -60,6 +62,11 @@ cvLookUpResult_t LoklightConfig::lookUpCV(uint16_t cvNumber) const
         }
     }
     return {false, 0};
+}
+
+void LoklightConfig::resetDefaultConfig()
+{
+    memcpy(cvMap_, defaultCvMap, sizeof(cvMap_t));
 }
 
 uint16_t LoklightConfig::getFunctionOutputMask(DccFunctionOutputMap_t function) const
