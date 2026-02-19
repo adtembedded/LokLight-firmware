@@ -41,6 +41,9 @@ typedef struct DccHwInitCfg_s DccHwInitCfg_t;
 // Get the current tick in ms
 uint32_t platform_get_tick_ms(void);
 
+// Delay by ms
+void platform_delay_ms(uint32_t ms);
+
 // Use as printf for debug information
 void loklight_debug_print(const char* sFormat, ...);
 

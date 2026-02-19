@@ -21,6 +21,12 @@ extern "C" uint32_t platform_get_tick_ms(void)
     return HAL_GetTick();
 }
 
+extern "C" void platform_delay_ms(uint32_t ms)
+{
+    // Change as needed to implement a delay in ms
+    HAL_Delay(ms);
+}
+
 extern "C" void loklight_debug_print(const char* sFormat, ...)
 {
     // Placeholder implementation
