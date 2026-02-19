@@ -73,6 +73,11 @@ typedef struct DccServiceModeObj_s {
     bool cvWriteFlag;
 } DccServiceModeObj_t;
 
+typedef struct DccCvWriteObj_s {
+    uint8_t cvAddress;
+    uint8_t cvValue;
+} DccCvWriteObj_t;
+
 //Message processing
 // Expected ticks for DCC bit transitions
 // Refer to https://www.nmra.org/sites/default/files/standards/sandrp/DCC/S/s-9.1_electrical_standards_for_digital_command_control.pdf
@@ -208,6 +213,8 @@ public:
     const uint8_t getSpeed() const {return dccVarState_.speed;}
     const DccDirection_t getDirection() const {return dccVarState_.direction;}
     const uint16_t getActiveFuncs() const {return dccVarState_.funcEnanbled;}
+    bool getFactoryResetRequested() const { return serviceModeObj_.factoryResetFlag; }
+    DccCvWriteObj_t getCvWriteRequested() const; // Returns a CV address of 0 when no write is pending.
 
     // This function must be exposed to the wrapper, as it is called from the DCC bit-time ISR to add new bit-times to the queue
     bool addBitTime(uint32_t t);

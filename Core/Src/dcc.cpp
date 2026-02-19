@@ -1364,6 +1364,17 @@ bool DccInterface::processServiceMsg()
     return false;
 }
 
+DccCvWriteObj_t DccInterface::getCvWriteRequested() const
+{
+    DccCvWriteObj_t ret = {}; // Initializes to 0, which indicates no CV write requested.
+    if(serviceModeObj_.cvWriteFlag)
+    {
+        ret.cvAddress = serviceModeObj_.lastCvAccessed;
+        ret.cvValue = serviceModeObj_.lastCvWriteValue;
+    }
+    return ret;
+}
+
 void DccInterface::updateF0()
 {
     // Toggle F0, useful for direction changes through speed instructions that immediately switch the light 

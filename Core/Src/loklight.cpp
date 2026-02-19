@@ -98,26 +98,65 @@ bool Loklight::step()
 
     // Set LED status according to settings and DCC state
     bool enableLed1 = false, enableLed2 = false;
-    
-    // Update LED enabled according to its function map and the active functions
-    uint16_t activeFuncs = dccInterface_.getActiveFuncs();
-    enableLed1 = (activeFuncs & led1FunctionMap_) != 0;
-    enableLed2 = (activeFuncs & led2FunctionMap_) != 0;
 
-    // Update LED enabled according to direction
-    DccDirection_t direction = dccInterface_.getDirection();
-    if(direction == DCC_DIRECTION_FORWARD)
+    // Perform normal led actions is we are in normal operation
+    DccControlMode_t controlMode = dccInterface_.getControlMode();
+    if(controlMode == DCC_CONTROL_MODE_DCC_14SS || controlMode == DCC_CONTROL_MODE_DCC_128SS || controlMode == DCC_CONTROL_MODE_ANALOG)
     {
-        // Note: the LED_DIR_XX enum values follow a bitmap [bit1: rev, bit0: fwd]
-        // That is to say, if LED_DIR_ALL is set, the bit for LED_DIR_FWD is enabled
-        // and the expression below will evaluate to true.
-        enableLed1 = enableLed1 && (led1DirMap_ & LED_DIR_FWD);
-        enableLed2 = enableLed2 && (led2DirMap_ & LED_DIR_FWD);
+        
+        // Update LED enabled according to its function map and the active functions
+        uint16_t activeFuncs = dccInterface_.getActiveFuncs();
+        enableLed1 = (activeFuncs & led1FunctionMap_) != 0;
+        enableLed2 = (activeFuncs & led2FunctionMap_) != 0;
+
+        // Update LED enabled according to direction
+        DccDirection_t direction = dccInterface_.getDirection();
+        if(direction == DCC_DIRECTION_FORWARD)
+        {
+            // Note: the LED_DIR_XX enum values follow a bitmap [bit1: rev, bit0: fwd]
+            // That is to say, if LED_DIR_ALL is set, the bit for LED_DIR_FWD is enabled
+            // and the expression below will evaluate to true.
+            enableLed1 = enableLed1 && (led1DirMap_ & LED_DIR_FWD);
+            enableLed2 = enableLed2 && (led2DirMap_ & LED_DIR_FWD);
+        }
+        else if(direction == DCC_DIRECTION_REVERSE)
+        {
+            enableLed1 = enableLed1 && (led1DirMap_ & LED_DIR_REV);
+            enableLed2 = enableLed2 && (led2DirMap_ & LED_DIR_REV);
+        }
     }
-    else if(direction == DCC_DIRECTION_REVERSE)
+    else if (controlMode == DCC_CONTROL_MODE_SERVICE_MODE)
     {
-        enableLed1 = enableLed1 && (led1DirMap_ & LED_DIR_REV);
-        enableLed2 = enableLed2 && (led2DirMap_ & LED_DIR_REV);
+        // By default, the LEDs are off
+        enableLed1 = false;
+        enableLed2 = false;
+
+        // Check if there is an action to be performed
+        if(dccInterface_.getFactoryResetRequested())
+        {
+            loklightConfig_.resetDefaultConfig();
+            // TODO
+            // Write to flash
+            // Flash LEDs
+            // Reset device with NVIC_SystemReset() 
+        }
+
+        DccCvWriteObj_t cvWriteRequest = dccInterface_.getCvWriteRequested();
+        if(cvWriteRequest.cvAddress != 0) // A CV address of 0 indicates no write is pending
+        {
+            //TODO 
+            //perform CV write action based on the CV address and value
+            // TODO
+            // Write to flash
+            // Flash LEDs
+            // Reset device with NVIC_SystemReset() 
+        }
+    }
+    else
+    {
+        // In other modes, we turn off the LEDs
+        enableLed1 = false;
+        enableLed2 = false;
     }
 
     // Update LED states
