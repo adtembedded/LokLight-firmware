@@ -1026,8 +1026,7 @@ bool DccInterface::applyMsgToState()
     switch(lastDccMsg_.msg_type)
     {
         case dcc_msg_dcci:
-            // TODO
-            ret = true;
+            ret = applyDecCtrlMsgToState();
             break;
         case dcc_msg_sdir:
         case dcc_msg_sdif:
