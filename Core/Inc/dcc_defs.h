@@ -157,6 +157,9 @@ typedef enum DCCCvAccess_e : uint8_t {
     dcc_cv_addr_msb_mask = 0b11        //Mask for the MSB bits of the CV number (bits 8 and 9)
 } DCCCvAccess_t;
 
+// Timeout value for exiting service mode
+constexpr uint32_t DCC_SERVICE_MODE_TIMEOUT_MS = 20; //20ms according to NMRA standard.
+
 // XPOM is not supported by Loklight nor defined in this header
 
 #endif // DCC_DEFS_H
