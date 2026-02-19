@@ -21,6 +21,12 @@ extern "C" uint32_t platform_get_tick_ms(void)
     return HAL_GetTick();
 }
 
+extern "C" void platform_delay_ms(uint32_t ms)
+{
+    // Change as needed to implement a delay in ms
+    HAL_Delay(ms);
+}
+
 extern "C" void loklight_debug_print(const char* sFormat, ...)
 {
     // Placeholder implementation
@@ -117,5 +123,23 @@ extern "C" bool dcc_hw_read_analog_direction()
 {
     // On the Loklight PCB, this pin is the DCC Sense pin.
     // It is connected to the glowbulb body (not tip) connection, which should be the right track.
-    return HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_1);
+    // On old inductor/variac based controllers this signal will fluctuate so we implement a memory efficient filter
+    static uint8_t high_cnt = 0;
+    GPIO_PinState dcc_sense_state = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_1);
+    if(dcc_sense_state == GPIO_PIN_SET)
+    {
+        if(high_cnt < 0xff)
+        {
+            high_cnt++;
+        }
+    }
+    else
+    {
+        if(high_cnt > 0)
+        {
+            high_cnt--;
+        }
+    }
+    // This last number is the noise tolerance
+    return (high_cnt > 0x1f) ? true : false;
 }

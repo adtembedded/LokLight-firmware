@@ -98,26 +98,69 @@ bool Loklight::step()
 
     // Set LED status according to settings and DCC state
     bool enableLed1 = false, enableLed2 = false;
-    
-    // Update LED enabled according to its function map and the active functions
-    uint16_t activeFuncs = dccInterface_.getActiveFuncs();
-    enableLed1 = (activeFuncs & led1FunctionMap_) != 0;
-    enableLed2 = (activeFuncs & led2FunctionMap_) != 0;
 
-    // Update LED enabled according to direction
-    DccDirection_t direction = dccInterface_.getDirection();
-    if(direction == DCC_DIRECTION_FORWARD)
+    // Perform normal led actions is we are in normal operation
+    DccControlMode_t controlMode = dccInterface_.getControlMode();
+    if(controlMode == DCC_CONTROL_MODE_DCC_14SS || controlMode == DCC_CONTROL_MODE_DCC_128SS || controlMode == DCC_CONTROL_MODE_ANALOG)
     {
-        // Note: the LED_DIR_XX enum values follow a bitmap [bit1: rev, bit0: fwd]
-        // That is to say, if LED_DIR_ALL is set, the bit for LED_DIR_FWD is enabled
-        // and the expression below will evaluate to true.
-        enableLed1 = enableLed1 && (led1DirMap_ & LED_DIR_FWD);
-        enableLed2 = enableLed2 && (led2DirMap_ & LED_DIR_FWD);
+        
+        // Update LED enabled according to its function map and the active functions
+        uint16_t activeFuncs = dccInterface_.getActiveFuncs();
+        enableLed1 = (activeFuncs & led1FunctionMap_) != 0;
+        enableLed2 = (activeFuncs & led2FunctionMap_) != 0;
+
+        // Update LED enabled according to direction
+        DccDirection_t direction = dccInterface_.getDirection();
+        if(direction == DCC_DIRECTION_FORWARD)
+        {
+            // Note: the LED_DIR_XX enum values follow a bitmap [bit1: rev, bit0: fwd]
+            // That is to say, if LED_DIR_ALL is set, the bit for LED_DIR_FWD is enabled
+            // and the expression below will evaluate to true.
+            enableLed1 = enableLed1 && (led1DirMap_ & LED_DIR_FWD);
+            enableLed2 = enableLed2 && (led2DirMap_ & LED_DIR_FWD);
+        }
+        else if(direction == DCC_DIRECTION_REVERSE)
+        {
+            enableLed1 = enableLed1 && (led1DirMap_ & LED_DIR_REV);
+            enableLed2 = enableLed2 && (led2DirMap_ & LED_DIR_REV);
+        }
     }
-    else if(direction == DCC_DIRECTION_REVERSE)
+    else if (controlMode == DCC_CONTROL_MODE_SERVICE_MODE)
     {
-        enableLed1 = enableLed1 && (led1DirMap_ & LED_DIR_REV);
-        enableLed2 = enableLed2 && (led2DirMap_ & LED_DIR_REV);
+        // By default, the LEDs are off
+        enableLed1 = false;
+        enableLed2 = false;
+
+        // Check if there is an action to be performed
+        if(dccInterface_.getFactoryResetRequested())
+        {
+            loklightConfig_.resetDefaultConfig();
+            // TODO
+            // Write to flash
+            // Flash LEDs
+            ledControl_.setBrightness(LED1, 255);
+            ledControl_.setBrightness(LED2, 255);
+            // Reset device with NVIC_SystemReset() 
+        }
+
+        DccCvWriteObj_t cvWriteRequest = dccInterface_.getCvWriteRequested();
+        if(cvWriteRequest.cvAddress != 0) // A CV address of 0 indicates no write is pending
+        {
+            //TODO 
+            //perform CV write action based on the CV address and value
+            // TODO
+            // Write to flash
+            // Flash LEDs
+            ledControl_.setBrightness(LED1, 255);
+            ledControl_.setBrightness(LED2, 255);
+            // Reset device with NVIC_SystemReset() 
+        }
+    }
+    else
+    {
+        // In other modes, we turn off the LEDs
+        enableLed1 = false;
+        enableLed2 = false;
     }
 
     // Update LED states
@@ -140,8 +183,9 @@ void Loklight::updateLedFunctionMapping()
     // This function translates that to a row where one function outputs is linked to a set of functions.
     // I.e. one bitmaks maps function output 1 or 2 to functions F0F, F0R, F1..F3. This is used in the step function to determine which LEDs to turn on based on which functions are active in the DCC messages.
     
-    // First set LED1. It is function output 1 on the platform and can be mapped to F0F, F0R, F1..F3 through CVs 33-37
+    // First set LED1, then LED2. They are function output 1 and 2 on the platform and can be mapped to F0F, F0R, F1..F3 through CVs 33-37
     led1FunctionMap_ = 0;
+    led2FunctionMap_ = 0;
     for(uint8_t function = DCC_FOMAP_F0F; function <= DCC_FOMAP_F3; ++function)
     {
         uint16_t outputMask = loklightConfig_.getFunctionOutputMask(static_cast<DccFunctionOutputMap_t>(function));
@@ -151,13 +195,6 @@ void Loklight::updateLedFunctionMapping()
             // Bit0 maps to F0F, bit1 maps to F0R, bit2 maps to F1, bit3 maps to F2, bit4 maps to F3
             led1FunctionMap_ |= (1 << (function - DCC_FOMAP_F0F));
         }
-    }
-
-    // Then set LED2. It is function output 2 on the platform and can be mapped to F0F, F0R, F1..F3 through CVs 33-37
-    led2FunctionMap_ = 0;
-    for(uint8_t function = DCC_FOMAP_F0F; function <= DCC_FOMAP_F3; ++function)
-    {
-        uint16_t outputMask = loklightConfig_.getFunctionOutputMask(static_cast<DccFunctionOutputMap_t>(function));
         if(outputMask & 0x02) // Check if function maps to output 2
         {
             // Set corresponding bit in led2FunctionMap_

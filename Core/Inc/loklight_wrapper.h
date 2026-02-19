@@ -41,6 +41,9 @@ typedef struct DccHwInitCfg_s DccHwInitCfg_t;
 // Get the current tick in ms
 uint32_t platform_get_tick_ms(void);
 
+// Delay by ms
+void platform_delay_ms(uint32_t ms);
+
 // Use as printf for debug information
 void loklight_debug_print(const char* sFormat, ...);
 
@@ -49,17 +52,6 @@ void loklight_debug_print(const char* sFormat, ...);
     Loklight class
 
 */
-// Opaque handle type for C
-// typedef void* LoklightHandle;
-
-// Create and destroy
-// Not used as class is a singleton
-// LoklightHandle loklight_create(void);
-// void loklight_destroy(LoklightHandle handle);
-
-// Get the handle of the singleton instance
-// LoklightHandle loklight_get_instance(void);
-
 // Initialization, call after creation and HW init
 // bool loklight_init(LoklightHandle handle, LedControlInitCfg_t* ledInitCfg);
 bool loklight_init(LedHwInitCfg_t* ledHwInitCfg, DccHwInitCfg_t* dccHwInitCfg);
@@ -142,6 +134,14 @@ bool dcc_bit_queue_add(uint32_t bit_time);
 // Returns high when right track has positive polarity, which means the locomotive should move forward.
 // Returns low when right track has low or negative polarity, and we assume therefore the left track has high polarity and locomotive should move in reverse.
 bool dcc_hw_read_analog_direction();
+
+/*
+
+    Config class
+
+*/
+#define CV_MEM_START_ADDR (0x08003F80)  // Start address in flash where CV values can be stored. This memory must be reserved and cannot be used for text of the code
+#define CV_MEM_SIZE (128)               // Size of the reserved memory for CV storage. 
 
 #ifdef __cplusplus
 }

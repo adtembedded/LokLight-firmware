@@ -19,7 +19,9 @@
 typedef enum DccControlMode_e : uint8_t{
     DCC_CONTROL_MODE_ANALOG = 0,
     DCC_CONTROL_MODE_DCC_14SS = 1,  //In this mode, speed steps are 1-14, and bit4 of speed data is used for F0 (light) function
-    DCC_CONTROL_MODE_DCC_128SS = 2  //Also for 28 speed steps. F0 is bit4 in function group 1 instruction message
+    DCC_CONTROL_MODE_DCC_128SS = 2,  //Also for 28 speed steps. F0 is bit4 in function group 1 instruction message
+    DCC_CONTROL_MODE_SERVICE_MODE = 3, //Service mode, for CV access
+    DCC_CONTROL_MODE_INACTIVE = 4 //Inactive mode, do not process DCC messages until we receive a packet that cannot be mistaken for a service mode packet.
 } DccControlMode_t;
 
 // Direction bit in CV29
@@ -154,6 +156,10 @@ typedef enum DCCCvAccess_e : uint8_t {
     dcc_cv_bitmanipulate = 0b10<<2,    //Bit manipulation (Not supported by Loklight)
     dcc_cv_addr_msb_mask = 0b11        //Mask for the MSB bits of the CV number (bits 8 and 9)
 } DCCCvAccess_t;
+
+// Timeout value for exiting service mode
+constexpr uint32_t DCC_SERVICE_MODE_TIMEOUT_MS = 20; //20ms according to NMRA standard.
+constexpr uint8_t DCC_SERVICE_MODE_CONFORMATION_CNT = 2; // Amount of times that CV writes and other critical operations must be confirmed by sending multiple identical message. Total identical message count is DCC_SERVICE_MODE_CONFORMATION_CNT + 1
 
 // XPOM is not supported by Loklight nor defined in this header
 

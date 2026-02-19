@@ -64,6 +64,20 @@ typedef struct DccState_s {
     uint16_t funcEnanbled;      // Current function bits (F0F, F0R, F1 ..F12). These are masked bits, so bit 0 is F0F, bit 1 is F0R, bit 2 is F1, etc.
 } DccVarState_t;
 
+typedef struct DccServiceModeObj_s {
+    uint32_t lastValidMsgTime; //Timestamp of the last valid message received, used for timing out of service mode
+    uint8_t lastCvAccessed;
+    uint8_t lastCvWriteValue;
+    uint8_t identicalRequestCnt;
+    bool factoryResetFlag;
+    bool cvWriteFlag;
+} DccServiceModeObj_t;
+
+typedef struct DccCvWriteObj_s {
+    uint8_t cvAddress;
+    uint8_t cvValue;
+} DccCvWriteObj_t;
+
 //Message processing
 // Expected ticks for DCC bit transitions
 // Refer to https://www.nmra.org/sites/default/files/standards/sandrp/DCC/S/s-9.1_electrical_standards_for_digital_command_control.pdf
@@ -80,7 +94,7 @@ constexpr uint32_t DCC_BITTIME_T0_MAX_TOTAL = (uint32_t)((DCC_TIMER_FREQ_MAX*120
 constexpr uint8_t NUM_ONES_VALID_PREAMBLE = 10; // At receiver side. There should be 14 or more preamble bits by the controller
 constexpr uint8_t MAX_BYTESIZE_ADDR = 2;
 constexpr uint8_t MAX_BYTESIZE_CMD_ARG = 3;
-constexpr uint8_t MAX_BYTESIZE_DATA = MAX_BYTESIZE_ADDR + MAX_BYTESIZE_CMD_ARG + 1; //2 address bytes, 3 data bytes
+constexpr uint8_t MAX_BYTESIZE_DATA = MAX_BYTESIZE_ADDR + MAX_BYTESIZE_CMD_ARG + 1; //2 address bytes, 3 data bytes, 1 CRC byte
 constexpr uint8_t MIN_BYTESIZE_DATA = 3; //At least the address, one byte of data, and one byte of CRC
 
 
@@ -199,6 +213,8 @@ public:
     const uint8_t getSpeed() const {return dccVarState_.speed;}
     const DccDirection_t getDirection() const {return dccVarState_.direction;}
     const uint16_t getActiveFuncs() const {return dccVarState_.funcEnanbled;}
+    bool getFactoryResetRequested() const { return serviceModeObj_.factoryResetFlag; }
+    DccCvWriteObj_t getCvWriteRequested() const; // Returns a CV address of 0 when no write is pending.
 
     // This function must be exposed to the wrapper, as it is called from the DCC bit-time ISR to add new bit-times to the queue
     bool addBitTime(uint32_t t);
@@ -219,21 +235,26 @@ private:
     bool is0HalfBit(uint32_t t);
     bool valid1BitDelta(uint32_t t11, uint32_t t12);
     bool valid0BitTotal(uint32_t t01, uint32_t t02);
+    bool validServiceMsg(uint8_t firstByte);
+    bool isBroadCastResetMsg(uint8_t firstByte, uint8_t secondByte);
 
     //Message processing funcs
     bool isMsgForThisUnit();
     bool processDccMsg();
     bool processAddress();
     bool processCmdType();
+    bool processDecCtrlMsg();
     bool processBaselineMsg(DccReinterpretBaseline_t speedSetting = dcc_reinterpret_baseline_none);
     bool processAdvancedMsg();
     bool processFuncGroupMsg();
-    bool processCvWriteMsg();
     bool applyMsgToState();
+    bool applyDecCtrlMsgToState();
     bool applyBaselineMsgToState();
     bool applyAdvancedMsgToState();
     bool applyFuncGroupMsgToState();
+    bool processServiceMsg();
     void updateF0();
+    void initServiceMode();
 
     // Analog processing funcs
     DccDirection_t detectAnalogDirection();
@@ -252,7 +273,7 @@ private:
     uint8_t dccMsgBuf_[MAX_BYTESIZE_DATA] = {0}; //Buffer to store incoming bytes while processing a message. Size is max addr bytes + max data bytes
     DccMsg_t lastDccMsg_ = {0, false, no_new_dcc_msg, {0}, 0, DCC_DIRECTION_FORWARD, 0, 0, 0}; //Last valid message received
     DccBitTimeQueue bitTimeQueue_;
-    bool cvWriteInProgress_ = false; //Indicates a CV write operation is ongoing. Flag is set after reception of the first messsage, and cleared after the second required cmd message was received OR when the write is invalidated.
+    DccServiceModeObj_t serviceModeObj_ = {0, 0, 0, 0, false, false}; //Object to store the state of service mode CV access
     DccControlMode_t activeControlMode_ = DCC_CONTROL_MODE_DCC_128SS; // Default if no other control mode is set
 };
 

@@ -32,9 +32,9 @@ bool DccInterface::init(DccHwInitCfg_t* initHwCfg /*= nullptr*/, DccConfig_t* in
 
     //Reset runtime state of reader
     bitTimeQueue_.resetQueue();
-    resetDccReader(true);
-    dccVarState_ = {0, DCC_DIRECTION_FORWARD, 0};  //Set speed to 0, all functions off
-    activeControlMode_ = dccConfig_.controlMode; // Set the active control mode to the configured control mode
+    resetDccReader(true);                           // Resets the bit processing state, message buffer and cv access state.
+    dccVarState_ = {0, DCC_DIRECTION_FORWARD, 0};   //Set speed to 0, all functions off
+    activeControlMode_ = dccConfig_.controlMode;    // Set the active control mode to the configured control mode
     //Do not reset the config. It has default values and the caller can overwrite them if needed. The settings are preserved across inits.
     
     // Initialize PWM timer for DCC reading, this is mandatory
@@ -92,48 +92,89 @@ bool DccInterface::step()
             // Process msg if valid
             if(feedBit(bitStatus) == dcc_reader_new_msg)
             {                
-                // Processing the message when in DCC mode will update the direction, speed and functions too.
-                processDccMsg();
+                // Regardless of the state, any broadcast reset message must be processed
+                if(isBroadCastResetMsg(dccMsgBuf_[0], dccMsgBuf_[1]))
+                {
+                    // We received a broadcast reset message, reset the reader and stay in service mode to wait for CV access messages
+                    initServiceMode();
+                    continue; // No need to process the message further
+                }
+                
+                // Check what mode we are in, and how the message should be processed
+                if(activeControlMode_ == DCC_CONTROL_MODE_SERVICE_MODE)
+                {
+                    // Service mode processing
+                    processServiceMsg();
+                }
+                else if(activeControlMode_ == DCC_CONTROL_MODE_DCC_14SS || activeControlMode_ == DCC_CONTROL_MODE_DCC_128SS)
+                {
+                    // Normal DCC processing
+                    // Processing the message when in DCC mode will update the direction, speed and functions too.
+                    processDccMsg();
+                }
+                else if(activeControlMode_ == DCC_CONTROL_MODE_INACTIVE)
+                {
+                    // Check if message is a valid service message. If not, we can re-enable normal DCC processing.
+                    bool canBeServiceMsg = validServiceMsg(dccMsgBuf_[0]);
+                    if(!canBeServiceMsg)
+                    {
+                        // This message cannot be a service mode message, so we can safely assume it is a normal DCC message and switch to the configured DCC control mode.
+                        activeControlMode_ = dccConfig_.controlMode;
+                        // Processing will resume in the next cycle, discard the message for now.
+                    }
+                    else
+                    {
+                        // This can be a service message, update the timing
+                        serviceModeObj_.lastValidMsgTime = platform_get_tick_ms();
+                    }
+                }
+                else
+                {
+                    // We should not be processing DCC messages in this mode, ignore the message and wait for the next one.
+                    continue;
+                }
+                
             }
         }
     }
 
+    
     /*
     
-        Analog operation
+    Analog operation
     
     */
    if(activeControlMode_ == DCC_CONTROL_MODE_ANALOG)
    {
-        // Detect the direction
-        dccVarState_.direction = detectAnalogDirection();
+       // Detect the direction
+       dccVarState_.direction = detectAnalogDirection();
+       
+       // Set speed. Always use value of 1, as we have no means to deduce the actual speed
+       // The fact that this code runs tells us that there is a track voltage, so we are not stopped.
+       dccVarState_.speed = 1;
+       
+       // Set the functions according to the config.
+       updateAnalogFuncState();
+    }
     
-        // Set speed. Always use value of 1, as we have no means to deduce the actual speed
-        // The fact that this code runs tells us that there is a track voltage, so we are not stopped.
-        dccVarState_.speed = 1;
-
-        // Set the functions according to the config.
-        updateAnalogFuncState();
-   }
-
     /* 
     
-        Mode switching and activity detection
+    Mode switching and activity detection
     
     */
-    // Check for activity and revert to analog mode if none is detected.
-    uint32_t lastBitTime = bitTimeQueue_.getLastWriteTime();    // This needs to happen first, as we can get interrupted by the ISR between this instruction and the one below, leading to false elapsed time calcs.
-    uint32_t currentTime = platform_get_tick_ms();
-    uint32_t timeSinceLastBit = currentTime - lastBitTime;
-    // This part checks for timeouts and reverts to analog mode if no activity is detected
-    if(timeSinceLastBit > DCC_ACTIVITY_TIMEOUT_MS)
-    {
-        activeControlMode_ = DCC_CONTROL_MODE_ANALOG;
-        // Reset the reader. This voids any past communications.
-        // This part of the code is only executed when no DCC activity takes place.
-        // That means as soon as DCC bits are received, the reader can actually start to process messages again.
-        // As soon as a valid message is received we switch back to DCC mode in the code that detects DCC activity.
-        resetDccReader(true); 
+   // Check for activity and revert to analog mode if none is detected.
+   uint32_t lastBitTime = bitTimeQueue_.getLastWriteTime();    // This needs to happen first, as we can get interrupted by the ISR between this instruction and the one below, leading to false elapsed time calcs.
+   uint32_t currentTime = platform_get_tick_ms();
+   uint32_t timeSinceLastBit = currentTime - lastBitTime;
+   // This part checks for timeouts and reverts to analog mode if no activity is detected
+   if(timeSinceLastBit > DCC_ACTIVITY_TIMEOUT_MS)
+   {
+       activeControlMode_ = DCC_CONTROL_MODE_ANALOG;
+       // Reset the reader. This voids any past communications.
+       // This part of the code is only executed when no DCC activity takes place.
+       // That means as soon as DCC bits are received, the reader can actually start to process messages again.
+       // As soon as a valid message is received we switch back to DCC mode in the code that detects DCC activity.
+       resetDccReader(true); 
     }
     // This part re-enables DCC mode if sufficient bit activity is detected
     // Note, analog polarity could change without the dcc reader loosing power. Therefore we check for 
@@ -145,7 +186,17 @@ bool DccInterface::step()
             activeControlMode_ = dccConfig_.controlMode; 
         }
     }
-
+    // Time-out for service mode
+    if(activeControlMode_ == DCC_CONTROL_MODE_SERVICE_MODE)
+    {
+        uint32_t timeSinceLastValidMsg = currentTime - serviceModeObj_.lastValidMsgTime;
+        if(timeSinceLastValidMsg > DCC_SERVICE_MODE_TIMEOUT_MS)
+        {
+            // No valid service mode message received for a while, exit service mode and go to inactive mode until we receive a message that cannot be a service mode message.
+            activeControlMode_ = DCC_CONTROL_MODE_INACTIVE;
+        }
+    }
+    
     return true;
 }
 
@@ -166,7 +217,7 @@ void DccInterface::resetDccReader(bool resetLastMsg)
     if(resetLastMsg) {
         lastDccMsg_ = {0, false, no_new_dcc_msg, {0}, 0, DCC_DIRECTION_FORWARD, 0, 0, 0};
     }
-    cvWriteInProgress_ = false;
+    serviceModeObj_ = {0, 0, 0, 0, false, false}; //Reset CV access state
     dccDebugInfo_.EFrReaderResets++;
 }
 
@@ -516,6 +567,29 @@ bool DccInterface::valid0BitTotal(uint32_t t01, uint32_t t02)
     return (total <= DCC_BITTIME_T0_MAX_TOTAL);
 }
 
+bool DccInterface::validServiceMsg(uint8_t firstByte)
+{
+    if(firstByte >= 112 && firstByte <= 127)
+    {
+        // For valid service messages, the first byte is 0111xxxx, which works out to 112 - 127 in decimal
+        return true;
+    }
+
+    return false;
+}
+
+bool DccInterface::isBroadCastResetMsg(uint8_t firstByte, uint8_t secondByte)
+{
+    // Ignore the last bit of the second byte, this indicates soft or hard reset. Both are valid.
+    if(firstByte == dcc_short_addr_all && 
+        (secondByte & 0xfe)== 0x00)
+    {
+        return true;
+    }
+
+    return false;
+}
+
 bool DccInterface::isMsgForThisUnit()
 {
     bool ret = false;
@@ -562,6 +636,9 @@ bool DccInterface::processDccMsg()
     bool cmdWasProcessed = false;
     switch(lastDccMsg_.msg_type)
     {
+        case dcc_msg_dcci:
+            cmdWasProcessed = processDecCtrlMsg();
+            break;
         case dcc_msg_aoi:
             cmdWasProcessed = processAdvancedMsg();
             break;
@@ -574,10 +651,7 @@ bool DccInterface::processDccMsg()
             cmdWasProcessed = processFuncGroupMsg();
              break;
         case dcc_msg_cvai:
-            cmdWasProcessed = processCvWriteMsg();
-            break;
         case dcc_msg_fexp:
-        case dcc_msg_dcci:
         // These messages are not supported
         // Note that the previous function should already have logged the error and returned false
         // The code below is just in case, it should never be reached
@@ -708,6 +782,7 @@ bool DccInterface::processCmdType()
         uint8_t cmdBits = (dccMsgBuf_[cmdIdx]>>5) & 0x07; // Command bits are bit 7..5 of the command byte
         switch(cmdBits)
         {
+            case dcc_msg_dcci:
             case dcc_msg_aoi:
             case dcc_msg_sdir:
             case dcc_msg_sdif:
@@ -717,7 +792,6 @@ bool DccInterface::processCmdType()
                 lastDccMsg_.msg_type = static_cast<DccMsgType_t>(cmdBits);
                 break;
             case dcc_msg_fexp:
-            case dcc_msg_dcci:
                 lastDccMsg_.msg_type = dcc_reader_unsupported;
                 dccDebugInfo_.EMsUnsupportedMsgType++;
                 return false; // Unsupported message type
@@ -728,6 +802,37 @@ bool DccInterface::processCmdType()
         }
     }
 
+    return true;
+}
+
+// This function decodes decoder and consist control messages.
+// The only supported command is the reset command
+bool DccInterface::processDecCtrlMsg()
+{
+    // Sanity check, is this a decoder and consist control message?
+    if(lastDccMsg_.msg_type != dcc_msg_dcci)
+    {
+        return false;
+    }
+    
+    // This is a message with 1 or 2 address bytes and 1 or 2 command/data bytes
+    uint8_t cmdIdx = lastDccMsg_.longAddr ? 2 : 1;
+    uint8_t cmdByte = dccMsgBuf_[cmdIdx];
+    // Copy over to message buffer
+    memset(lastDccMsg_.cmd_arg, 0, sizeof(lastDccMsg_.cmd_arg));
+    // The message we can process only has a single command byte
+    lastDccMsg_.cmd_arg[0] = cmdByte;
+
+    // Reset command is 0x00 (soft) or 0x01 (hard) reset. 
+    // For Loklight, both can be handled in the same way.
+    if((cmdByte & 0xfe) != 0x00)
+    {
+        // Unsupported command, return false
+        dccDebugInfo_.EMsUnsupportedMsgType++;
+        return false;
+    }
+
+    // We have received a reset command
     return true;
 }
 
@@ -909,10 +1014,6 @@ bool DccInterface::processFuncGroupMsg()
     
     return true;
 }
-bool DccInterface::processCvWriteMsg()
-{
-    return true; //TODO
-}
 
 bool DccInterface::applyMsgToState()
 {
@@ -925,6 +1026,9 @@ bool DccInterface::applyMsgToState()
     //Step 2: check what message it is and apply it to the state
     switch(lastDccMsg_.msg_type)
     {
+        case dcc_msg_dcci:
+            ret = applyDecCtrlMsgToState();
+            break;
         case dcc_msg_sdir:
         case dcc_msg_sdif:
             ret = applyBaselineMsgToState();
@@ -943,6 +1047,30 @@ bool DccInterface::applyMsgToState()
     }
     
     return ret;
+}
+
+bool DccInterface::applyDecCtrlMsgToState()
+{
+    // Step 1: check if this is a valid message for this function
+    if(!lastDccMsg_.validMsg || !isMsgForThisUnit() || !(lastDccMsg_.msg_type == dcc_msg_dcci))
+    {
+        return false;
+    }
+
+    // Step 2: check if this is a reset command
+    uint8_t cmdByte = lastDccMsg_.cmd_arg[0];
+
+    // Reset command is 0x00 (soft) or 0x01 (hard) reset. 
+    // For Loklight, both can be handled in the same way.
+    if((cmdByte & 0xfe) != 0x00)
+    {
+        return false;
+    }
+
+    // Step 3: reset the decoder into service mode
+    initServiceMode();
+
+    return true;
 }
 
 bool DccInterface::applyBaselineMsgToState()
@@ -1133,6 +1261,120 @@ bool DccInterface::applyFuncGroupMsgToState()
     return true;
 }
 
+bool DccInterface::processServiceMsg()
+{
+    // Every message must be processed in this mode, there is no addressing
+    // We support the following operations (refer to NMRA S9.2.3):
+    // 1. General reset
+    // 2. Decoder Factory Reset
+    // 3. Service Mode Instruction Packets for Direct Mode
+    if(!validServiceMsg(dccMsgBuf_[0]))
+    {
+        return false; // Not a valid service mode message, ignore
+    }
+
+    // Check if this message is the same as the last. This needs to be done as some instructions require a confirmation by sending the same message multiple times.
+    // The general reset & decoder reset are both 2-byte instructions + 1 CRC byte
+    // The direct mode packets are 3-byte instructions + 1 CRC byte
+    // Given the above, if we compare the first 3 bytes of any message, we can check if they have identical content
+    static uint8_t lastRequest[3] = {};
+    if(memcmp(lastRequest, dccMsgBuf_, sizeof(uint8_t)*3) == 0)
+    {
+        // The same message is received. Increase confirmation count.
+        serviceModeObj_.identicalRequestCnt++;
+    }
+    else
+    {
+        // We have received a different message. Reset the service object
+        memset(&serviceModeObj_, 0, sizeof(DccServiceModeObj_t));
+    }
+    
+    // Update last valid message time, to prevent service mode timeout
+    serviceModeObj_.lastValidMsgTime = platform_get_tick_ms(); 
+    memcpy(lastRequest, dccMsgBuf_, sizeof(uint8_t)*3); // Update last request buffer with the new message
+
+    // A factory reset always has this spec:
+    // Byte 1: 0b0111 1111
+    // Byte 2: 0b0000 1000
+    // Byte 3: 0b0111 0111
+    constexpr uint8_t factoryResetMsg[3] = {0b01111111, 0b00001000, 0b01110111};
+    // A CV write instruction has the following format:
+    // Byte 1: 0111CCAA, where CC is the sub instruction of which we only support writing (CC=11)
+    // Byte 2: AAAAAAAA, where A is the 10-bit CV address 
+    // Byte 3: DDDDDDDD, where D is the value specification
+    constexpr uint8_t cvWriteInstr = 0b01111100;
+
+    // Handle resets
+    if(isBroadCastResetMsg(dccMsgBuf_[0], dccMsgBuf_[1]))
+    {
+        // General reset, reset the decoder into service mode
+        initServiceMode();
+        return true;
+    }
+    else if(memcmp(dccMsgBuf_, factoryResetMsg, sizeof(factoryResetMsg)) == 0)
+    {
+        // Check if this is the first request or not
+        if(serviceModeObj_.identicalRequestCnt >= DCC_SERVICE_MODE_CONFORMATION_CNT)
+        {
+            // The command is valid.
+            // The DCC class only flags the parent to take action
+            // The actual reset is performed somewhere else
+            serviceModeObj_.factoryResetFlag = true;
+        }
+        else
+        {
+            // This is the first time we receive this message.
+            // Nothing need to happen here            
+        }
+        
+        return true;
+    }
+    else if(((dccMsgBuf_[0]) & cvWriteInstr) == cvWriteInstr) // cvWriteInstr is also a valid mask
+    {
+        // Check if this is the first request or not
+        if(serviceModeObj_.identicalRequestCnt >= DCC_SERVICE_MODE_CONFORMATION_CNT)
+        {
+            // This is the second time we receive this message, perform the write
+            // The DCC class only flags the parent to take action
+            // The actual write is performed somewhere else
+            serviceModeObj_.cvWriteFlag = true;
+        }
+        else
+        {
+            // This is the first time we receive this message, store it and wait for confirmation
+            // Extract CV address from the first two bytes. 
+            // The 10 bit CV address is encoded in the first two bytes, where byte 1 contains the 2 MSB of the address in bit1 and bit0.
+            // A value of 0 indicates CV1, 1 for CV2, etc.
+            uint16_t cvAddress = (((dccMsgBuf_[0] & 0x03) << 8) | dccMsgBuf_[1]) + 1; 
+            uint8_t cvValue = dccMsgBuf_[2]; // Extract CV value from the third byte
+            serviceModeObj_.lastCvAccessed = cvAddress;
+            serviceModeObj_.lastCvWriteValue = cvValue;
+        }
+
+        return true;
+    }
+    else
+    {
+        // Unsupported service mode message, ignore
+        dccDebugInfo_.EMsUnsupportedMsgType++;
+    }
+
+    // Cannot end up here
+    memset(lastRequest, 0, sizeof(lastRequest)); 
+    return false;
+}
+
+DccCvWriteObj_t DccInterface::getCvWriteRequested() const
+{
+    DccCvWriteObj_t ret = {}; // Initializes to 0, which indicates no CV write requested.
+    if(serviceModeObj_.cvWriteFlag)
+    {
+        ret.cvAddress = serviceModeObj_.lastCvAccessed;
+        ret.cvValue = serviceModeObj_.lastCvWriteValue;
+    }
+    return ret;
+}
+
 void DccInterface::updateF0()
 {
     // Toggle F0, useful for direction changes through speed instructions that immediately switch the light 
@@ -1147,6 +1389,16 @@ void DccInterface::updateF0()
         dccVarState_.funcEnanbled |= (dccVarState_.direction == DCC_DIRECTION_FORWARD) ? DCC_FUNC_F0F : DCC_FUNC_F0R; // Set F0 bit according to new direction
     }
     // If F0 was not on, the bits are already 0 in the function enabled variable, so we do not need to do anything
+}
+
+void DccInterface::initServiceMode()
+{
+    // Set the state to service mode, this will allow programming of CVs through programming track or through ops mode programming
+    resetDccReader(true);
+    dccVarState_ = {0, DCC_DIRECTION_FORWARD, 0}; // Set speed to 0, all functions off
+    memset(&serviceModeObj_, 0, sizeof(DccServiceModeObj_t)); // Clear service mode object
+    activeControlMode_ = DCC_CONTROL_MODE_SERVICE_MODE;
+    serviceModeObj_.lastValidMsgTime = platform_get_tick_ms(); // Set start of service mode so we can detect a service mode timeout
 }
 
 DccDirection_t DccInterface::detectAnalogDirection()
