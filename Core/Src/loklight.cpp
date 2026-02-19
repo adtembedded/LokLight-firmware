@@ -138,21 +138,41 @@ bool Loklight::step()
             // TODO
             // Write to flash
             // Flash LEDs
-            ledControl_.setBrightness(LED1, 255);
-            ledControl_.setBrightness(LED2, 255);
+            ledControl_.longFlash(3); // Flash 3 times to indicate factory reset
             // Reset device with NVIC_SystemReset() 
         }
 
         DccCvWriteObj_t cvWriteRequest = dccInterface_.getCvWriteRequested();
         if(cvWriteRequest.cvAddress != 0) // A CV address of 0 indicates no write is pending
         {
-            //TODO 
-            //perform CV write action based on the CV address and value
-            // TODO
-            // Write to flash
-            // Flash LEDs
-            ledControl_.setBrightness(LED1, 255);
-            ledControl_.setBrightness(LED2, 255);
+            // Perform CV write action based on the CV address and value
+            // First check if the CV may already have the right value
+            cvLookUpResult_t cvLookUpResult = loklightConfig_.lookUpCV(cvWriteRequest.cvAddress);
+            bool writeResult = false; 
+            if(cvLookUpResult.cvFound && cvLookUpResult.cvValue == cvWriteRequest.cvValue)
+            {
+                // CV already has the right value, act as if the write was successful without actually performing it.
+                writeResult = true;
+            }
+            else
+            {
+                // CV does not have the right value, perform write
+                writeResult = loklightConfig_.writeCv(cvWriteRequest.cvAddress, cvWriteRequest.cvValue);
+                // Write to flash
+            }
+
+            // Visual feedback based on write result.
+            if(writeResult)
+            {
+                // Flash twice to indicate success
+                ledControl_.longFlash(2);
+            }
+            else
+            {
+                // Fast flashing to indicate error
+                ledControl_.shortFlash(5);
+            }
+            
             // Reset device with NVIC_SystemReset() 
         }
     }

@@ -182,3 +182,42 @@ void LedControl::enableLight(LedNumber_t ledNumber, bool enable)
         ledEnabled_[ledNumber] = enable;
     }
 }
+
+void LedControl::shortFlash(uint8_t times)
+{
+    for(uint8_t i = 0; i < times; ++i)
+    {
+        // Turn on all LEDs
+        for(auto j = 0; j < LED_COUNT; ++j)
+        {
+            led_control_set_pwm(static_cast<LedNumber_t>(j), ledControlCfg_[j].maxBrightness);
+        }
+        platform_delay_ms(50); // Short duration, adjust as needed
+
+        // Turn off all LEDs
+        for(auto j = 0; j < LED_COUNT; ++j)
+        {
+            led_control_set_pwm(static_cast<LedNumber_t>(j), ledControlCfg_[j].minBrightness);
+        }
+        platform_delay_ms(50); // Short duration, adjust as needed
+     }
+}
+void LedControl::longFlash(uint8_t times)
+{
+    for(uint8_t i = 0; i < times; ++i)
+    {
+        // Turn on all LEDs
+        for(auto j = 0; j < LED_COUNT; ++j)
+        {
+            led_control_set_pwm(static_cast<LedNumber_t>(j), ledControlCfg_[j].maxBrightness);
+        }
+        platform_delay_ms(250); // Long duration, adjust as needed
+
+        // Turn off all LEDs
+        for(auto j = 0; j < LED_COUNT; ++j)
+        {
+            led_control_set_pwm(static_cast<LedNumber_t>(j), ledControlCfg_[j].minBrightness);
+        }
+        platform_delay_ms(250); // Long duration, adjust as needed
+     }
+}

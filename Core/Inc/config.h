@@ -130,6 +130,8 @@ public:
     cvLookUpResult_t lookUpCV(uint16_t cvNumber) const;
     // Reset the configuration to default values defined in defaultCvMap[]
     void resetDefaultConfig();
+    // Write a CV value
+    bool writeCv(uint8_t cvNumber, uint8_t cvValue);
 
     // Specific DCC getters. Translates between DCC entity and CV value according to the standard.
     // Get the function outputs that a dcc function should enable. If no CVs are found within the config, this function will return a 0 mask.

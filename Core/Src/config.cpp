@@ -69,6 +69,19 @@ void LoklightConfig::resetDefaultConfig()
     memcpy(cvMap_, defaultCvMap, sizeof(cvMap_t));
 }
 
+bool LoklightConfig::writeCv(uint8_t cvNumber, uint8_t cvValue)
+{
+    // Look for the CV in the map
+    for (auto& entry : cvMap_) {
+        if (entry.cvNumber == cvNumber) {
+            // CV found, update its value
+            entry.cvValue = cvValue;
+            return true;
+        }
+    }
+    return false; // CV not found in the map
+}
+
 uint16_t LoklightConfig::getFunctionOutputMask(DccFunctionOutputMap_t function) const
 {
     //F0F, F0R, F1, F2, F3 can be mapped to platform specific outputs 1..8 through CV33-CV37

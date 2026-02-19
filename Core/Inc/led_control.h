@@ -42,10 +42,11 @@ public:
     bool step();
     bool setConfig(ledControlCfg_t* cfg, uint8_t ledNumber);
     void enableLight(LedNumber_t ledNumber, bool enable);   // Use for normal operation. Includes ramp function.
+    void shortFlash(uint8_t times); // Flash all LEDs for short duration, number of times provided as argument
+    void longFlash(uint8_t times);  // Flash all LEDs for long duration, number of times provided as argument
     bool isLightEnabled(LedNumber_t ledNumber) { return ledEnabled_[ledNumber]; }
     bool isInitialized() const { return isInitialized_; }
     uint8_t getBrightness(LedNumber_t ledNumber) const;
-    void setBrightness(LedNumber_t ledNumber, uint8_t brightness); // Use only to set brightness directly. Not for normal operation
     
     private:
     //This class is a singleton
@@ -59,6 +60,7 @@ public:
     uint32_t lastStepTime_ = 0;
     bool isInitialized_ = false;
     
+    void setBrightness(LedNumber_t ledNumber, uint8_t brightness); // Use only to set brightness directly. Not for normal operation
 };
 
 #endif
