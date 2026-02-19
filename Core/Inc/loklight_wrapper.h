@@ -44,6 +44,9 @@ uint32_t platform_get_tick_ms(void);
 // Delay by ms
 void platform_delay_ms(uint32_t ms);
 
+// Reset the system
+void platform_reset();
+
 // Use as printf for debug information
 void loklight_debug_print(const char* sFormat, ...);
 

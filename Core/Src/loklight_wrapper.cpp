@@ -27,6 +27,12 @@ extern "C" void platform_delay_ms(uint32_t ms)
     HAL_Delay(ms);
 }
 
+extern "C" void platform_reset()
+{
+    // Change as needed to implement a system reset
+    NVIC_SystemReset();
+}
+
 extern "C" void loklight_debug_print(const char* sFormat, ...)
 {
     // Placeholder implementation

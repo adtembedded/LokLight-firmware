@@ -124,7 +124,7 @@ bool Loklight::step()
             enableLed1 = enableLed1 && (led1DirMap_ & LED_DIR_REV);
             enableLed2 = enableLed2 && (led2DirMap_ & LED_DIR_REV);
         }
-    }
+    } // End of normal operation
     else if (controlMode == DCC_CONTROL_MODE_SERVICE_MODE)
     {
         // By default, the LEDs are off
@@ -139,7 +139,8 @@ bool Loklight::step()
             // Write to flash
             // Flash LEDs
             ledControl_.longFlash(3); // Flash 3 times to indicate factory reset
-            // Reset device with NVIC_SystemReset() 
+            // Reset device
+            platform_reset();
         }
 
         DccCvWriteObj_t cvWriteRequest = dccInterface_.getCvWriteRequested();
@@ -159,6 +160,7 @@ bool Loklight::step()
                 // CV does not have the right value, perform write
                 writeResult = loklightConfig_.writeCv(cvWriteRequest.cvAddress, cvWriteRequest.cvValue);
                 // Write to flash
+                
             }
 
             // Visual feedback based on write result.
@@ -171,11 +173,11 @@ bool Loklight::step()
             {
                 // Fast flashing to indicate error
                 ledControl_.shortFlash(5);
-            }
-            
-            // Reset device with NVIC_SystemReset() 
-        }
-    }
+            }  
+            // Either way, reset the system
+            platform_reset();
+        }   // End of CV Write
+    } // End of service mode
     else
     {
         // In other modes, we turn off the LEDs
