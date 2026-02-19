@@ -577,8 +577,6 @@ bool DccInterface::processDccMsg()
             cmdWasProcessed = processFuncGroupMsg();
              break;
         case dcc_msg_cvai:
-            cmdWasProcessed = processCvWriteMsg();
-            break;
         case dcc_msg_fexp:
         // These messages are not supported
         // Note that the previous function should already have logged the error and returned false
@@ -941,35 +939,6 @@ bool DccInterface::processFuncGroupMsg()
     }
     
     return true;
-}
-bool DccInterface::processCvWriteMsg()
-{
-    // Step 1: check if this is a valid CV write message
-    if(lastDccMsg_.msg_type != dcc_msg_cvai)
-    {
-        return false;
-    }
-
-    // Step 2: process command information. A CV write can be short or long format. We only support long.
-    // This is a message type with 1 or 2 address bytes, 3 command/data bytes
-    uint8_t cmdIdx = lastDccMsg_.longAddr ? 2 : 1;
-    uint8_t cmdByte = dccMsgBuf_[cmdIdx];
-    memset(lastDccMsg_.cmd_arg, 0, sizeof(lastDccMsg_.cmd_arg));
-    memcpy(lastDccMsg_.cmd_arg, &dccMsgBuf_[cmdIdx], sizeof(uint8_t)*3);
-
-    // Format of the instruction byte is 1111xxxx, 1110xxxx for short and long format CV writes, respectively.
-    // Note that XPOM writes also have instruction 1110xxxx, but the packet length will violate the 6-byte max length.
-    // Therefore XPOM writes will be filtered out in the feedBit() function when the max length is exceeded, and we do not check for them here.
-    if((cmdByte & 0xf0) != 0xe0)    
-    {
-        // Unsupported CV write format, return false
-        lastDccMsg_.msg_type = dcc_reader_unsupported;
-        dccDebugInfo_.EMsUnsupportedMsgType++;
-        return false;
-    }
-    // Step 3: 
-
-    return true; //TODO
 }
 
 bool DccInterface::applyMsgToState()

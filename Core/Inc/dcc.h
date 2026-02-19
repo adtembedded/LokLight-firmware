@@ -242,7 +242,6 @@ private:
     bool processBaselineMsg(DccReinterpretBaseline_t speedSetting = dcc_reinterpret_baseline_none);
     bool processAdvancedMsg();
     bool processFuncGroupMsg();
-    bool processCvWriteMsg();
     bool applyMsgToState();
     bool applyBaselineMsgToState();
     bool applyAdvancedMsgToState();
