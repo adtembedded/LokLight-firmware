@@ -19,7 +19,9 @@
 typedef enum DccControlMode_e : uint8_t{
     DCC_CONTROL_MODE_ANALOG = 0,
     DCC_CONTROL_MODE_DCC_14SS = 1,  //In this mode, speed steps are 1-14, and bit4 of speed data is used for F0 (light) function
-    DCC_CONTROL_MODE_DCC_128SS = 2  //Also for 28 speed steps. F0 is bit4 in function group 1 instruction message
+    DCC_CONTROL_MODE_DCC_128SS = 2,  //Also for 28 speed steps. F0 is bit4 in function group 1 instruction message
+    DCC_CONTROL_MODE_SERVICE_MODE = 3, //Service mode, for CV access
+    DCC_CONTROL_MODE_INACTIVE = 4 //Inactive mode, do not process DCC messages until we receive a packet that cannot be mistaken for a service mode packet.
 } DccControlMode_t;
 
 // Direction bit in CV29

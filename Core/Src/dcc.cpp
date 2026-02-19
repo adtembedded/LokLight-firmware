@@ -562,6 +562,9 @@ bool DccInterface::processDccMsg()
     bool cmdWasProcessed = false;
     switch(lastDccMsg_.msg_type)
     {
+        case dcc_msg_dcci:
+            cmdWasProcessed = processDecCtrlMsg();
+            break;
         case dcc_msg_aoi:
             cmdWasProcessed = processAdvancedMsg();
             break;
@@ -577,7 +580,6 @@ bool DccInterface::processDccMsg()
             cmdWasProcessed = processCvWriteMsg();
             break;
         case dcc_msg_fexp:
-        case dcc_msg_dcci:
         // These messages are not supported
         // Note that the previous function should already have logged the error and returned false
         // The code below is just in case, it should never be reached
@@ -708,6 +710,7 @@ bool DccInterface::processCmdType()
         uint8_t cmdBits = (dccMsgBuf_[cmdIdx]>>5) & 0x07; // Command bits are bit 7..5 of the command byte
         switch(cmdBits)
         {
+            case dcc_msg_dcci:
             case dcc_msg_aoi:
             case dcc_msg_sdir:
             case dcc_msg_sdif:
@@ -717,7 +720,6 @@ bool DccInterface::processCmdType()
                 lastDccMsg_.msg_type = static_cast<DccMsgType_t>(cmdBits);
                 break;
             case dcc_msg_fexp:
-            case dcc_msg_dcci:
                 lastDccMsg_.msg_type = dcc_reader_unsupported;
                 dccDebugInfo_.EMsUnsupportedMsgType++;
                 return false; // Unsupported message type
@@ -728,6 +730,37 @@ bool DccInterface::processCmdType()
         }
     }
 
+    return true;
+}
+
+// This function decodes decoder and consist control messages.
+// The only supported command is the reset command
+bool DccInterface::processDecCtrlMsg()
+{
+    // Sanity check, is this a decoder and consist control message?
+    if(lastDccMsg_.msg_type != dcc_msg_dcci)
+    {
+        return false;
+    }
+    
+    // This is a message with 1 or 2 address bytes and 1 or 2 command/data bytes
+    uint8_t cmdIdx = lastDccMsg_.longAddr ? 2 : 1;
+    uint8_t cmdByte = dccMsgBuf_[cmdIdx];
+    // Copy over to message buffer
+    memset(lastDccMsg_.cmd_arg, 0, sizeof(lastDccMsg_.cmd_arg));
+    // The message we can process only has a single command byte
+    lastDccMsg_.cmd_arg[0] = cmdByte;
+
+    // Reset command is 0x00 (soft) or 0x01 (hard) reset. 
+    // For Loklight, both can be handled in the same way.
+    if((cmdByte & 0xfe) != 0x00)
+    {
+        // Unsupported command, return false
+        dccDebugInfo_.EMsUnsupportedMsgType++;
+        return false;
+    }
+
+    // We have received a reset command
     return true;
 }
 
@@ -911,8 +944,31 @@ bool DccInterface::processFuncGroupMsg()
 }
 bool DccInterface::processCvWriteMsg()
 {
-    led_control_set_pwm(LED1, 255);
-    platform_delay_ms(1000);
+    // Step 1: check if this is a valid CV write message
+    if(lastDccMsg_.msg_type != dcc_msg_cvai)
+    {
+        return false;
+    }
+
+    // Step 2: process command information. A CV write can be short or long format. We only support long.
+    // This is a message type with 1 or 2 address bytes, 3 command/data bytes
+    uint8_t cmdIdx = lastDccMsg_.longAddr ? 2 : 1;
+    uint8_t cmdByte = dccMsgBuf_[cmdIdx];
+    memset(lastDccMsg_.cmd_arg, 0, sizeof(lastDccMsg_.cmd_arg));
+    memcpy(lastDccMsg_.cmd_arg, &dccMsgBuf_[cmdIdx], sizeof(uint8_t)*3);
+
+    // Format of the instruction byte is 1111xxxx, 1110xxxx for short and long format CV writes, respectively.
+    // Note that XPOM writes also have instruction 1110xxxx, but the packet length will violate the 6-byte max length.
+    // Therefore XPOM writes will be filtered out in the feedBit() function when the max length is exceeded, and we do not check for them here.
+    if((cmdByte & 0xf0) != 0xe0)    
+    {
+        // Unsupported CV write format, return false
+        lastDccMsg_.msg_type = dcc_reader_unsupported;
+        dccDebugInfo_.EMsUnsupportedMsgType++;
+        return false;
+    }
+    // Step 3: 
+
     return true; //TODO
 }
 
@@ -927,6 +983,10 @@ bool DccInterface::applyMsgToState()
     //Step 2: check what message it is and apply it to the state
     switch(lastDccMsg_.msg_type)
     {
+        case dcc_msg_dcci:
+            // TODO
+            ret = true;
+            break;
         case dcc_msg_sdir:
         case dcc_msg_sdif:
             ret = applyBaselineMsgToState();

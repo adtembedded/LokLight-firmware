@@ -93,7 +93,7 @@ constexpr uint32_t DCC_BITTIME_T0_MAX_TOTAL = (uint32_t)((DCC_TIMER_FREQ_MAX*120
 constexpr uint8_t NUM_ONES_VALID_PREAMBLE = 10; // At receiver side. There should be 14 or more preamble bits by the controller
 constexpr uint8_t MAX_BYTESIZE_ADDR = 2;
 constexpr uint8_t MAX_BYTESIZE_CMD_ARG = 3;
-constexpr uint8_t MAX_BYTESIZE_DATA = MAX_BYTESIZE_ADDR + MAX_BYTESIZE_CMD_ARG + 1; //2 address bytes, 3 data bytes
+constexpr uint8_t MAX_BYTESIZE_DATA = MAX_BYTESIZE_ADDR + MAX_BYTESIZE_CMD_ARG + 1; //2 address bytes, 3 data bytes, 1 CRC byte
 constexpr uint8_t MIN_BYTESIZE_DATA = 3; //At least the address, one byte of data, and one byte of CRC
 
 
@@ -238,6 +238,7 @@ private:
     bool processDccMsg();
     bool processAddress();
     bool processCmdType();
+    bool processDecCtrlMsg();
     bool processBaselineMsg(DccReinterpretBaseline_t speedSetting = dcc_reinterpret_baseline_none);
     bool processAdvancedMsg();
     bool processFuncGroupMsg();
