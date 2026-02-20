@@ -211,13 +211,13 @@ void LedControl::longFlash(uint8_t times)
         {
             led_control_set_pwm(static_cast<LedNumber_t>(j), ledControlCfg_[j].maxBrightness);
         }
-        platform_delay_ms(250); // Long duration, adjust as needed
+        platform_delay_ms(150); // Long duration, adjust as needed
 
         // Turn off all LEDs
         for(auto j = 0; j < LED_COUNT; ++j)
         {
             led_control_set_pwm(static_cast<LedNumber_t>(j), ledControlCfg_[j].minBrightness);
         }
-        platform_delay_ms(250); // Long duration, adjust as needed
+        platform_delay_ms(150); // Long duration, adjust as needed
      }
 }
