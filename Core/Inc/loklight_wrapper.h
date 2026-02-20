@@ -157,6 +157,16 @@ bool config_erase_cv_flash_map();
 // Writes the CV map to flash memory. Returns true if successful
 bool config_write_cv_flash_map(uint8_t* cvMapPtr, size_t size);
 
+// Write to the flash memory part where the CV map is stored.
+/// @brief Perform a write to the flash memory where CVs are stored
+/// @param data pointer to the data to be written
+/// @param size size of the data to be written in units of CV_MEM_ACCESS_SIZE. 
+///             So if CV_MEM_ACCESS_SIZE is 4 (for 32bit word), and the data block is 12 bytes, size should be 3.
+/// @param offset offset in the flash memory where the data should be written. Again, the offset is in units of CV_MEM_ACCESS_SIZE
+///             So if the write is to bytes 8-12 of the flash, with a 32-word access size, the offset should be 2 (starting from 0).
+/// @return true if the write operation was successful, false otherwise
+bool config_write_to_flash_map(void* data, size_t size, uint32_t offset);
+
 #ifdef __cplusplus
 }
 #endif

@@ -169,6 +169,40 @@ extern "C" bool config_write_cv_flash_map(uint8_t* cvMapPtr, size_t size)
     return result;
 }
 
+extern "C" bool config_write_to_flash_map(void* data, size_t size, uint32_t offset)
+{
+    static_assert(CV_MEM_SIZE % sizeof(uint32_t) == 0, "CV_MEM_SIZE must be a multiple of 32-bit word size");
+    if(size+sizeof(CV_MEM_PREFIX)+sizeof(CV_MEM_POSTFIX) > CV_MEM_SIZE)
+    {
+        return false;   // Size of data exceeds reserved flash memory for CVs
+    }
+
+    bool result = true;    // Assume success until a write operation fails
+    __disable_irq();    // Disable interrupts to prevent flash access conflicts
+    HAL_FLASH_Unlock(); // Allow control of the flash registers to perform write operation
+    // Write the CV map to flash memory word by word (32-bit)
+    // First recast the general byte pointer to the local word size
+    uint32_t* flashPtr = reinterpret_cast<uint32_t*>(CV_MEM_START_ADDR) + offset;
+    
+    // Write memory block to flash
+    while(result && size > 0)
+    {
+        if(HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, reinterpret_cast<uint32_t>(flashPtr), *reinterpret_cast<const uint32_t*>(data)) == HAL_OK)
+        {
+            flashPtr++;   // Move to the next word after writing prefix
+        }
+        else
+        {
+            result = false;   // Write failed
+        }
+        size--;
+    }
+
+    HAL_FLASH_Lock();   // Relock flash mem when done
+    __enable_irq();     // Re-enable interrupts    
+    return result;
+}
+
 extern "C" void loklight_debug_print(const char* sFormat, ...)
 {
 #if(PLATFORM_DEBUGGING)
