@@ -192,6 +192,7 @@ int main(void)
   MX_TIM2_Init();
   MX_WWDG_Init();
   /* USER CODE BEGIN 2 */
+
   HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3);
   HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_4);
   /* USER CODE END 2 */
@@ -209,10 +210,11 @@ int main(void)
   }
 #if(PLATFORM_DEBUGGING)  
   SEGGER_RTT_Init();
-  SEGGER_RTT_ConfigUpBuffer(0, NULL, NULL, 0, SEGGER_RTT_MODE_BLOCK_IF_FIFO_FULL);
+  SEGGER_RTT_ConfigUpBuffer(0, NULL, NULL, 0, SEGGER_RTT_MODE_NO_BLOCK_TRIM);
 #endif
   while (1)
   {
+    HAL_WWDG_Refresh(&hwwdg);
     loklight_step();
     debug_get_unused_mem_size();
     // HAL_Delay(1);
@@ -345,7 +347,8 @@ static void MX_WWDG_Init(void)
 {
 
   /* USER CODE BEGIN WWDG_Init 0 */
-
+#if(!PLATFORM_DEBUGGING)
+  // These settings will cause the WWDG to expire at ~1 second if not refreshed.
   /* USER CODE END WWDG_Init 0 */
 
   /* USER CODE BEGIN WWDG_Init 1 */
@@ -353,15 +356,17 @@ static void MX_WWDG_Init(void)
   /* USER CODE END WWDG_Init 1 */
   hwwdg.Instance = WWDG;
   hwwdg.Init.Prescaler = WWDG_PRESCALER_8;
-  hwwdg.Init.Window = 64;
-  hwwdg.Init.Counter = 64;
+  hwwdg.Init.Window = 127;
+  hwwdg.Init.Counter = 127;
   hwwdg.Init.EWIMode = WWDG_EWI_DISABLE;
   if (HAL_WWDG_Init(&hwwdg) != HAL_OK)
   {
     Error_Handler();
   }
   /* USER CODE BEGIN WWDG_Init 2 */
-
+  // Service immediately to prevent reset
+  HAL_WWDG_Refresh(&hwwdg);
+#endif
   /* USER CODE END WWDG_Init 2 */
 
 }
