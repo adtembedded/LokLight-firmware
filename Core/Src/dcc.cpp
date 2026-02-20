@@ -1293,12 +1293,16 @@ bool DccInterface::processServiceMsg()
     serviceModeObj_.lastValidMsgTime = platform_get_tick_ms(); 
     memcpy(lastRequest, dccMsgBuf_, sizeof(uint8_t)*3); // Update last request buffer with the new message
 
-    // A factory reset always has this spec:
+    // A factory reset always has this spec according to the NMRA standard S9.2.3:
     // Byte 1: 0b0111 1111
     // Byte 2: 0b0000 1000
     // Byte 3: 0b0111 0111
+    // While byte 3 is officially a CRC byte for this unique message construct, it can be generated on a normal controller with a CV write to register 777 with value 0x77 (119 in decimal). The actual CRC byte is then ignored.
     constexpr uint8_t factoryResetMsg[3] = {0b01111111, 0b00001000, 0b01110111};
-    // A CV write instruction has the following format:
+    // Another common factory reset instruction implemented by most manufacturers is a write to CV8 with value 8
+    constexpr uint8_t factoryResetMsgAlt[3] = {0b01111100, 0b00000111, 0x08}; // CV write to CV8 with value 8
+    
+    // A regular CV write instruction in service mode - direct mode has the following format:
     // Byte 1: 0111CCAA, where CC is the sub instruction of which we only support writing (CC=11)
     // Byte 2: AAAAAAAA, where A is the 10-bit CV address 
     // Byte 3: DDDDDDDD, where D is the value specification
@@ -1312,7 +1316,8 @@ bool DccInterface::processServiceMsg()
         initServiceMode();
         return true;
     }
-    else if(memcmp(dccMsgBuf_, factoryResetMsg, sizeof(factoryResetMsg)) == 0)
+    else if(memcmp(dccMsgBuf_, factoryResetMsg,     sizeof(factoryResetMsg))    == 0 ||
+            memcmp(dccMsgBuf_, factoryResetMsgAlt,  sizeof(factoryResetMsgAlt)) == 0)
     {
         // Check if this is the first request or not
         if(serviceModeObj_.identicalRequestCnt >= DCC_SERVICE_MODE_CONFORMATION_CNT)
@@ -1322,16 +1327,11 @@ bool DccInterface::processServiceMsg()
             // The actual reset is performed somewhere else
             serviceModeObj_.factoryResetFlag = true;
         }
-        else
-        {
-            // This is the first time we receive this message.
-            // Nothing need to happen here            
-        }
+        // else: first time we receive this message, nothing need to happen here, wait for confirmation
         
         return true;
     }
     else if(((dccMsgBuf_[0]) & cvWriteMsgMask) == cvWriteInstr) // cvWriteInstr is also a valid mask
-    else if(((dccMsgBuf_[0]) & cvWriteInstr) == cvWriteInstr) // cvWriteInstr is also a valid mask
     {
         // Check if this is the first request or not
         if(serviceModeObj_.identicalRequestCnt >= DCC_SERVICE_MODE_CONFORMATION_CNT)
