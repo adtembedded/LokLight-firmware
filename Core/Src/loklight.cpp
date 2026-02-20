@@ -84,7 +84,7 @@ bool Loklight::step()
     // Perform periodic tasks
     
     // First check if we are initialized
-    if(!ledControl_.isInitialized())
+    if(!ledControl_.isInitialized() || !dccInterface_.isInitialized())
     {
         return false; // Not initialized
     }

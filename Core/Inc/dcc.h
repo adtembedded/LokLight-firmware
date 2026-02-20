@@ -207,6 +207,7 @@ public:
     
     bool init(DccHwInitCfg_t* initHwCfg = nullptr, DccConfig_t* initCfg = nullptr);
     bool step();
+    bool isInitialized(){return isInitialized_;}
     const DccMsg_t& getLastMsg() const {return lastDccMsg_;}
     const DccReaderState_t& getReaderState() const {return dccReaderState_;}
     const DccControlMode_t& getControlMode() const {return activeControlMode_;}
