@@ -218,7 +218,10 @@ void DccInterface::resetDccReader(bool resetLastMsg)
         lastDccMsg_ = {0, false, no_new_dcc_msg, {0}, 0, DCC_DIRECTION_FORWARD, 0, 0, 0};
     }
     serviceModeObj_ = {0, 0, 0, 0, false, false}; //Reset CV access state
-    dccDebugInfo_.EFrReaderResets++;
+    if constexpr(DCC_DEBUG_FRAMES)
+    {
+        dccDebugInfo_.EFrReaderResets++;
+    }
 }
 
 DccHalfbit_t DccInterface::feedHalfbit(uint32_t t)
@@ -440,7 +443,10 @@ DccReaderState_t DccInterface::feedBit(DccHalfbit_t bit)
         else
         {
             // Invalid bit during preamble, reset count
-            dccDebugInfo_.EFrInvalidPreambles++;
+            if constexpr(DCC_DEBUG_FRAMES)
+            {
+                dccDebugInfo_.EFrInvalidPreambles++;
+            }
             preambleCount = 0;
         }
 
@@ -477,12 +483,18 @@ DccReaderState_t DccInterface::feedBit(DccHalfbit_t bit)
             // Byte complete, check if we are within limits
             bitPos = 0;
             rxByteCnt++;
-            dccDebugInfo_.RxFrTotBytes++;
+            if constexpr(DCC_DEBUG_FRAMES)
+            {
+                dccDebugInfo_.RxFrTotBytes++;
+            }
 
             if(rxByteCnt >= MAX_BYTESIZE_DATA)
             {
                 // Too many bytes received, reset reader
-                dccDebugInfo_.EFrInvalidFrames++;
+                if constexpr(DCC_DEBUG_FRAMES)
+                {
+                    dccDebugInfo_.EFrInvalidFrames++;
+                }
                 resetDccReader(false);
             }
             
@@ -518,7 +530,10 @@ DccReaderState_t DccInterface::feedBit(DccHalfbit_t bit)
             else
             {
                 // Not enough bytes received, reset reader
-                dccDebugInfo_.EFrInvalidFrames++;
+                if constexpr(DCC_DEBUG_FRAMES)
+                {
+                    dccDebugInfo_.EFrInvalidFrames++;
+                }
                 resetDccReader(false);
 
                 // Bit is consumed, exit here
@@ -550,12 +565,18 @@ DccReaderState_t DccInterface::feedBit(DccHalfbit_t bit)
         {
             // CRC has expecte value. This is a valid DCC frame
             dccReaderState_ = dcc_reader_new_msg;
-            dccDebugInfo_.RxFrValidFrames++;
+            if constexpr(DCC_DEBUG_FRAMES)
+            {
+                dccDebugInfo_.RxFrValidFrames++;
+            }
         }
         else
         {
             // CRC does not match, invalid frame
-            dccDebugInfo_.EFrInvalidCRC++;
+            if constexpr(DCC_DEBUG_FRAMES)
+            {
+                dccDebugInfo_.EFrInvalidCRC++;
+            }
             resetDccReader(false);
         }
     }
