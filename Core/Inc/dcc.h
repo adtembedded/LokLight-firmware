@@ -22,12 +22,12 @@
 // If the main loop is executed with with a 1ms delay, the number of elements is up to 28
 constexpr uint32_t DCC_BITTIME_QUEUE_SIZE = 48; 
 
-constexpr bool DCC_PRINT_DEBUG_INFO = true; // Set to true to enable periodic printing of DCC reader debug info through platform debug channel
+constexpr bool DCC_PRINT_DEBUG_INFO = false; // Set to true to enable periodic printing of DCC reader debug info through platform debug channel
 constexpr uint32_t DCC_DEBUG_PERIOD_MS = 500; //Period for printing debug info about DCC reader state
 constexpr bool DCC_DEBUG_HALFBITS = false;  // Set to true to enable printing of debug info about halfbit processing
 constexpr bool DCC_DEBUG_FRAMES = false;    // Set to true to enable printing of debug info about byte processing of DCC frames
 constexpr bool DCC_DEBUG_MESSAGES = false;  // Set to true to enable printing of debug info about message processing
-constexpr bool DCC_DEBUG_STATE = true;      // Set to true to enable printing of debug info about the current DCC state (speed, functions, etc.) after processing each message  
+constexpr bool DCC_DEBUG_STATE = false;      // Set to true to enable printing of debug info about the current DCC state (speed, functions, etc.) after processing each message  
 
 // Run-time config
 constexpr uint16_t DCC_DEFAULT_ADDR = 3; //Default DCC address if none is set on init

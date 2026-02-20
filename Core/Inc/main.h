@@ -41,7 +41,7 @@ extern "C" {
 
 /* Exported constants --------------------------------------------------------*/
 /* USER CODE BEGIN EC */
-#define PRINT_MEM_USAGE (0)
+#define PRINT_MEM_USAGE (1)
 /* USER CODE END EC */
 
 /* Exported macro ------------------------------------------------------------*/

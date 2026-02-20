@@ -22,8 +22,10 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdbool.h>
-#include "loklight_wrapper.h"
+#include "loklight_wrapper.h"  // This is where generic loklight functions are bound to platform-dependent methods. Also defines PLATFORM_DEBUGGING
+#if(PLATFORM_DEBUGGING)
 #include "SEGGER_RTT.h"
+#endif
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -95,7 +97,7 @@ uint32_t debug_get_unused_mem_size()
     free(fillPtr); // Free the allocated byte
     initialized = true;
   }
-  else
+  else  // Main code for unused memory tracking
   {
     //Push the lower bound higher until we find the pattern.
     //This means dynamic memory has been used
@@ -104,7 +106,9 @@ uint32_t debug_get_unused_mem_size()
       if(lower_bound >= upper_bound)
       {
         //This means the stack and heap have collided, no free memory left
+#if(PLATFORM_DEBUGGING)
         SEGGER_RTT_printf(0, "Memory usage error: stack and heap have collided!\n");
+#endif
         while(1); // Error handling
         break;
       }
@@ -117,7 +121,9 @@ uint32_t debug_get_unused_mem_size()
       if(lower_bound >= upper_bound)
       {
         //This means the stack and heap have collided, no free memory left
+#if(PLATFORM_DEBUGGING)
         SEGGER_RTT_printf(0, "Memory usage error: stack and heap have collided!\n");
+#endif
         while(1); // Error handling
         break;
       }
@@ -126,6 +132,9 @@ uint32_t debug_get_unused_mem_size()
 
     //This part is only reached after initialization.
     //Assume that by this point the RTT debug module has been initialized
+    (void) first_upper_bound; // Suppress compiler unused warning when no platform debugging is used
+    (void) first_lower_bound;
+#if(PLATFORM_DEBUGGING)
     if(PRINT_MEM_USAGE)
     {
       static uint32_t lastPrint = 0;
@@ -139,7 +148,8 @@ uint32_t debug_get_unused_mem_size()
         lastPrint = now;
       }
     }
-  }
+#endif
+  } // End of main code for unused memory tracking
 
   unusedSize = (uint32_t)((uint8_t*)(upper_bound) - (uint8_t*)lower_bound);
 
@@ -193,9 +203,10 @@ int main(void)
   {
     while(1); // Error handling
   }
+#if(PLATFORM_DEBUGGING)  
   SEGGER_RTT_Init();
-  SEGGER_RTT_ConfigUpBuffer(0, NULL, NULL, 0, SEGGER_RTT_MODE_NO_BLOCK_TRIM);
-
+  SEGGER_RTT_ConfigUpBuffer(0, NULL, NULL, 0, SEGGER_RTT_MODE_BLOCK_IF_FIFO_FULL);
+#endif
   while (1)
   {
     loklight_step();

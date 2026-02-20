@@ -157,12 +157,15 @@ extern "C" bool config_write_cv_flash_map(uint8_t* cvMapPtr, size_t size)
 
 extern "C" void loklight_debug_print(const char* sFormat, ...)
 {
-    // Placeholder implementation
-    // You can implement this using SEGGER RTT, UART, or any other debugging output method you prefer
-    va_list ParamList;
-    va_start(ParamList, sFormat);
-    SEGGER_RTT_vprintf(0, sFormat, &ParamList);
-    va_end(ParamList);
+#if(PLATFORM_DEBUGGING)
+    {
+        // You can implement this using SEGGER RTT, UART, or any other debugging output method you prefer
+        va_list ParamList;
+        va_start(ParamList, sFormat);
+        SEGGER_RTT_vprintf(0, sFormat, &ParamList);
+        va_end(ParamList);
+    }
+#endif
 }
 
 // Re-enable when create and destroy are used

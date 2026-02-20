@@ -38,6 +38,7 @@ typedef struct DccHwInitCfg_s DccHwInitCfg_t;
     General platform functions
 
 */
+#define PLATFORM_DEBUGGING (0) // Set to 1 to enable debug print functions, set to 0 to disable
 // Get the current tick in ms
 uint32_t platform_get_tick_ms(void);
 
