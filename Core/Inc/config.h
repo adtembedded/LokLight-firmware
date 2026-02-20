@@ -58,7 +58,14 @@ inline constexpr cvEntry_t defaultCvMap[] = {
                 // LED2 direction sensitivity bit 2 F..3 R; By default set to 3<<2 (sensitive to both directions)
 };
 
-using cvMap_t = std::remove_const_t<decltype(defaultCvMap)>; // Type for the CV map, based on the default map definition. This is used in the config class to define the type of the CV map member variable.
+// Type for the CV map, based on the default map definition. 
+// Used in the config class to define the type size of the CV map member variable.
+using cvMap_t = std::remove_const_t<decltype(defaultCvMap)>; 
+
+typedef struct cvLookUpResult_s {
+    bool cvFound;
+    uint8_t cvValue;
+} cvLookUpResult_t;
 
 /*
 
@@ -101,12 +108,11 @@ typedef enum DccFunctionOutputMap_e: uint8_t {
     Classes 
     
 */
-
-typedef struct cvLookUpResult_s {
-    bool cvFound;
-    uint8_t cvValue;
-} cvLookUpResult_t;
-
+// This is the main config class.
+// Upon creation, call the init function to load any existing config from flash, or load defaults if no valid config is found in flash.
+// During operation, it can be used for lookup/writing of CV values and saving these to flash.
+// Also, it contains useful getters for DCC related configuration values, 
+// which translate between CV values and DCC concepts like control mode, direction reversal and function mapping.
 class LoklightConfig
 {
 public:

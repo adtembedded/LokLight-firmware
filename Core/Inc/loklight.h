@@ -31,13 +31,21 @@ typedef struct ledCfgLookupResult_s {
 } ledCfgLookupResult_t;
 
 // LED directional sensitivity
-// Note this definition corresponds to the bit encoding for loklight in CV116
+// Note this definition corresponds to the bit encoding for loklight in CV116, it must not be changed
 typedef enum LedDirectionSensitivity_e { 
     LED_DIR_NONE = 0, 
     LED_DIR_FWD = 1,
     LED_DIR_REV = 2, 
     LED_DIR_BOTH = 3
 } LedDirectionSensitivity_t;
+
+// The main Loklight class. This class is the managing parent of LED control through DCC operation.
+//
+// The init step reads the configuration from flash and initializes the LED controller (brightness, ramp) 
+// and DCC reader (addr, control mode, function masking, etc) accordingly.
+//
+// The step function steps all the subcomponents (LED control, DCC reader) and applies any changes in DCC state to the LED control state.
+// It also handles service requests (factory reset, CV writes) and applies them to the configuration and saves the settings to flash.
 
 class Loklight
 {

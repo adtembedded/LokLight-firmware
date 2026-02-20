@@ -58,12 +58,14 @@ typedef enum DccFuncMask_e : uint16_t {
     DCC_FUNC_F12 = (1ul << 13)
 } DccFuncMask_t;
 
+// Stores the active state which is controlled by a DCC controller.
 typedef struct DccState_s {
     uint8_t  speed;             // Current speed step (-127 .. +127, -28 .. +28 or -14 .. +14 depending on speed step mode)
     DccDirection_t direction;   // Current direction (true is forward, false is reverse)
     uint16_t funcEnanbled;      // Current function bits (F0F, F0R, F1 ..F12). These are masked bits, so bit 0 is F0F, bit 1 is F0R, bit 2 is F1, etc.
 } DccVarState_t;
 
+// Object that is only used while the decoder is in service mode
 typedef struct DccServiceModeObj_s {
     uint32_t lastValidMsgTime; //Timestamp of the last valid message received, used for timing out of service mode
     uint8_t lastCvAccessed;
@@ -73,6 +75,7 @@ typedef struct DccServiceModeObj_s {
     bool cvWriteFlag;
 } DccServiceModeObj_t;
 
+// When a CV write has been performed, the dcc class saves it and platform's main manager can request the details through this type
 typedef struct DccCvWriteObj_s {
     uint8_t cvAddress;
     uint8_t cvValue;
@@ -90,7 +93,7 @@ constexpr uint32_t DCC_BITTIME_T0_MIN = (uint32_t)((DCC_TIMER_FREQ_MIN*90ull)/10
 constexpr uint32_t DCC_BITTIME_T0_MAX = (uint32_t)((DCC_TIMER_FREQ_MAX*10000ull)/1000000ull);         // 10.000us for halfbit
 constexpr uint32_t DCC_BITTIME_T0_MAX_TOTAL = (uint32_t)((DCC_TIMER_FREQ_MAX*12000ull)/1000000ull);   // 12.000us For total bit (two "0"-half bits with 0 stretching)
 
-// state machine enumeration for DCC definitions
+// state machine constants & enumeration for DCC definitions
 constexpr uint8_t NUM_ONES_VALID_PREAMBLE = 10; // At receiver side. There should be 14 or more preamble bits by the controller
 constexpr uint8_t MAX_BYTESIZE_ADDR = 2;
 constexpr uint8_t MAX_BYTESIZE_CMD_ARG = 3;
@@ -108,6 +111,7 @@ typedef enum DccReaderState_e : uint8_t {
     dcc_reader_new_msg = 6
 } DccReaderState_t;
 
+// Used to keep track of half bit state while receiving DCC bits.
 typedef enum DccHalfbitState_e : uint8_t {
     dcc_halfbit_uninitialized = 0,
     dcc_half1_bit = 1,
@@ -117,6 +121,7 @@ typedef enum DccHalfbitState_e : uint8_t {
     dcc_invalid_bit = 5
 } DccHalfbit_t;
 
+// This type is used to buffer DCC messages. Which fields are valid is determined by the message type.
 typedef struct DccMsg_s {
     uint16_t addr;
     bool longAddr = false;
@@ -129,6 +134,8 @@ typedef struct DccMsg_s {
     uint8_t validMsg;
 } DccMsg_t;
 
+// Baseline messages can be interpreted in multiple ways, depending on CV29. This is an enum used as function argument
+// when (re)interpreting baseline messages.
 typedef enum DccReinterpretBaseline_e : uint8_t {
     dcc_reinterpret_baseline_none = 0,
     dcc_reinterpret_baseline_14ss = 1, // Reinterpret speed in baseline messages as 14 speed steps, where bit4 is F0
@@ -136,6 +143,7 @@ typedef enum DccReinterpretBaseline_e : uint8_t {
 } DccReinterpretBaseline_t;
 
 // Debugging info
+// The compiler will optimize out any unused variables. The writes and printouts are enabled/disabled with the DCC_DEBUG_xxx flags
 typedef struct DccDebugInfo_s {
     uint32_t RxHbTotHalfBits;   // Total number of half-bits received, including invalid ones
     uint32_t RxHbValid1Bits;    // Total number of valid full "1"-bits received
@@ -159,6 +167,10 @@ typedef struct DccDebugInfo_s {
     uint32_t EMsUnsupportedMsgType;     // Amount of times an unsupported message type was received
 } DccDebugInfo_t;
 
+// This class is used to store bit-times. It can be accessed by the platform's IRQ handlers through loklight_wrapper to store bit-times
+// as pin high/low transitions are detected upon DCC halfbit reception.
+// When the queue is full and a write is attempted, an internal error flag is set and the queue must be reset by the reader.
+// Note that the queue assumes a write can always happen (irq) while a read only happens in threaded mode (non-irq).
 class DccBitTimeQueue
 {
 public:
@@ -188,7 +200,41 @@ private:
     uint32_t lastWriteTime_ = 0; // Timestamp of the last write, used to detect analog mode (long periods without any bits) and to calculate the time between bits for validation
 };
 
-
+// The main DCC class.
+// Must be initialized so the class is linked to the platform's bit timing specs. A software config (addr, control mode, etc) can be provided, 
+// otherwise a default config is loaded. The config is stored in dccConfig_.
+//
+// After init, the step function must be called periodically to process incoming DCC bits and convert these to message.
+// The step function then proceeds to process the message, and if broadcast or sent to this unit, apply it to the state (speed, direction, functions, etc).
+// The state is tracked in dccVarState_. The relevant entities (speed, direction, active funcs) can be retrieved by various getters.
+//
+// Besides DCC normal operation, the class automatically converts to analog (no communication is received, automatically resumes DCC when new DCC message is received)
+// or service mode when service entry is requested by a reset command (automatic timeout and reset to DCC normal operation when non-service frames are received).
+// For analog mode, the function outputs are set according to the configuration.
+// Please note that, for simplicity, only 14SS and 128SS mode are supported, as 28SS is an in-between mode not commonly used. The class is designed so that this should be straightforward.
+//
+// The class receives CV access requests (only writes are supported) and factory reset requests in a dedicated service object serviceModeObj_.
+// These can be retrieved by the platform's main manager through the getFactoryResetRequested and getCvWriteRequested functions
+//
+// TODO
+// - Potentially refactor this class so the halfbit and bit processing are done in a dedicated class
+// - Support more DCC communication features. For now, the dcc class supports basic Roco MultiMAUS operation for loklight control.
+//   Most of the unsupported features below cannot be generated (hence tested) by this controller.
+//      NORMAL OPERATION
+//      - 28 speed step mode - NMRA S9.2
+//      - Full decoder control (factory test, advanced addressing frame, send decoder acknowledgement) - NMRA S9.2.1 section 2.3.1.1
+//      - Consist control - NMRA S9.2.1 section 2.3.1.4
+//      - Full set of Advanced Operations Instructions (Zimo east/west, features expansions with a.o. Funcs 13-28) - NMRA S9.2.1 section 2.3.2
+//      - CV access while in normal DCC operation through "Configuration Variable Access Instructions" - NMRA S9.2.1 section 2.3.7.
+//      - Bidirectional communication, including CV access with read and bit manipulations - NMRA S9.2.1 section 2.3.7
+//      - XPOM communication - NMRA S9.2.1 section 2.3.7.4
+//      - Accessory decoder support - NMRA S9.2.1 section 2.4
+//
+//      SERVICE MODE
+//      - Support bidirectional communication
+//      - Write CV1 with address-only mode - NMRA S9.2.3 page 4
+//      - Support Physical Register Addressing (more or less same as above) - NMRA S9.2.3 page 5
+//      - Potentially Support paged CV Adressing for pre-2002 hardware (conflicts somewhat with above) - NMRA S9.2.3 page 6, 7
 class DccInterface
 {
 public:
@@ -205,15 +251,20 @@ public:
     DccInterface& operator=(const DccInterface&) = delete;
     DccInterface& operator=(DccInterface&&) = delete;
     
+    // Main functions
     bool init(DccHwInitCfg_t* initHwCfg = nullptr, DccConfig_t* initCfg = nullptr);
     bool step();
     bool isInitialized(){return isInitialized_;}
+
+    // Getters to provide the DCC state for this decoder
     const DccMsg_t& getLastMsg() const {return lastDccMsg_;}
     const DccReaderState_t& getReaderState() const {return dccReaderState_;}
-    const DccControlMode_t& getControlMode() const {return activeControlMode_;}
+    const DccControlMode_t& getControlMode() const {return activeControlMode_;} //i.e. normal operation 14SS/128SS/analog/service mode
     const uint8_t getSpeed() const {return dccVarState_.speed;}
     const DccDirection_t getDirection() const {return dccVarState_.direction;}
     const uint16_t getActiveFuncs() const {return dccVarState_.funcEnanbled;}
+
+    // Getters for service mode (CV writes and factory resets)
     bool getFactoryResetRequested() const { return serviceModeObj_.factoryResetFlag; }
     DccCvWriteObj_t getCvWriteRequested() const; // Returns a CV address of 0 when no write is pending.
 
@@ -240,6 +291,7 @@ private:
     bool isBroadCastResetMsg(uint8_t firstByte, uint8_t secondByte);
 
     //Message processing funcs
+    // Normal DCC operation
     bool isMsgForThisUnit();
     bool processDccMsg();
     bool processAddress();
@@ -248,14 +300,16 @@ private:
     bool processBaselineMsg(DccReinterpretBaseline_t speedSetting = dcc_reinterpret_baseline_none);
     bool processAdvancedMsg();
     bool processFuncGroupMsg();
+    // Normal DCC operation when message is addressed to this decoder
     bool applyMsgToState();
     bool applyDecCtrlMsgToState();
     bool applyBaselineMsgToState();
     bool applyAdvancedMsgToState();
     bool applyFuncGroupMsgToState();
+    void updateF0();    // Useful when direction is inverted to automatically update F0F and F0R, without requiring F0 to be updated through a function group message
+    // Service mode processing
     bool processServiceMsg();
-    void updateF0();
-    void initServiceMode();
+    void initServiceMode(); // Resets state of DCC reader, resset speed/dir/functions to 0 and sets service mode 
 
     // Analog processing funcs
     DccDirection_t detectAnalogDirection();

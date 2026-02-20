@@ -21,7 +21,10 @@ typedef struct ledControlCfg_s {
     uint8_t brightnessRamp;
 } ledControlCfg_t;
 
-// class led
+// This class manages the state of the LEDs.
+// In normal operation, the step() function is called periodically to sync LED hardware control with the desired state.
+// It automatically ramps brightness up/down to the min/max value (0-255) according to brightnessRamp (0 is instant, 255 ramps min/max in ~1s).
+// enableLight() is used to set the desired state, where off will result in actuating minBrightness and on will result in maxBrightness.
 class LedControl
 {
 public:
@@ -38,10 +41,13 @@ public:
     LedControl& operator=(const LedControl&) = delete;
     LedControl& operator=(LedControl&&) = delete;
 
-    bool init(LedHwInitCfg_t* initHwCfg = nullptr);
+    // Main functions
+    bool init(LedHwInitCfg_t* initHwCfg = nullptr);             // Call after creation and before using step()
     bool step();
-    bool setConfig(ledControlCfg_t* cfg, uint8_t ledNumber);
-    void enableLight(LedNumber_t ledNumber, bool enable);   // Use for normal operation. Includes ramp function.
+    void enableLight(LedNumber_t ledNumber, bool enable);       // Use for normal operation. Includes ramp function.
+    bool setConfig(ledControlCfg_t* cfg, uint8_t ledNumber);    // update brightness specs
+
+    // Utility functions. The flash functions operate outside of the step() and are blocking calls until the flashing is finished.
     void shortFlash(uint8_t times); // Flash all LEDs for short duration, number of times provided as argument
     void longFlash(uint8_t times);  // Flash all LEDs for long duration, number of times provided as argument
     bool isLightEnabled(LedNumber_t ledNumber) { return ledEnabled_[ledNumber]; }

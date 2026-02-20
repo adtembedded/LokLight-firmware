@@ -11,6 +11,9 @@
 
 // This header contains all types, definitions and functions to wrap the C++ loklight functionality 
 // for C usage on a specific hardware platform (here: STM32L0xx)
+//
+// The code from main.c can call the init and step functions of loklight to control the device (LED control on DCC tracks)
+// The other functions implement a HAL so that loklight (subclasses) can use hardware-specific functionality for things like LED PWM control, DCC bit readings, etc.
 
 #ifndef LOKLIGHT_WRAPPER_H
 #define LOKLIGHT_WRAPPER_H
@@ -38,7 +41,8 @@ typedef struct DccHwInitCfg_s DccHwInitCfg_t;
     General platform functions
 
 */
-#define PLATFORM_DEBUGGING (0) // Set to 1 to enable debug print functions, set to 0 to disable
+#define PLATFORM_DEBUGGING (0) // Set to 1 to enable debug print functions, set to 0 to disable for code size optimization
+
 // Get the current tick in ms
 uint32_t platform_get_tick_ms(void);
 
@@ -64,7 +68,6 @@ bool loklight_init(LedHwInitCfg_t* ledHwInitCfg, DccHwInitCfg_t* dccHwInitCfg);
 bool loklight_init_status();
 
 // Step function, call periodically
-// bool loklight_step(LoklightHandle handle);
 bool loklight_step();
 
 /* 
