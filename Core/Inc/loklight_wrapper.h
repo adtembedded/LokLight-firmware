@@ -149,23 +149,20 @@ bool dcc_hw_read_analog_direction();
 */
 #define CV_MEM_START_ADDR (0x08003F80)  // Start address in flash where CV values can be stored. This memory must be reserved and cannot be used for text of the code
 #define CV_MEM_SIZE (128u)              // Size of the reserved memory for CV storage. 
-#define CV_MEM_ACCESS_SIZE (sizeof(uint32_t))        // Size of the smallest unit that can be written to flash. STM32 cortex-M mcus are 32 bit word-aligned.
+#define CV_MEM_ACCESS_SIZE (sizeof(uint32_t))  // Size of the smallest unit that can be written to flash. ARM Cortex-M mcus are 32 bit word-aligned.
 
 // Erases the part of the flash memory where CVs are stored. Returns true if successful
 bool config_erase_cv_flash_map();
 
-// Writes the CV map to flash memory. Returns true if successful
-bool config_write_cv_flash_map(uint8_t* cvMapPtr, size_t size);
-
 // Write to the flash memory part where the CV map is stored.
 /// @brief Perform a write to the flash memory where CVs are stored
-/// @param data pointer to the data to be written
+/// @param data pointer to the data to be written. Must be aligned to CV_MEM_ACCESS_SIZE on (most? all?) ARM cortex-M platforms
 /// @param size size of the data to be written in units of CV_MEM_ACCESS_SIZE. 
 ///             So if CV_MEM_ACCESS_SIZE is 4 (for 32bit word), and the data block is 12 bytes, size should be 3.
 /// @param offset offset in the flash memory where the data should be written. Again, the offset is in units of CV_MEM_ACCESS_SIZE
 ///             So if the write is to bytes 8-12 of the flash, with a 32-word access size, the offset should be 2 (starting from 0).
 /// @return true if the write operation was successful, false otherwise
-bool config_write_to_flash_map(void* data, size_t size, uint32_t offset);
+bool config_write_to_flash_map(const void* data, size_t size, uint32_t offset);
 
 #ifdef __cplusplus
 }

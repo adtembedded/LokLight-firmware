@@ -72,8 +72,12 @@ typedef struct cvLookUpResult_s {
     Constants and Variables for LokLight configuration and state management
 
 */
-constexpr uint8_t CV_MEM_PREFIX[] = {'L', 'O', 'K', 'L'}; // Prefix to identify valid CV data in flash
-constexpr uint8_t CV_MEM_POSTFIX[] = {'I', 'G', 'H', 'T'}; // Postfix to identify valid CV data in flash
+// These constant will be written in flash to identify a valid CV map. 
+//To be able to write them, we need them to be aligned in the native platform's memory access size
+// Note that these constant are placed in flash text memory anyway and will be aligned per definition, 
+// so there shouldn't be a need for the alignment attribute, but just in case..
+__attribute__ ((aligned (CV_MEM_ACCESS_SIZE))) constexpr uint8_t CV_MEM_PREFIX[] = {'L', 'O', 'K', 'L'}; // Prefix to identify valid CV data in flash
+__attribute__ ((aligned (CV_MEM_ACCESS_SIZE))) constexpr uint8_t CV_MEM_POSTFIX[] = {'I', 'G', 'H', 'T'}; // Postfix to identify valid CV data in flash
 
 /*
 
@@ -159,7 +163,9 @@ private:
     ~LoklightConfig(){;}
 
     bool isInitialized_ = false;
-    cvMap_t cvMap_ = {};
+    // The alignment attribute is to make sure the CV map can be accessed in the native platform's memory write access size for flash
+    // For ex. on STM32, we have 32-bit word size flash write access, and the input data have to be aligned to 32 bits as well for an efficient copy.
+    __attribute__ ((aligned (CV_MEM_ACCESS_SIZE))) cvMap_t cvMap_ = {};
 };
 
 

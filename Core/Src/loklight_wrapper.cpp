@@ -54,21 +54,7 @@ extern "C" bool config_erase_cv_flash_map()
     return result;
 }
 
-//TODO
-// This function writes the CV map including the pre- and postfix. These are implementation specific details of the config class
-// which do not really belong here. For now, however, it is the most convenient way to make sure a non-word aligned CV map (uint16 per entry) can be written
-// to the word-accessed flash memory of an STM32 arm cortex-m device. Also, the (un)locking of flash memory and other platform-specific functions
-// should ideally happen only once, which is the case for the implementation below.
-//
-// A future implementation must define the alignment size in loklight_wrapper.h, then generate a (default) cvmap with appropriate padding in config.h/config.cpp.
-// It should then use a generalistic flash-writing function in the wrapper to write the CV map to flash by providing a generalized memory block & size spec.
-// This could already have been done here by generating a new memory object that is [PREFIX CV-MAP POSTFIX] in the config class
-// and passing it to the function below.
-// However, there isn't enough RAM memory on the STM32C011 to support making a temporary CV-map copy when (memory-heavy) debugging features are also enabled.
-//
-// Alternatively, the config class can perform writes for the PREFIX, cv-map and POSTFIX seperately.
-
-extern "C" bool config_write_cv_flash_map(uint8_t* cvMapPtr, size_t size)
+extern "C" bool config_write_to_flash_map(const void* data, size_t size, uint32_t offset)
 {
     static_assert(CV_MEM_SIZE % sizeof(uint32_t) == 0, "CV_MEM_SIZE must be a multiple of 32-bit word size");
     if(size+sizeof(CV_MEM_PREFIX)+sizeof(CV_MEM_POSTFIX) > CV_MEM_SIZE)
@@ -80,116 +66,17 @@ extern "C" bool config_write_cv_flash_map(uint8_t* cvMapPtr, size_t size)
     __disable_irq();    // Disable interrupts to prevent flash access conflicts
     HAL_FLASH_Unlock(); // Allow control of the flash registers to perform write operation
     // Write the CV map to flash memory word by word (32-bit)
-    // First recast the general byte pointer to the local word size
-    uint32_t* flashPtr = reinterpret_cast<uint32_t*>(CV_MEM_START_ADDR);
-    // Write prefix to flash
-    if(HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, reinterpret_cast<uint32_t>(flashPtr), *reinterpret_cast<const uint32_t*>(CV_MEM_PREFIX)) == HAL_OK)
-    {
-        flashPtr++;   // Move to the next word after writing prefix
-    }
-    else
-    {
-        result = false;   // Write failed
-    }
-
-    // Only attempt to write data if prefix write was successful
-    if(result)   
-    {
-        while(size > 3)   // While there are at least 4 bytes (32 bits) left to write
-        {
-            // Assemble a word from the data pointer
-            // We need to do this, as the pointer does not have to be word-aligned
-            // If we give a non-word-aligned pointer to HAL_FLASH_Program it will cause a hard fault
-            uint32_t word = 0;
-            word = (cvMapPtr[0] << 0) | (cvMapPtr[1] << 8) | (cvMapPtr[2] << 16) | (cvMapPtr[3] << 24);
-            if(HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, reinterpret_cast<uint32_t>(flashPtr), word) == HAL_OK)
-            {
-                flashPtr++;   // Move to the next word after successful write
-                cvMapPtr+= 4; // Move to the next word in the data pointer
-                size -= 4;    // Decrease remaining size by 4 bytes
-            }
-            else
-            {
-                result = false;   // Write failed, exit loop
-                break;
-            }
-        }
-    }
-
-    // Write last part and postfix to flash
-    if(result)    // Only attempt to write postfix if all previous writes were successful
-    {
-        if (size > 0)  // There are remaining bytes
-        {
-            uint32_t lastWords[2] = {0,0};
-            size_t i = 0;
-            while(i < size) // This is the part that remains after an N x word sized block has been written
-            {
-                lastWords[0] |= (cvMapPtr[i] << (i*8)); // Assemble remaining bytes into a word. Convert to little endian format
-                i++;
-            }
-            while(i < 4)    // For the remaining space in the word var, add the start of the postfix
-            {
-                lastWords[0] |= CV_MEM_POSTFIX[i-size] << (i*8); // After data bytes, fill the rest of the word with the beginning of the postfix. Convert to little endian format
-                i++;
-            }
-            while(i-size < sizeof(CV_MEM_POSTFIX)) // Write the rest of the postfix into the next word var
-            {
-                lastWords[1] |= CV_MEM_POSTFIX[i-size] << ((i-4)*8); // Write remaining part of postfix into second word. Convert to little endian format
-                i++;
-            }
-            while(i < 8)    // Pad the rest of the second word with 0xff
-            {
-                // Pad with 0xff, which is the default erased state of flash memory
-                lastWords[1] |= 0xFF << ((i-4)*8);
-                i++;
-            }
-            if(HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, reinterpret_cast<uint32_t>(flashPtr), lastWords[0]) != HAL_OK)
-            {
-                result = false;   // Write failed
-            }
-            flashPtr++;
-            if(HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, reinterpret_cast<uint32_t>(flashPtr), lastWords[1]) != HAL_OK)
-            {
-                result = false;   // Write failed
-            }
-            flashPtr++;
-        }
-        else    // Happens when CV map was word-aligned
-        {
-            if(HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, reinterpret_cast<uint32_t>(flashPtr), *reinterpret_cast<const uint32_t*>(CV_MEM_POSTFIX)) != HAL_OK)
-            {
-                result = false;   // Write failed
-            }
-        }
-    }
-
-    HAL_FLASH_Lock();   // Relock flash mem when done
-    __enable_irq();     // Re-enable interrupts    
-    return result;
-}
-
-extern "C" bool config_write_to_flash_map(void* data, size_t size, uint32_t offset)
-{
-    static_assert(CV_MEM_SIZE % sizeof(uint32_t) == 0, "CV_MEM_SIZE must be a multiple of 32-bit word size");
-    if(size+sizeof(CV_MEM_PREFIX)+sizeof(CV_MEM_POSTFIX) > CV_MEM_SIZE)
-    {
-        return false;   // Size of data exceeds reserved flash memory for CVs
-    }
-
-    bool result = true;    // Assume success until a write operation fails
-    __disable_irq();    // Disable interrupts to prevent flash access conflicts
-    HAL_FLASH_Unlock(); // Allow control of the flash registers to perform write operation
-    // Write the CV map to flash memory word by word (32-bit)
-    // First recast the general byte pointer to the local word size
+    // First recast the general void pointer to the local word size
     uint32_t* flashPtr = reinterpret_cast<uint32_t*>(CV_MEM_START_ADDR) + offset;
+    uint32_t* nativeDataPtr = reinterpret_cast<uint32_t*>(const_cast<void*>(data));
     
     // Write memory block to flash
     while(result && size > 0)
     {
-        if(HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, reinterpret_cast<uint32_t>(flashPtr), *reinterpret_cast<const uint32_t*>(data)) == HAL_OK)
-        {
-            flashPtr++;   // Move to the next word after writing prefix
+        if(HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, reinterpret_cast<uint32_t>(flashPtr), *nativeDataPtr) == HAL_OK)
+        {   // Move to the next word
+            flashPtr++;   
+            nativeDataPtr++;
         }
         else
         {

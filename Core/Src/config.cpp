@@ -96,12 +96,32 @@ bool LoklightConfig::saveCvMapToFlash()
     }
     
     // Step 2: Write the values to flash. Prefix and postfix are handled by the write function
-    if(!config_write_cv_flash_map(reinterpret_cast<uint8_t*>(cvMap_), sizeof(cvMap_)))
+    
+    // Calculate platform specific offsets
+    // The platform flash memory is accessed per "flash mem write access size", or CV_MEM_ACCESS_SIZE. 
+    // The offsets are given by mem_block / CV_MEM_ACCESS_SIZE
+    
+    // Note that asserts to check for alignment of pre/postfix and cvmap sizes to CV_MEM_ACCESS_SIZE are performed in the init function
+    // Hence if we end up here, the pre/postfix and cvmap are guaranteed to be integer multiples of CV_MEM_ACCESS_SIZE 
+    // and we do not need to worry about size misalignment. 
+    
+    uint32_t cvMapOffset    = sizeof(CV_MEM_PREFIX)/CV_MEM_ACCESS_SIZE; // CV map starts after the prefix
+    uint32_t postFixOffset = (sizeof(CV_MEM_PREFIX) + sizeof(cvMap_))/CV_MEM_ACCESS_SIZE; // Postfix starts after the CV map
+
+    if(!config_write_to_flash_map(reinterpret_cast<const void*>(CV_MEM_PREFIX), sizeof(CV_MEM_PREFIX)/CV_MEM_ACCESS_SIZE, 0))
+    {
+        return false;   // Write failed
+    }
+    if(!config_write_to_flash_map(reinterpret_cast<const void*>(cvMap_), sizeof(cvMap_)/CV_MEM_ACCESS_SIZE, cvMapOffset))
+    {
+        return false;   // Write failed
+    }
+    if(!config_write_to_flash_map(reinterpret_cast<const void*>(CV_MEM_POSTFIX), sizeof(CV_MEM_POSTFIX)/CV_MEM_ACCESS_SIZE, postFixOffset))
     {
         return false;   // Write failed
     }
 
-    // Step 3: Verify the values
+    // Step 3: Verify the values with a byte-sizes check.
     uint8_t* flashPtr = reinterpret_cast<uint8_t*>(CV_MEM_START_ADDR);
     bool prefixMatch = memcmp(CV_MEM_PREFIX, flashPtr, sizeof(CV_MEM_PREFIX)) == 0;
     bool postfixMatch = memcmp(CV_MEM_POSTFIX, flashPtr + sizeof(CV_MEM_PREFIX) + sizeof(cvMap_), sizeof(CV_MEM_POSTFIX)) == 0;
