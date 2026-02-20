@@ -17,7 +17,10 @@ LoklightConfigInitResult_t LoklightConfig::init(void)
 
     // Check if config data memory is large enough
     static_assert(sizeof(cvMap_) * sizeof(cvEntry_t) <= CV_MEM_SIZE - sizeof(CV_MEM_PREFIX) - sizeof(CV_MEM_POSTFIX), "CV map size exceeds reserved flash memory for CV storage");
-
+    // Check if the CV map has a size that is suitable for flash writing (word-aligned)
+    static_assert(sizeof(CV_MEM_PREFIX) % CV_MEM_ACCESS_SIZE == 0, "CV map PREFIX must be a multiple of the platforms flash write access size for flash writing, use padding in defaultCvMap[] if required");
+    static_assert(sizeof(CV_MEM_POSTFIX) % CV_MEM_ACCESS_SIZE == 0, "CV map POSTFIX must be a multiple of the platforms flash write access size for flash writing, use padding in defaultCvMap[] if required");
+    static_assert(sizeof(cvMap_) % CV_MEM_ACCESS_SIZE == 0, "CV map size must be a multiple of the platforms flash write access size for flash writing, use padding in defaultCvMap[] if required");
     // Try to find a valid data configuration in flash
     // Note that future implementations could try to save writes cycles by
     // iteratively going through the memory, each time increasing the offset by the cvmap amount until the last valid configuration is found.
