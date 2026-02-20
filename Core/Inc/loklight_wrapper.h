@@ -148,7 +148,8 @@ bool dcc_hw_read_analog_direction();
 
 */
 #define CV_MEM_START_ADDR (0x08003F80)  // Start address in flash where CV values can be stored. This memory must be reserved and cannot be used for text of the code
-#define CV_MEM_SIZE (128)               // Size of the reserved memory for CV storage. 
+#define CV_MEM_SIZE (128u)              // Size of the reserved memory for CV storage. 
+#define CV_MEM_ACCESS_SIZE (32u)        // Size of the smallest unit that can be written to flash. STM32 cortex-M mcus are 32 bit word-aligned.
 
 // Erases the part of the flash memory where CVs are stored. Returns true if successful
 bool config_erase_cv_flash_map();
