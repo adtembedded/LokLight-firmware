@@ -1303,6 +1303,7 @@ bool DccInterface::processServiceMsg()
     // Byte 2: AAAAAAAA, where A is the 10-bit CV address 
     // Byte 3: DDDDDDDD, where D is the value specification
     constexpr uint8_t cvWriteInstr = 0b01111100;
+    constexpr uint8_t cvWriteMsgMask = 0b01111100; // Actually same value as cvWriteInstr, but we define it separately for readability.
 
     // Handle resets
     if(isBroadCastResetMsg(dccMsgBuf_[0], dccMsgBuf_[1]))
@@ -1329,6 +1330,7 @@ bool DccInterface::processServiceMsg()
         
         return true;
     }
+    else if(((dccMsgBuf_[0]) & cvWriteMsgMask) == cvWriteInstr) // cvWriteInstr is also a valid mask
     else if(((dccMsgBuf_[0]) & cvWriteInstr) == cvWriteInstr) // cvWriteInstr is also a valid mask
     {
         // Check if this is the first request or not
