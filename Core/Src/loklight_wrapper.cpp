@@ -54,6 +54,20 @@ extern "C" bool config_erase_cv_flash_map()
     return result;
 }
 
+//TODO
+// This function writes the CV map including the pre- and postfix. These are implementation specific details of the config class
+// which do not really belong here. For now, however, it is the most convenient way to make sure a non-word aligned CV map (uint16 per entry) can be written
+// to the word-accessed flash memory of an STM32 arm cortex-m device. Also, the (un)locking of flash memory and other platform-specific functions
+// should ideally happen only once, which is the case for the implementation below.
+//
+// A future implementation must define the alignment size in loklight_wrapper.h, then generate a (default) cvmap with appropriate padding in config.h/config.cpp.
+// It should then use a generalistic flash-writing function in the wrapper to write the CV map to flash by providing a generalized memory block & size spec.
+// This could already have been done here by generating a new memory object that is [PREFIX CV-MAP POSTFIX] in the config class
+// and passing it to the function below.
+// However, there isn't enough RAM memory on the STM32C011 to support making a temporary CV-map copy when (memory-heavy) debugging features are also enabled.
+//
+// Alternatively, the config class can perform writes for the PREFIX, cv-map and POSTFIX seperately.
+
 extern "C" bool config_write_cv_flash_map(uint8_t* cvMapPtr, size_t size)
 {
     static_assert(CV_MEM_SIZE % sizeof(uint32_t) == 0, "CV_MEM_SIZE must be a multiple of 32-bit word size");
