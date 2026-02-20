@@ -91,6 +91,9 @@ private:
     void updateLedFunctionMapping(); // This function updates the led function mapping variables based on the configuration.
     void updateLedDirectionMapping();// This function updates the led direction mapping variables based on the configuration.
     ledCfgLookupResult_t getLedConfig(uint8_t ledNumber); // This function returns the LED control configuration for a given LED number based on the CV values in the config.
+
+    // Handle service requests
+    void handleServiceRequests(); // This function checks for service requests from the DCC interface (factory reset, CV writes) and applies them to the configuration and saves to flash if needed.
 };
 
 #endif // LOKLIGHT_H

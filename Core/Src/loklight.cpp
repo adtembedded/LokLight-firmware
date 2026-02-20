@@ -131,44 +131,8 @@ bool Loklight::step()
         enableLed1 = false;
         enableLed2 = false;
 
-        // Check if there is an action to be performed
-        if(dccInterface_.getFactoryResetRequested())
-        {
-            loklightConfig_.resetDefaultConfig();
-            // Write to flash
-            bool writeResult = loklightConfig_.saveCvMapToFlash();
-            // Flash LEDs
-            writeResult ? ledControl_.longFlash(2) : ledControl_.shortFlash(5); // Flash twice to indicate success, fast flash to indicate error
-            // Reset device
-            platform_reset();
-        }
-
-        DccCvWriteObj_t cvWriteRequest = dccInterface_.getCvWriteRequested();
-        if(cvWriteRequest.cvAddress != 0) // A CV address of 0 indicates no write is pending
-        {
-            // Perform CV write action based on the CV address and value
-            // First check if the CV may already have the right value
-            cvLookUpResult_t cvLookUpResult = loklightConfig_.lookUpCV(cvWriteRequest.cvAddress);
-            bool writeResult = false; 
-            if(cvLookUpResult.cvFound && cvLookUpResult.cvValue == cvWriteRequest.cvValue)
-            {
-                // CV already has the right value, act as if the write was successful without actually performing it.
-                writeResult = true;
-            }
-            else
-            {
-                // CV does not have the right value, perform write
-                if(loklightConfig_.writeCv(cvWriteRequest.cvAddress, cvWriteRequest.cvValue))
-                {
-                    // Write to flash
-                    writeResult = loklightConfig_.saveCvMapToFlash();
-                } // Else: write failed. Do nothing, writeResult is already false
-            }
-            // Visual feedback based on write result.
-            writeResult ? ledControl_.longFlash(2) : ledControl_.shortFlash(5); // Flash twice to indicate success, fast flash to indicate error
-            // Either way, reset the system
-            platform_reset();
-        }   // End of CV Write
+        // This will handle factory resets and CV writes
+        handleServiceRequests();
     } // End of service mode
     else
     {
@@ -285,4 +249,53 @@ ledCfgLookupResult_t Loklight::getLedConfig(uint8_t ledNumber)
     }
     
     return {true, cfg};
+}
+
+void Loklight::handleServiceRequests()
+{
+    // Check if there is an action to be performed
+
+    // Factory resets
+    if(dccInterface_.getFactoryResetRequested())
+    {
+        // Apply defaults to config, overwriting any user-defined config
+        loklightConfig_.resetDefaultConfig();
+        // Write to flash
+        bool writeResult = loklightConfig_.saveCvMapToFlash();
+        // Flash LEDs
+        writeResult ? ledControl_.longFlash(2) : ledControl_.shortFlash(5); // Flash twice to indicate success, fast flash to indicate error
+        // Reset device, this will apply the newly saved config
+        platform_reset();
+    }
+
+    // CV writes
+    DccCvWriteObj_t cvWriteRequest = dccInterface_.getCvWriteRequested();
+    if(cvWriteRequest.cvAddress != 0) // A CV address of 0 indicates no write is pending
+    {
+        // Perform CV write action based on the CV address and value
+        // First check if the CV may already have the right value
+        // If the CV is not found, any write action will be skipped
+        cvLookUpResult_t cvLookUpResult = loklightConfig_.lookUpCV(cvWriteRequest.cvAddress);
+        bool writeResult = false; 
+        if(cvLookUpResult.cvFound && cvLookUpResult.cvValue == cvWriteRequest.cvValue)
+        {
+            // CV already has the right value, act as if the write was successful without actually performing it.
+            // TODO: sometimes register can have a unique role (write X to reset, read-only, etc). 
+            // If those cases are to be supported, this check must be reimplemented.
+            writeResult = true;
+        }
+        else
+        {
+            // CV does not have the right value, perform write
+            if(loklightConfig_.writeCv(cvWriteRequest.cvAddress, cvWriteRequest.cvValue))
+            {
+                // Write to flash
+                writeResult = loklightConfig_.saveCvMapToFlash();
+            } // Else: write failed. Do nothing, writeResult is already false
+        }
+        // Visual feedback based on write result.
+        writeResult ? ledControl_.longFlash(2) : ledControl_.shortFlash(5); // Flash twice to indicate success, fast flash to indicate error
+        // Either way, reset the system and apply the config that is currenty in flash
+        platform_reset();
+    }   // End of CV Write
 }
