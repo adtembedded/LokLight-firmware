@@ -78,7 +78,7 @@ typedef struct DccCvWriteObj_s {
     uint8_t cvValue;
 } DccCvWriteObj_t;
 
-//Message processing
+// Message processing
 // Expected ticks for DCC bit transitions
 // Refer to https://www.nmra.org/sites/default/files/standards/sandrp/DCC/S/s-9.1_electrical_standards_for_digital_command_control.pdf
 // We use timer frequency and include the tolerance to calculate the min and max ticks for each bit type

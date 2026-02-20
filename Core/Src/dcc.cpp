@@ -224,7 +224,10 @@ void DccInterface::resetDccReader(bool resetLastMsg)
 DccHalfbit_t DccInterface::feedHalfbit(uint32_t t)
 {
     static uint32_t lastHalfbitTime = 0;    // 0 will denote invalid/uninitialized
-    dccDebugInfo_.RxHbTotHalfBits++;
+    if constexpr(DCC_DEBUG_HALFBITS)
+    {
+        dccDebugInfo_.RxHbTotHalfBits++;
+    }
     
     // First check if we are processing a valid bit-time
     bool validHalfbit = is1HalfBit(t) || is0HalfBit(t);
@@ -232,7 +235,10 @@ DccHalfbit_t DccInterface::feedHalfbit(uint32_t t)
     {
         // Stop processing here, invalid half-bit time
         halfbitState_ = dcc_invalid_bit;
-        dccDebugInfo_.EHbBitTimeViolations++;
+        if constexpr(DCC_DEBUG_HALFBITS)
+        {
+            dccDebugInfo_.EHbBitTimeViolations++;
+        }
         // loklight_debug_print("Invalid half-bit time: %lu\r\n", t);
         // Resetting the state will happen below
     }
@@ -266,8 +272,10 @@ DccHalfbit_t DccInterface::feedHalfbit(uint32_t t)
                     // Happens when we found a time that is neither a 0 nor 1 half-bit
                     // Actually cannot not end up here because of the validHalfbit check above
                     halfbitState_ = dcc_invalid_bit;
-                    dccDebugInfo_.EHbBitTimeViolations++;
-                    // loklight_debug_print("Invalid half-bit time: %lu\r\n", t);
+                    if constexpr(DCC_DEBUG_HALFBITS)
+                    {
+                        dccDebugInfo_.EHbBitTimeViolations++;
+                    }
                 }
                 break;
             }
@@ -280,7 +288,10 @@ DccHalfbit_t DccInterface::feedHalfbit(uint32_t t)
                 if(valid1Halfbit && validDelta)
                 {
                     halfbitState_ = dcc_valid_1;
-                    dccDebugInfo_.RxHbValid1Bits++;
+                    if constexpr(DCC_DEBUG_HALFBITS)
+                    {
+                        dccDebugInfo_.RxHbValid1Bits++;
+                    }
                 }
                 else if(valid0Halfbit)
                 {
@@ -295,7 +306,10 @@ DccHalfbit_t DccInterface::feedHalfbit(uint32_t t)
                     else
                     {
                         halfbitState_ = dcc_invalid_bit;
-                        dccDebugInfo_.EHbBadSyncHalfBits++;
+                        if constexpr(DCC_DEBUG_HALFBITS)
+                        {
+                            dccDebugInfo_.EHbBadSyncHalfBits++;
+                        }
                         // loklight_debug_print("Received 1-halfbit and 0-halfbit but not while reading preamble: %lu %lu %u\r\n", lastHalfbitTime, t, dccReaderState_);
                     }
                 }
@@ -304,12 +318,18 @@ DccHalfbit_t DccInterface::feedHalfbit(uint32_t t)
                     halfbitState_ = dcc_invalid_bit;
                     if(!valid1Halfbit)
                     {
-                        dccDebugInfo_.EHbBadSyncHalfBits++;
+                        if constexpr(DCC_DEBUG_HALFBITS)
+                        {
+                            dccDebugInfo_.EHbBadSyncHalfBits++;
+                        }
                         // loklight_debug_print("Receiving 1bit, second half not 1bit nor 0bit: %lu %lu\r\n", lastHalfbitTime, t);
                     }
                     else
                     {   //This can only happen if the delta was invalid
-                        dccDebugInfo_.EHbDeltaViolations++;
+                        if constexpr(DCC_DEBUG_HALFBITS)
+                        {
+                            dccDebugInfo_.EHbDeltaViolations++;
+                        }
                         // uint32_t delta = (lastHalfbitTime > t) ? (lastHalfbitTime - t) : (t - lastHalfbitTime);
                         // loklight_debug_print("Receiving 1bit, delta invalid: %lu %lu %lu\r\n", lastHalfbitTime, t, delta);
                     }
@@ -324,21 +344,30 @@ DccHalfbit_t DccInterface::feedHalfbit(uint32_t t)
                 if(valid0Halfbit && validTotal)
                 {
                     halfbitState_ = dcc_valid_0;
-                    dccDebugInfo_.RxHbValid0Bits++;
+                    if constexpr(DCC_DEBUG_HALFBITS)
+                    {
+                        dccDebugInfo_.RxHbValid0Bits++;
+                    }
                 }
                 else
                 {
                     halfbitState_ = dcc_invalid_bit;
                     if(!valid0Halfbit)
                     {
-                        dccDebugInfo_.EHbBadSyncHalfBits++;
+                        if constexpr(DCC_DEBUG_HALFBITS)
+                        {
+                            dccDebugInfo_.EHbBadSyncHalfBits++;
+                        }
                         // loklight_debug_print("Receiving 0bit, second half not 0bit: %lu %lu\r\n", lastHalfbitTime, t);
                     }
                     else
                     {
-                        dccDebugInfo_.EHbTotTimeViolations++;
-                        uint32_t total = t + lastHalfbitTime;
-                        loklight_debug_print("Receiving 0bit, total invalid: %lu %lu %lu\r\n", lastHalfbitTime, t, total);
+                        if constexpr(DCC_DEBUG_HALFBITS)
+                        {
+                            dccDebugInfo_.EHbTotTimeViolations++;
+                        }
+                        // uint32_t total = t + lastHalfbitTime;
+                        // loklight_debug_print("Receiving 0bit, total invalid: %lu %lu %lu\r\n", lastHalfbitTime, t, total);
                     }
                 }
                 break;
@@ -1436,72 +1465,70 @@ void DccInterface::updateAnalogFuncState()
 
 void DccInterface::printDccDebugInfo()
 {
-    if(!DCC_PRINT_DEBUG_INFO)
-    {
-        return;
-    }
-    
-    static uint32_t lastPrintTime = 0;
-    uint32_t currentTime = platform_get_tick_ms();
-    if(currentTime - lastPrintTime >= dccDebugPrintPeriod_)
-    {
-        lastPrintTime = currentTime;
-        if(DCC_DEBUG_HALFBITS)
+    if constexpr(DCC_PRINT_DEBUG_INFO)  // Optimize out the entire block if debug printing is disabled at compile time
+    {    
+        static uint32_t lastPrintTime = 0;
+        uint32_t currentTime = platform_get_tick_ms();
+        if(currentTime - lastPrintTime >= dccDebugPrintPeriod_)
         {
-            // Print debug information about the DCC reader state, queue status, etc.
-            // loklight_debug_print("QElem: %u, BitSM: %u, ReadSM: %u\n", elementsInQueue(), halfbitState_, dccReaderState_);
-            loklight_debug_print("TOTBRX:%u, TOTB1:%u, TOTB0:%u, EBT:%u, EB1DT:%u, EB0TOT:%u, EBSYNC:%u, ", 
-                dccDebugInfo_.RxHbTotHalfBits, 
-                dccDebugInfo_.RxHbValid1Bits, 
-                dccDebugInfo_.RxHbValid0Bits, 
-                dccDebugInfo_.EHbBitTimeViolations, 
-                dccDebugInfo_.EHbDeltaViolations, 
-                dccDebugInfo_.EHbTotTimeViolations, 
-                dccDebugInfo_.EHbBadSyncHalfBits);
+            lastPrintTime = currentTime;
+            if constexpr(DCC_DEBUG_HALFBITS)
+            {
+                // Print debug information about the DCC reader state, queue status, etc.
+                // loklight_debug_print("QElem: %u, BitSM: %u, ReadSM: %u\n", elementsInQueue(), halfbitState_, dccReaderState_);
+                loklight_debug_print("TOTBRX:%u, TOTB1:%u, TOTB0:%u, EBT:%u, EB1DT:%u, EB0TOT:%u, EBSYNC:%u, ", 
+                    dccDebugInfo_.RxHbTotHalfBits, 
+                    dccDebugInfo_.RxHbValid1Bits, 
+                    dccDebugInfo_.RxHbValid0Bits, 
+                    dccDebugInfo_.EHbBitTimeViolations, 
+                    dccDebugInfo_.EHbDeltaViolations, 
+                    dccDebugInfo_.EHbTotTimeViolations, 
+                    dccDebugInfo_.EHbBadSyncHalfBits);
+            }
+            if constexpr(DCC_DEBUG_FRAMES)
+            {
+                loklight_debug_print("TOTBYTE: %u, TOTFR:%u, ERESET:%u, EPRE:%u, EFRAME:%u, ECRC:%u, ", 
+                    dccDebugInfo_.RxFrTotBytes,
+                    dccDebugInfo_.RxFrValidFrames, 
+                    dccDebugInfo_.EFrReaderResets, 
+                    dccDebugInfo_.EFrInvalidPreambles,
+                    dccDebugInfo_.EFrInvalidFrames, 
+                    dccDebugInfo_.EFrInvalidCRC);
+            }
+            if constexpr(DCC_DEBUG_MESSAGES)
+            {
+                loklight_debug_print("TOTMSG: %u, TOTIDLE:%u, TOTALL:%u, TOTDEC:%u, TOTTHIS:%u, ENOSUP:%u, EINV:%u, ",
+                    dccDebugInfo_.RxMsgValidMsgs, 
+                    dccDebugInfo_.RxMsgIdle, 
+                    dccDebugInfo_.RxMsgBroadcast, 
+                    dccDebugInfo_.RxMsgForMpDecoder,
+                    dccDebugInfo_.RxMsgTotMsgsForThisUnit,  
+                    dccDebugInfo_.EMsUnsupportedMsgType,
+                    dccDebugInfo_.EMsgInvalidMsgType); 
+            }
+            if constexpr(DCC_DEBUG_STATE)
+            {
+                loklight_debug_print("SPEED:%u, DIR:%s, FUNC: %s%s%s%s%s%s%s%s%s%s%s%s%s%s,", 
+                    dccVarState_.speed, 
+                    (dccVarState_.direction == DCC_DIRECTION_FORWARD) ? "FWD" : "REV",
+                    dccVarState_.funcEnanbled & DCC_FUNC_F0F ? "F0F " : "",
+                    dccVarState_.funcEnanbled & DCC_FUNC_F0R ? "F0R " : "",
+                    dccVarState_.funcEnanbled & DCC_FUNC_F1 ? "F1 " : "",
+                    dccVarState_.funcEnanbled & DCC_FUNC_F2 ? "F2 " : "",
+                    dccVarState_.funcEnanbled & DCC_FUNC_F3 ? "F3 " : "",
+                    dccVarState_.funcEnanbled & DCC_FUNC_F4 ? "F4 " : "",
+                    dccVarState_.funcEnanbled & DCC_FUNC_F5 ? "F5 " : "",
+                    dccVarState_.funcEnanbled & DCC_FUNC_F6 ? "F6 " : "",
+                    dccVarState_.funcEnanbled & DCC_FUNC_F7 ? "F7 " : "",
+                    dccVarState_.funcEnanbled & DCC_FUNC_F8 ? "F8 " : "",
+                    dccVarState_.funcEnanbled & DCC_FUNC_F9 ? "F9 " : "",
+                    dccVarState_.funcEnanbled & DCC_FUNC_F10 ? "F10 " : "",
+                    dccVarState_.funcEnanbled & DCC_FUNC_F11 ? "F11 " : "",
+                    dccVarState_.funcEnanbled & DCC_FUNC_F12 ? "F12 " : "",
+                    dccVarState_.funcEnanbled);
+            }
+            loklight_debug_print("\r\n");
         }
-        if(DCC_DEBUG_FRAMES)
-        {
-            loklight_debug_print("TOTBYTE: %u, TOTFR:%u, ERESET:%u, EPRE:%u, EFRAME:%u, ECRC:%u, ", 
-                dccDebugInfo_.RxFrTotBytes,
-                dccDebugInfo_.RxFrValidFrames, 
-                dccDebugInfo_.EFrReaderResets, 
-                dccDebugInfo_.EFrInvalidPreambles,
-                dccDebugInfo_.EFrInvalidFrames, 
-                dccDebugInfo_.EFrInvalidCRC);
-        }
-        if(DCC_DEBUG_MESSAGES)
-        {
-            loklight_debug_print("TOTMSG: %u, TOTIDLE:%u, TOTALL:%u, TOTDEC:%u, TOTTHIS:%u, ENOSUP:%u, EINV:%u, ",
-                dccDebugInfo_.RxMsgValidMsgs, 
-                dccDebugInfo_.RxMsgIdle, 
-                dccDebugInfo_.RxMsgBroadcast, 
-                dccDebugInfo_.RxMsgForMpDecoder,
-                dccDebugInfo_.RxMsgTotMsgsForThisUnit,  
-                dccDebugInfo_.EMsUnsupportedMsgType,
-                dccDebugInfo_.EMsgInvalidMsgType); 
-        }
-        if(DCC_DEBUG_STATE)
-        {
-            loklight_debug_print("SPEED:%u, DIR:%s, FUNC: %s%s%s%s%s%s%s%s%s%s%s%s%s%s,", 
-                dccVarState_.speed, 
-                (dccVarState_.direction == DCC_DIRECTION_FORWARD) ? "FWD" : "REV",
-                dccVarState_.funcEnanbled & DCC_FUNC_F0F ? "F0F " : "",
-                dccVarState_.funcEnanbled & DCC_FUNC_F0R ? "F0R " : "",
-                dccVarState_.funcEnanbled & DCC_FUNC_F1 ? "F1 " : "",
-                dccVarState_.funcEnanbled & DCC_FUNC_F2 ? "F2 " : "",
-                dccVarState_.funcEnanbled & DCC_FUNC_F3 ? "F3 " : "",
-                dccVarState_.funcEnanbled & DCC_FUNC_F4 ? "F4 " : "",
-                dccVarState_.funcEnanbled & DCC_FUNC_F5 ? "F5 " : "",
-                dccVarState_.funcEnanbled & DCC_FUNC_F6 ? "F6 " : "",
-                dccVarState_.funcEnanbled & DCC_FUNC_F7 ? "F7 " : "",
-                dccVarState_.funcEnanbled & DCC_FUNC_F8 ? "F8 " : "",
-                dccVarState_.funcEnanbled & DCC_FUNC_F9 ? "F9 " : "",
-                dccVarState_.funcEnanbled & DCC_FUNC_F10 ? "F10 " : "",
-                dccVarState_.funcEnanbled & DCC_FUNC_F11 ? "F11 " : "",
-                dccVarState_.funcEnanbled & DCC_FUNC_F12 ? "F12 " : "",
-                dccVarState_.funcEnanbled);
-        }
-        loklight_debug_print("\r\n");
     }
 }
 
