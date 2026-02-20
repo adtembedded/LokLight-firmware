@@ -705,7 +705,10 @@ bool DccInterface::processDccMsg()
         // These messages are not supported
         // Note that the previous function should already have logged the error and returned false
         // The code below is just in case, it should never be reached
-            dccDebugInfo_.EMsUnsupportedMsgType++;
+            if constexpr(DCC_DEBUG_MESSAGES)
+            {
+                dccDebugInfo_.EMsUnsupportedMsgType++;
+            }
         case no_new_dcc_msg:
         case dcc_msg_idle:
         // Do nothing with these message types
@@ -715,7 +718,10 @@ bool DccInterface::processDccMsg()
         default:
             // Should not end up here, throw error
             lastDccMsg_.msg_type = dcc_reader_error;
-            dccDebugInfo_.EMsgInvalidMsgType++;
+            if constexpr(DCC_DEBUG_MESSAGES)
+            {
+                dccDebugInfo_.EMsgInvalidMsgType++;
+            }
             cmdWasProcessed = false; 
     }
     if(!cmdWasProcessed)
@@ -724,7 +730,10 @@ bool DccInterface::processDccMsg()
     }
 
     lastDccMsg_.validMsg = true;
-    dccDebugInfo_.RxMsgValidMsgs++;
+    if constexpr(DCC_DEBUG_MESSAGES)
+    {
+        dccDebugInfo_.RxMsgValidMsgs++;
+    }
 
     // Step 4: Copy state to runtime variables if the message is for this unit and we are in DCC mode
     if(!isMsgForThisUnit() || activeControlMode_ == DCC_CONTROL_MODE_ANALOG)
@@ -733,8 +742,10 @@ bool DccInterface::processDccMsg()
         // Return true because the reception has succesfully finished
         return true;
     }
-    
-    dccDebugInfo_.RxMsgTotMsgsForThisUnit++;
+    if constexpr(DCC_DEBUG_MESSAGES)
+    {
+        dccDebugInfo_.RxMsgTotMsgsForThisUnit++;
+    }
     // Apply message to state
     if(!applyMsgToState())
     {
@@ -755,7 +766,10 @@ bool DccInterface::processAddress()
         // Broadcast message, address is 0
         lastDccMsg_.addr = dcc_short_addr_all;
         lastDccMsg_.longAddr = false;
-        dccDebugInfo_.RxMsgBroadcast++;
+        if constexpr(DCC_DEBUG_MESSAGES)
+        {
+            dccDebugInfo_.RxMsgBroadcast++;
+        }
     }
     else if(addrByte1 >= dcc_short_addr_multipurp_start && addrByte1 <= dcc_short_addr_multipurp_end)
     {
@@ -763,7 +777,10 @@ bool DccInterface::processAddress()
         // The address is encoded in the first byte
         lastDccMsg_.addr = addrByte1;
         lastDccMsg_.longAddr = false;
-        dccDebugInfo_.RxMsgForMpDecoder++;
+        if constexpr(DCC_DEBUG_MESSAGES)
+        {
+            dccDebugInfo_.RxMsgForMpDecoder++;
+        }
     }
     else if(addrByte1 >= dcc_short_addr_accessory_start && addrByte1 <= dcc_short_addr_accessory_end)
     {
@@ -787,14 +804,20 @@ bool DccInterface::processAddress()
         uint8_t addrByte2 = dccMsgBuf_[1];
         uint16_t addr = ((addrByte1 - 192) << 8) + addrByte2;
         lastDccMsg_.addr = addr;
-        dccDebugInfo_.RxMsgForMpDecoder++;
+        if constexpr(DCC_DEBUG_MESSAGES)
+        {
+            dccDebugInfo_.RxMsgForMpDecoder++;
+        }
         lastDccMsg_.longAddr = true;
     }
     else if(addrByte1 == dcc_short_addr_idle)
     {
         // Idle packet, address is 0
         lastDccMsg_.addr = dcc_short_addr_idle;
-        dccDebugInfo_.RxMsgIdle++;
+        if constexpr(DCC_DEBUG_MESSAGES)
+        {
+            dccDebugInfo_.RxMsgIdle++;
+        }
         lastDccMsg_.longAddr = false;
     }
     else
@@ -803,7 +826,10 @@ bool DccInterface::processAddress()
         lastDccMsg_.addr = 0;
         lastDccMsg_.longAddr = false;
         lastDccMsg_.validMsg = false;
-        dccDebugInfo_.EMsUnsupportedMsgType++;
+        if constexpr(DCC_DEBUG_MESSAGES)
+        {
+            dccDebugInfo_.EMsUnsupportedMsgType++;
+        }
         return false;
     }
 
@@ -822,7 +848,10 @@ bool DccInterface::processCmdType()
         // Filter out accessory messages. These appear to have a valid MP decoder address and command type, so need to
         // be filtered out here before the command type is determined.
         lastDccMsg_.msg_type = dcc_reader_unsupported;
-        dccDebugInfo_.EMsUnsupportedMsgType++;
+        if constexpr(DCC_DEBUG_MESSAGES)
+        {
+            dccDebugInfo_.EMsUnsupportedMsgType++;
+        }
         return false; // Unsupported message type
     }  
     else
@@ -843,11 +872,17 @@ bool DccInterface::processCmdType()
                 break;
             case dcc_msg_fexp:
                 lastDccMsg_.msg_type = dcc_reader_unsupported;
-                dccDebugInfo_.EMsUnsupportedMsgType++;
+                if constexpr(DCC_DEBUG_MESSAGES)
+                {
+                    dccDebugInfo_.EMsUnsupportedMsgType++;
+                }
                 return false; // Unsupported message type
             default:
                 lastDccMsg_.msg_type = dcc_reader_error;
-                dccDebugInfo_.EMsgInvalidMsgType++;
+                if constexpr(DCC_DEBUG_MESSAGES)
+                {
+                    dccDebugInfo_.EMsgInvalidMsgType++;
+                }
                 return false; // Unsupported message type
         }
     }
@@ -878,7 +913,10 @@ bool DccInterface::processDecCtrlMsg()
     if((cmdByte & 0xfe) != 0x00)
     {
         // Unsupported command, return false
-        dccDebugInfo_.EMsUnsupportedMsgType++;
+        if constexpr(DCC_DEBUG_MESSAGES)
+        {
+            dccDebugInfo_.EMsUnsupportedMsgType++;
+        }
         return false;
     }
 
@@ -990,7 +1028,10 @@ bool DccInterface::processAdvancedMsg()
     {
         // Unsupported instruction, return false
         lastDccMsg_.msg_type = dcc_reader_unsupported;
-        dccDebugInfo_.EMsUnsupportedMsgType++;
+        if constexpr(DCC_DEBUG_MESSAGES)
+        {
+            dccDebugInfo_.EMsUnsupportedMsgType++;
+        }
         return false;
     }
 
@@ -1408,7 +1449,10 @@ bool DccInterface::processServiceMsg()
     else
     {
         // Unsupported service mode message, ignore
-        dccDebugInfo_.EMsUnsupportedMsgType++;
+        if constexpr(DCC_DEBUG_MESSAGES)
+        {
+            dccDebugInfo_.EMsUnsupportedMsgType++;
+        }
     }
 
     // Cannot end up here
