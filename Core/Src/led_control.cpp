@@ -100,7 +100,7 @@ bool LedControl::step()
                 continue;
             }
 
-            uint16_t newBrightness = targetBrightness;
+            uint16_t newBrightness = targetBrightness; // NOLINT, initialize to target in case of future mods to code below
 
             if(currentBrightness < targetBrightness)
             {
