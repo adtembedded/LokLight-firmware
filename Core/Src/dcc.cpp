@@ -1075,7 +1075,7 @@ bool DccInterface::processFuncGroupMsg()
     lastDccMsg_.cmd_arg[0] = cmdByte; // Copy over to message buffer
 
     // Step 3: update registers accordingly
-    if((lastDccMsg_.msg_type == dcc_msg_fgi1))
+    if(lastDccMsg_.msg_type == dcc_msg_fgi1)
     {   // Message contains F0..F4
         // The format is as follows:
         // [1, 0, 0, F0, F4, F3, F2, F1]
