@@ -561,7 +561,7 @@ DccReaderState_t DccInterface::feedBit(DccHalfbit_t bit)
         }
 
         // Compare calculated CRC with received CRC (last byte)
-        if(crc == data[rxByteCnt - 1])
+        if(rxByteCnt > 0 && crc == data[rxByteCnt - 1])
         {
             // CRC has expecte value. This is a valid DCC frame
             dccReaderState_ = dcc_reader_new_msg;
