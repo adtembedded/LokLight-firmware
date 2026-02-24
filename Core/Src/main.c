@@ -85,19 +85,22 @@ uint32_t debug_get_unused_mem_size()
   
   if(!initialized)
   {
-    register unsigned int stackVal asm("sp");
+    uint32_t stackVal;
+    __asm volatile ("mov %0, sp" : "=r"(stackVal));
     uint32_t* stackPtr = (uint32_t*)stackVal; // Get current stack pointer
+
     uint32_t* fillPtr = (uint32_t*)malloc(1); // Get current heap pointer by allocating 1 byte
     upper_bound = stackPtr; //Set initial values for subsequent calls
     lower_bound = fillPtr;
     first_upper_bound = upper_bound;
     first_lower_bound = lower_bound;
-    
+    // NOLINTBEGIN
     while(fillPtr < stackPtr)
     {
       *fillPtr++ = fillWord; // Fill free memory with pattern for easier debugging of memory usage
     }
     free(fillPtr); // Free the allocated byte
+    // NOLINTEND
     initialized = true;
   }
   else  // Main code for unused memory tracking
@@ -222,6 +225,8 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
   }
+  // Beyond this point we only have STM code, which generates warnings.
+  // NOLINTBEGIN
   /* USER CODE END 3 */
 }
 
@@ -403,7 +408,8 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-
+// Beyond this point there are no lint warnings.
+// NOLINTEND
 /* USER CODE END 4 */
 
 /**
