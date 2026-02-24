@@ -18,7 +18,6 @@
 #ifndef LOKLIGHT_WRAPPER_H
 #define LOKLIGHT_WRAPPER_H
 
-#include <sys/cdefs.h>
 #ifdef __cplusplus
 extern "C" {
 #endif
